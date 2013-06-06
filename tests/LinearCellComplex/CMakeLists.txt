@@ -29,8 +29,14 @@ find_package(Boost REQUIRED)
 # Entries for target
 add_executable(${CMAKE_PROJECT_NAME}
     # Add other sources here
+    Geomview_stream_extension.cpp
     main.cpp)
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${CMAKE_PROJECT_NAME})
+
+# Include directories
+include_directories(
+    ${CMAKE_PROJECT_NAME}
+)
 
 # Link the executable to CGAL and third-party libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}

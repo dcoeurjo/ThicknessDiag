@@ -4,11 +4,17 @@
 #include <ctime>
 #include <cstdlib>
 
+#include <unistd.h>
+
+const std::size_t DISPLAY_WAIT_INTERVAL = 3;
+
 #include <CGAL/Linear_cell_complex.h>
 #include <CGAL/Linear_cell_complex_operations.h>
 
 #include <CGAL/IO/Geomview_stream.h>
 #include <CGAL/IO/Color.h>
+
+#include "Geomview_stream_extension.h"
 
 // Global Geomview stream
 static CGAL::Geomview_stream gv;
@@ -65,9 +71,6 @@ class Display_Vertices
                 }
             }
             gv.look_recenter();
-
-            // Wait until next display
-            while (std::cin.get() != '\n');
         }
 
     private:
@@ -78,54 +81,15 @@ class Display_Vertices
 // Display the vertices of each volume by iterating on darts.
 void display_all_vertices(const LCC_3 & lcc)
 {
+    // Display the vertices
     std::for_each(lcc.one_dart_per_cell<3>().begin(),
             lcc.one_dart_per_cell<3>().end(),
             Display_Vertices(lcc));
+
+    // Wait until next display
+    //while (std::cin.get() != '\n');
+    sleep(DISPLAY_WAIT_INTERVAL);
 }
-
-// Small extension to CGAL for the Geomview_stream module
-namespace CGAL {
-    // Taken directly from the Geomview official website
-    // (see geomview.org/docs/html/ui_002dpanel.html#ui_002dpanel)
-    struct Geomview_panel {
-        enum Identifier {
-            GEOMVIEW,   // main panel
-            TOOLS,      // motion controls
-            APPEARANCE, // appearance controls
-            CAMERAS,    // camera controls
-            LIGHTING,   // lighting controls
-            OBSCURE,    // obscure controls (doesn't seem to exist any more)
-            MATERIALS,  // material properties controls
-            COMMAND,    // command entry box
-            CREDITS,    // geomview credits 
-        };
-    };
-
-    // Extension allowing enable/disable for Geomview panels
-    void set_panel_enabled(Geomview_stream &gv,
-            Geomview_panel::Identifier panel, bool enabled)
-    {
-        gv << "(ui-panel ";
-        switch (panel) {
-            case Geomview_panel::GEOMVIEW:   gv << "geomview";   break;
-            case Geomview_panel::TOOLS:      gv << "tools";      break;
-            case Geomview_panel::APPEARANCE: gv << "appearance"; break;
-            case Geomview_panel::CAMERAS:    gv << "cameras";    break;
-            case Geomview_panel::LIGHTING:   gv << "lighting";   break;
-            case Geomview_panel::OBSCURE:    gv << "obscure";    break;
-            case Geomview_panel::MATERIALS:  gv << "materials";  break;
-            case Geomview_panel::COMMAND:    gv << "command";    break;
-            case Geomview_panel::CREDITS:    gv << "credits";    break;
-        }
-        gv << " ";
-        if (enabled) {
-            gv << "on";
-        } else {
-            gv << "off";
-        }
-        gv << ")";
-    }
-} // namespace CGAL
 
 int main(int argc, const char * argv[])
 {
