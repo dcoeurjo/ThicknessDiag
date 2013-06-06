@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-const std::size_t DISPLAY_WAIT_INTERVAL = 3;
+#define DISPLAY_WAIT_INTERVAL 3
 
 #include <CGAL/Linear_cell_complex.h>
 #include <CGAL/Linear_cell_complex_operations.h>
@@ -53,8 +53,10 @@ class Display_Vertices
 
             // Display current dart
             std::cout << "DART #" << ++_dart_id << std::endl;
-            typedef LCC::One_dart_per_incident_cell_const_range<0, 3> dart_range;
-            dart_range it_range = _lcc.one_dart_per_incident_cell<0, 3>(_lcc.dart_handle(d));
+            typedef LCC::One_dart_per_incident_cell_const_range<0, 3>
+                dart_range;
+            dart_range it_range = _lcc.one_dart_per_incident_cell<0, 3>
+                (_lcc.dart_handle(d));
             dart_range::const_iterator it = it_range.begin(),
                 itend = it_range.end();
             while (it != itend)
@@ -132,6 +134,11 @@ int main(int argc, const char * argv[])
             (LCC_3::point(it), v);
     }
     std::cout << "Translating the second tetrahedra" << std::endl;
+    display_all_vertices(lcc);
+
+    // Insert a 0-cell in the first tetrahedron
+    std::cout << "Insert a 0-cell in the first tetrahedron" << std::endl;
+    Dart_handle d3 = insert_cell_1_in_cell_2(lcc, d1, d1->beta(1));
     display_all_vertices(lcc);
 
     return EXIT_SUCCESS;
