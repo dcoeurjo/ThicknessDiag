@@ -83,12 +83,58 @@ void display_all_vertices(const LCC_3 & lcc)
             Display_Vertices(lcc));
 }
 
+// Small extension to CGAL for the Geomview_stream module
+namespace CGAL {
+    // Taken directly from the Geomview official website
+    // (see geomview.org/docs/html/ui_002dpanel.html#ui_002dpanel)
+    struct Geomview_panel {
+        enum Identifier {
+            GEOMVIEW,   // main panel
+            TOOLS,      // motion controls
+            APPEARANCE, // appearance controls
+            CAMERAS,    // camera controls
+            LIGHTING,   // lighting controls
+            OBSCURE,    // obscure controls (doesn't seem to exist any more)
+            MATERIALS,  // material properties controls
+            COMMAND,    // command entry box
+            CREDITS,    // geomview credits 
+        };
+    };
+
+    // Extension allowing enable/disable for Geomview panels
+    void set_panel_enabled(Geomview_stream &gv,
+            Geomview_panel::Identifier panel, bool enabled)
+    {
+        gv << "(ui-panel ";
+        switch (panel) {
+            case Geomview_panel::GEOMVIEW:   gv << "geomview";   break;
+            case Geomview_panel::TOOLS:      gv << "tools";      break;
+            case Geomview_panel::APPEARANCE: gv << "appearance"; break;
+            case Geomview_panel::CAMERAS:    gv << "cameras";    break;
+            case Geomview_panel::LIGHTING:   gv << "lighting";   break;
+            case Geomview_panel::OBSCURE:    gv << "obscure";    break;
+            case Geomview_panel::MATERIALS:  gv << "materials";  break;
+            case Geomview_panel::COMMAND:    gv << "command";    break;
+            case Geomview_panel::CREDITS:    gv << "credits";    break;
+        }
+        gv << " ";
+        if (enabled) {
+            gv << "on";
+        } else {
+            gv << "off";
+        }
+        gv << ")";
+    }
+} // namespace CGAL
+
 int main(int argc, const char * argv[])
 {
     // Setup Geomview
     gv.set_wired(false);
     gv.set_bg_color(Color(0, 0, 0));
     gv.clear();
+    CGAL::set_panel_enabled(gv, CGAL::Geomview_panel::TOOLS, false);
+    CGAL::set_panel_enabled(gv, CGAL::Geomview_panel::GEOMVIEW, false);
 
     // Initialize random seed
     std::srand(std::time(0));
@@ -103,10 +149,12 @@ int main(int argc, const char * argv[])
             Point(-1, 0, -1),
             Point(1, 0, -1),
             Point(1, 1, -3));
+    std::cout << "Adding two tetrahedra" << std::endl;
     display_all_vertices(lcc);
 
     // 3-Sew the 2 tetrahedra along one facet
     lcc.sew<3>(d1, d2);
+    std::cout << "Sewing tetrahedra" << std::endl;
     display_all_vertices(lcc);
 
     // Translate the second tetrahedra by a given vector
@@ -119,6 +167,7 @@ int main(int argc, const char * argv[])
         LCC_3::point(it) = LCC_3::Traits::Construct_translated_point_3()
             (LCC_3::point(it), v);
     }
+    std::cout << "Translating the second tetrahedra" << std::endl;
     display_all_vertices(lcc);
 
     return EXIT_SUCCESS;
