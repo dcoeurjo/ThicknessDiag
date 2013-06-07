@@ -4,8 +4,6 @@
 #include <ctime>
 #include <cstdlib>
 
-#include <boost/static_assert.hpp>
-
 #include <CGAL/Linear_cell_complex.h>
 #include <CGAL/Linear_cell_complex_operations.h>
 
