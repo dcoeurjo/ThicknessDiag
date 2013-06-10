@@ -22,7 +22,7 @@ struct Divide_by_two_functor
   }
 };
 
-struct Spherical_Item
+struct Spherical_CMap_Items
 {
   template <class Refs>
   struct Dart_wrapper
@@ -35,7 +35,7 @@ struct Spherical_Item
   };
 };
 
-
+typedef CGAL::Combinatorial_map<3, Spherical_CMap_Items> Spherical_CMap;
 
 int main(int argc, const char * argv[])
 {
