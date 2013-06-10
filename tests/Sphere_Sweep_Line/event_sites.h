@@ -1,11 +1,14 @@
 #ifndef EVENT_QUEUE_H
 #define EVENT_QUEUE_H
 
-#include <stdexcept>
-#include <sstream>
 #include <set>
 #include <vector>
 #include <functional>
+
+#ifndef NDEBUG
+#  include <stdexcept>
+#  include <sstream>
+#endif // NDEBUG //
 
 template <typename K>
 class Event_site
@@ -60,7 +63,7 @@ class Normal_event_site: public Event_site<K>
     // Add an event to the site, passing the event's semantic
     void add_event(const Circle & c, Event_tag t)
     {
-      // Only valid events can be added to the site
+#ifndef NDEBUG // Check that events added to the site are *valid*
       const Point & p = Event_site<K>::point();
       if (c.has_on(p) == false)
       {
@@ -69,6 +72,7 @@ class Normal_event_site: public Event_site<K>
           << p << ", circle " << c << " does not pass here";
         throw std::logic_error(oss.str());
       }
+#endif // NDEBUG //
 
       // Add event to accurate container
       switch (t)
@@ -88,13 +92,13 @@ class Normal_event_site: public Event_site<K>
   private:
     // Compare circles by increasing radius
     struct Compare_circle_radii: std::unary_function<Circle, bool>
-  {
-    bool operator()(const Circle & left,
-        const Circle & right) const
     {
-      return left.squared_radius() < right.squared_radius();
-    }
-  };
+      bool operator()(const Circle & left,
+          const Circle & right) const
+      {
+        return left.squared_radius() < right.squared_radius();
+      }
+    };
 
     // Compare circles by decreasing radius
     typedef std::unary_negate<Compare_circle_radii>
