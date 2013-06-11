@@ -23,6 +23,7 @@ class Normal_event_site
       _point(p), _starts(),
       _ends(), _cts() {}
 
+    // Add a base normal event
     void add_event(const Normal_event<K> & ev)
     {
 #ifndef NDEBUG // Check that events added to the site are *valid*
@@ -53,19 +54,36 @@ class Normal_event_site
       else { _ends.insert(ev); }
     }
 
+    // Overload for adding an intersection event
     void add_event(const Intersection_event<K> & ev)
+    { _cts.push_back(ev); }
+
+    // Range version of add_event taking any iterator
+    // verifying the STL InputIterator concept
+    template <typename InputIterator>
+    void add_event(InputIterator begin, InputIterator end)
     {
-      _cts.push_back(ev);
+      for (; begin != end; begin++)
+      { add_event(*begin); }
     }
 
     // TODO must be modified to follow CGAL's concepts
     //  for now this simply indicates the rules to follow,
     //  and probably doesn't actually work
+    //bool occurs_before(const Normal_event_site<K> & es) const
+    //{
+    //  return _point.theta < es._point.theta
+    //    || (_point.theta == es._point.theta
+    //        && _point.z > es._point.z);
+    //}
+    //
+    // Implemented version, using lexicographic comparing. This introduces
+    // the concepts that points are compared lexicographically and are
+    // placed in a frame local to the sphere (ie with its origin at the
+    // center of the sphere), in cylindrical coordinates.
     bool occurs_before(const Normal_event_site<K> & es) const
     {
-      return _point.theta < es._point.theta
-        || (_point.theta == es._point.theta
-            && _point.z > es._point.z);
+      return _point < es._point;
     }
 
     bool occurs_before(const Polar_event_site<K> & es) const
