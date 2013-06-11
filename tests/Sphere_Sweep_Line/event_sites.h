@@ -157,4 +157,4 @@ class Polar_event_site
     Polar_event<K> _event;
 };
 
-#endif // EVENT_SITES_H // vim: sw=2 et ts=2 sts=2 tw=2
+#endif // EVENT_SITES_H // vim: sw=2 et ts=2 sts=2

@@ -128,4 +128,4 @@ struct Intersection_event
   { return arcs == ev.arcs && tag == ev.tag; }
 };
 
-#endif // EVENTS_H // vim: sw=2 et ts=2 sts=2 tw=2
+#endif // EVENTS_H // vim: sw=2 et ts=2 sts=2
