@@ -58,6 +58,9 @@ class Normal_event_site
       _cts.push_back(ev);
     }
 
+    // TODO must be modified to follow CGAL's concepts
+    //  for now this simply indicates the rules to follow,
+    //  and probably doesn't actually work
     bool occurs_before(const Normal_event_site<K> & es) const
     {
       return _point.theta < es._point.theta
