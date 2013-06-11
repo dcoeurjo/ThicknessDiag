@@ -5,6 +5,11 @@
 #include <functional>
 #include <event_sites.h>
 
+#ifndef NDEBUG
+#  include <stdexcept>
+#  include <sstream>
+#endif // NDEBUG //
+
 template <typename K>
 struct Event_queue
 {
@@ -45,8 +50,15 @@ struct Event_queue
   // Concept: there is a next event
   Event_site_type next_event() const
   {
-    // Assertion check
-    assert(has_next_event());
+#ifndef NDEBUG // Assertion check
+    if (has_next_event() == false)
+    {
+      std::ostringstream oss;
+      oss << "Concept violation: there must be a 'next event' "
+        << "in order to get that next event's type";
+      throw std::logic_error(oss.str());
+    }
+#endif
 
     // Basic case for when one of the queues is empty
     if (polar_events.empty())
