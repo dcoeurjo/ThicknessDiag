@@ -52,7 +52,7 @@ class Normal_event_site
 
     void add_event(const Intersection_event<K> & ev)
     {
-      // TODO
+      _cts.push_back(ev);
     }
 
   private:
