@@ -83,13 +83,13 @@ class Normal_event_site
     // center of the sphere), in cylindrical coordinates.
     bool occurs_before(const Normal_event_site<K> & es) const
     {
-      return _point < es._point;
+      typename K::CompareThetaZ_3 comp;
+      typename K::Circular_arc_point_3 cp(_point), es_cp(es._point);
+      return comp.fo(cp, es_cp);
     }
 
     bool occurs_before(const Polar_event_site<K> & es) const
-    {
-      return es.is_single_polar() && es.is_start();
-    }
+    { return es.occurs_before(*this) == false; }
 
   private:
     // Location of event site
