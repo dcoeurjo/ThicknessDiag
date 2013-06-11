@@ -4,7 +4,7 @@
 #include <set>
 
 template <typename K>
-class Vertical_ordered
+class Vertical_orderer
 {
     public:
         // TODO contain/insert/delete operations
