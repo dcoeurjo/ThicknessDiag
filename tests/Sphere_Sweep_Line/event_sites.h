@@ -1,5 +1,5 @@
-#ifndef EVENT_QUEUE_H
-#define EVENT_QUEUE_H
+#ifndef EVENT_SITES_H
+#define EVENT_SITES_H
 
 #include <set>
 #include <vector>
@@ -9,39 +9,6 @@
 #  include <stdexcept>
 #  include <sstream>
 #endif // NDEBUG //
-
-template <typename K>
-class Event_site
-{
-  public:
-    typedef typename K::Point_3 Point;
-    typedef typename K::Circle_3 Circle;
-
-    Event_site(const Point & p):
-      _point(p) {}
-
-    const Point & point() const
-    { return _point; }
-
-  private:
-    Point _point;
-};
-
-template <typename K>
-class Polar_event_site: public Event_site<K>
-{
-  public:
-    Polar_event_site(typename Event_site<K>::Point const & p):
-      Event_site<K>(p) {}
-};
-
-template <typename K>
-class Bipolar_event_site: public Event_site<K>
-{
-  public:
-    Bipolar_event_site(typename Event_site<K>::Point const & p):
-      Event_site<K>(p) {}
-};
 
 template <typename K>
 class Normal_event_site: public Event_site<K>
@@ -112,4 +79,4 @@ class Normal_event_site: public Event_site<K>
     std::vector<std::pair<Event_tag, Circle> > _cts;
 };
 
-#endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2 tw=2
+#endif // EVENT_SITES_H // vim: sw=2 et ts=2 sts=2 tw=2

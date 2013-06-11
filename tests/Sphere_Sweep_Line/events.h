@@ -15,33 +15,33 @@
 
 struct Normal_event
 {
-    // Pair of arcs defining the circle 
-    // Tag { Start, End }
+  // Pair of arcs defining the circle 
+  // Tag { Start, End }
 };
 
 struct Polar_event
 {
-    // Arc looping around the entire circle
-    // Tag { Start, End }
-    //
-    // Note: emplacement of the event is a pole
+  // Arc looping around the entire circle
+  // Tag { Start, End }
+  //
+  // Note: emplacement of the event is a pole
 };
 
 struct Bipolar_event
 {
-    // Arc on the circle, bounded by the poles
-    // Tag { Start, End }
-    //
-    // Note: emplacement of the event is the entire meridian
+  // Arc on the circle, bounded by the poles
+  // Tag { Start, End }
+  //
+  // Note: emplacement of the event is the entire meridian
 };
 
 struct Intersection_event
 {
-    // Intersection point
-    // Tag { Smallest_Crossing, Largest_Crossing, Tangency }
-    //
-    // Note: points are compared using lexicographic
-    //  order away from poles.
+  // Intersection point
+  // Tag { Smallest_Crossing, Largest_Crossing, Tangency }
+  //
+  // Note: points are compared using lexicographic
+  //  order away from poles.
 };
 
-#endif
+#endif // EVENTS_H // vim: sw=2 et ts=2 sts=2 tw=2
