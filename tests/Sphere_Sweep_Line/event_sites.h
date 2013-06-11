@@ -13,6 +13,9 @@
 #include <events.h>
 
 template <typename K>
+class Polar_event_site;
+
+template <typename K>
 class Normal_event_site
 {
   public:
@@ -46,13 +49,25 @@ class Normal_event_site
 #endif // NDEBUG //
 
       // Add event to accurate container
-      if (ev.is_start) { _starts.insert(ev); }
+      if (ev.is_start()) { _starts.insert(ev); }
       else { _ends.insert(ev); }
     }
 
     void add_event(const Intersection_event<K> & ev)
     {
       _cts.push_back(ev);
+    }
+
+    bool occurs_before(const Normal_event_site<K> & es) const
+    {
+      return _point.theta < es._point.theta
+        || (_point.theta == es._point.theta
+            && _point.z > es._point.z);
+    }
+
+    bool occurs_before(const Polar_event_site<K> & es) const
+    {
+      return es.is_single_polar() && es.is_start();
     }
 
   private:
@@ -79,6 +94,64 @@ class Normal_event_site
 
     // Crossing/Tangency events
     std::vector<Intersection_event<K> > _cts;
+};
+
+template <typename K>
+class Polar_event_site
+{
+  public:
+    Polar_event_site(const Polar_event<K> & ev):
+      _event(ev) {}
+
+    bool is_single_polar() const
+    { return _event.is_single_polar(); }
+
+    bool is_bipolar() const
+    { return _event.is_bipolar(); }
+
+    bool occurs_before(const Normal_event_site<K> & es) const
+    {
+      return is_bipolar() || _event.is_end();
+    }
+
+    bool occurs_before(const Polar_event_site<K> & es) const
+    {
+      if (_event.polarity != es._event.polarity)
+      {
+        if (_event.is_single_polar())
+        { return _event.is_end(); } // Polar end before bipolar
+        else
+        { return es._event.is_start(); } // Bipolar only before polar start
+      }
+      else if (_event.is_single_polar())
+      {
+        if (_event.tag != es._event.tag)
+        { return _event.is_end(); } // End before start
+        else if (_event.pole != es._event.pole)
+        { return _event.is_north(); } // North pole before south
+        else
+        {
+          // Store the polar event site having the biggest
+          // associated circle radius
+          const Polar_event_site<K> & es_biggest_circle = *this;
+          if (es._event.arc.squared_radius() > _event.arc.squared_radius())
+          { es_biggest_circle = es; }
+
+          // Start -> biggest occurs first, end -> smallest occurs first
+          if (_event.is_start())
+          { return es_biggest_circle == *this; }
+          else
+          { return es_biggest_circle != *this; }
+        }
+      }
+      else
+      {
+        return false; // FIXME two bipolar events cannot be in conflict (?)
+      }
+    }
+
+  private:
+    Polar_event<K> _event;
 };
 
 #endif // EVENT_SITES_H // vim: sw=2 et ts=2 sts=2 tw=2

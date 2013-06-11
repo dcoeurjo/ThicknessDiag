@@ -15,31 +15,92 @@
 
 #include <utility>
 
+// Refactoring for event structures needing a mark
+// for the { Start, End } tag.
+//
+// Current solution is a enum.
+template <typename K>
+struct Tagged_event
+{
+  enum Tag_type {
+    Start, End
+  };
+
+  Tag_type tag;
+
+  bool is_start() const
+  { return tag == Start; }
+
+  bool is_end() const
+  { return tag == End; }
+
+  bool operator==(const Tagged_event<K> & ev) const
+  { return tag == ev.tag; }
+};
+
 // Basic normal events are defined by:
 //  - the pair of arcs defining its circle 
 //  - a tag { Start, End }
 template <typename K>
-struct Normal_event
+struct Normal_event: Tagged_event<K>
 {
   std::pair<typename K::Circular_arc_3,
     typename K::Circular_arc_3> arcs;
-  bool is_start;
+
+  bool operator==(const Normal_event<K> & ev) const
+  {
+    return Tagged_event<K>::operator==(ev)
+      && arcs == ev.args;
+  }
 };
 
-struct Polar_event
+// Polar events are defined by:
+//  - the arc looping around its entire circle
+//  - a tag { Start, End }
+//
+// Bipolar events are defined by:
+//  - the arc on the circle, bounded by the poles
+//  - a tag { Start, End }
+//
+// Both are regrouped under one single struct because
+// of the very similar structure of these two. Difference
+// between these is done by accessing the polarity flag.
+template <typename K>
+struct Polar_event: Tagged_event<K>
 {
-  // Arc looping around the entire circle
-  // Tag { Start, End }
-  //
-  // Note: emplacement of the event is a pole
-};
+  typename K::Circular_arc_3 arc;
 
-struct Bipolar_event
-{
-  // Arc on the circle, bounded by the poles
-  // Tag { Start, End }
-  //
-  // Note: emplacement of the event is the entire meridian
+  enum Polarity_type {
+    Single, Dual
+  };
+
+  Polarity_type polarity;
+
+  bool is_single_polar() const
+  { return polarity == Single; }
+
+  bool is_bipolar() const
+  { return polarity == Dual; }
+
+  enum Pole_type {
+    North, South
+  };
+
+  Pole_type pole;
+
+  bool is_north() const
+  { return pole == North; }
+
+  bool is_south() const
+  { return pole == North; }
+
+  bool operator==(const Polar_event<K> & ev) const
+  {
+    return Tagged_event<K>::operator==(ev)
+      && arc == ev.arc
+      && polarity == ev.polarity
+      && pole == ev.pole;
+  }
 };
 
 // Intersection normal events are defined by:
@@ -52,15 +113,19 @@ struct Bipolar_event
 template <typename K>
 struct Intersection_event
 {
+  std::pair<typename K::Circular_arc_3,
+    typename K::Circular_arc_3> arcs;
+
   enum Intersection_type {
     Smallest_Crossing,
     Largest_Crossing,
     Tangency
   };
 
-  std::pair<typename K::Circular_arc_3,
-    typename K::Circular_arc_3> arcs;
   Intersection_type tag;
+
+  bool operator==(const Intersection_event<K> & ev) const
+  { return arcs == ev.arcs && tag == ev.tag; }
 };
 
 #endif // EVENTS_H // vim: sw=2 et ts=2 sts=2 tw=2
