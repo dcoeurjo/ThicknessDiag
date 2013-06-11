@@ -10,73 +10,75 @@
 #  include <sstream>
 #endif // NDEBUG //
 
+#include <events.h>
+
 template <typename K>
-class Normal_event_site: public Event_site<K>
+class Normal_event_site
 {
   public:
-    typedef typename Event_site<K>::Point Point;
-    typedef typename Event_site<K>::Circle Circle;
-
-    Normal_event_site(const Point & p):
-      Event_site<K>(p), _starts(),
+    Normal_event_site(typename K::Point_3 const & p):
+      _point(p), _starts(),
       _ends(), _cts() {}
 
-    // Tag to pass when adding an event to the site
-    enum Event_tag {
-      Start, End,
-      Crossing, Tangency
-    };
-
-    // Add an event to the site, passing the event's semantic
-    void add_event(const Circle & c, Event_tag t)
+    void add_event(const Normal_event<K> & ev)
     {
 #ifndef NDEBUG // Check that events added to the site are *valid*
-      const Point & p = Event_site<K>::point();
-      if (c.has_on(p) == false)
+      typename K::Circle_3 c(ev.arcs.first.supporting_circle()),
+               ac(ev.arcs.second.supporting_circle());
+
+      // Both arcs of event should lie on the same circle
+      if (c != ac)
+      {
+        std::ostringstream oss;
+        oss << "Normal event isn't valid, arcs do not lie on the "
+          << "same circle " << c << " != " << ac;
+        throw std::logic_error(oss.str());
+      }
+
+      // Event site should be located somewhere on the event's arcs
+      if (c.has_on(_point) == false)
       {
         std::ostringstream oss;
         oss << "Can only add valid events to normal event site at "
-          << p << ", circle " << c << " does not pass here";
+          << _point << ", circle " << c << " does not pass here";
         throw std::logic_error(oss.str());
       }
 #endif // NDEBUG //
 
       // Add event to accurate container
-      switch (t)
-      {
-        case Start:
-          _starts.insert(c);
+      if (ev.is_start) { _starts.insert(ev); }
+      else { _ends.insert(ev); }
+    }
 
-        case End:
-          _ends.insert(c);
-
-        case Crossing:
-        case Tangency:
-          _cts.insert(c);
-      }
+    void add_event(const Intersection_event<K> & ev)
+    {
+      // TODO
     }
 
   private:
+    // Location of event site
+    typename K::Point_3 _point;
+
     // Compare circles by increasing radius
-    struct Compare_circle_radii: std::unary_function<Circle, bool>
+    struct Comp_event_arc_radii: std::unary_function<Normal_event<K>, bool>
     {
-      bool operator()(const Circle & left,
-          const Circle & right) const
+      bool operator()(const Normal_event<K> & left,
+          const Normal_event<K> & right) const
       {
-        return left.squared_radius() < right.squared_radius();
+        return left.arcs.first.squared_radius() < right.arcs.first.squared_radius();
       }
     };
 
     // Compare circles by decreasing radius
-    typedef std::unary_negate<Compare_circle_radii>
-      Compare_inv_circle_radii;
+    typedef std::unary_negate<Comp_event_arc_radii>
+      Comp_inv_event_arc_radii;
 
     // Start/End events
-    std::multiset<Circle, Compare_circle_radii> _starts;
-    std::multiset<Circle, Compare_inv_circle_radii> _ends;
+    std::multiset<Normal_event<K>, Comp_event_arc_radii> _starts;
+    std::multiset<Normal_event<K>, Comp_inv_event_arc_radii> _ends;
 
     // Crossing/Tangency events
-    std::vector<std::pair<Event_tag, Circle> > _cts;
+    std::vector<Intersection_event<K> > _cts;
 };
 
 #endif // EVENT_SITES_H // vim: sw=2 et ts=2 sts=2 tw=2
