@@ -29,7 +29,7 @@ class Vertical_orderer
     void initial_insert(ForwardIterator begin, ForwardIterator end)
     {
 #ifndef NDEBUG // Check assertions
-      if (_sorted_arcs.empty() == false) // Vertical orderer clean
+      if (_arcs.empty() == false) // Vertical orderer clean
       {
         std::ostringstream oss;
         oss << "Initial insertion can only be done when the vertical"
@@ -52,20 +52,20 @@ class Vertical_orderer
     }
 
     void insert(typename Kernel::Circular_arc_3 const & arc)
-    { _sorted_arcs.insert(arc); }
+    { _arcs.insert(arc); }
 
     void remove(typename Kernel::Circular_arc_3 const & arc)
-    { _sorted_arcs.erase(arc); }
+    { _arcs.erase(arc); }
 
     void contains(typename Kernel::Circular_arc_3 const & arc) const
-    { return _sorted_arcs.find(arc) != _sorted_arcs.end(); }
+    { return _arcs.find(arc) != _arcs.end(); }
 
     void clear()
-    { _sorted_arcs.clear(); }
+    { _arcs.clear(); }
 
   private:
     // List of arcs sorted "vertically"
-    std::vector<typename Kernel::Circular_arc_3> _sorted_arcs;
+    std::vector<typename Kernel::Circular_arc_3> _arcs;
 
     // Circle proxy
     const Circle_proxy<Kernel> & _circle_proxy;
