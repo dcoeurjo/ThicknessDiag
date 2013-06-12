@@ -3,9 +3,15 @@
 
 #include <set>
 #include <vector>
-#include <utility>
+#include <iterator>
 #include <functional>
-#include <algorithm>
+
+#ifndef NDEBUG
+#  include <stdexcept>
+#  include <sstream>
+#endif // NDEBUG //
+
+#include <boost/ref.hpp>
 
 template <typename Kernel>
 class Circle_proxy;
@@ -27,7 +33,7 @@ class Circle_handle
             split(typename Kernel::Point_3 const & p)
         {
             typename Kernel::Circular_arc_3 arc(_circle, p);
-            // TODO modify circle proxy
+            _cp.circle_handle_split(*this, arc);
             return arc;
         }
         // ...using two points
@@ -36,11 +42,12 @@ class Circle_handle
                     typename Kernel::Point_3 const & target)
         {
             typename Kernel::Circular_arc_3 arc(_circle, source, target);
-            // TODO modify circle proxy
+            _cp.circle_handle_split(*this, arc);
             return arc;
         }
 
     private:
+        // Bidirectional exclusive access
         friend class Circle_proxy<Kernel>;
 
         Circle_handle(Circle_proxy<Kernel> & cp,
@@ -49,26 +56,51 @@ class Circle_handle
 
         Circle_proxy<Kernel> & _cp;
         typename Kernel::Circle_3 const & _circle;
+
+        typedef std::vector<boost::reference_wrapper<
+            const typename Kernel::Circular_arc_3> > Arc_list;
 };
 
 template <typename Kernel>
 class Circle_proxy
 {
     public:
-
-    private:
         // Set of circles
         typedef std::set<typename Kernel::Circle_3>
             Circle_list;
-        Circle_list _circle_list;
 
-        // Circle map iterator
+        // Circle iterators
         // ...usual
         typedef typename Circle_list::iterator
             Circle_iterator;
         // ...const
         typedef typename Circle_list::const_iterator
             Circle_const_iterator;
+
+        // Add a circle to the proxy, computing intersections
+        //  and inserting these computed intersection arcs
+        void add_circle(typename Kernel::Circle_3 const & c)
+        {
+            std::pair<Circle_iterator,
+                bool> it_pair = _circle_list.insert(c);
+#ifndef NDEBUG
+            if (it_pair.second == false)
+            {
+                std::ostringstream oss;
+                oss << "Concept violation, cannot insert twice the same"
+                    << " circle in the circle proxy";
+                throw std::logic_error(oss.str());
+            }
+#endif // NDEBUG //
+            // TODO
+        }
+
+    private:
+        // Bidirectional exclusive access
+        friend class Circle_handle<Kernel>;
+
+        // Actual set of circles
+        Circle_list _circle_list;
 };
 
 #endif
