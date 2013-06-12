@@ -6,11 +6,11 @@
 template <typename Kernel>
 struct Comp_arcs_by_radii
 {
-    bool operator()(typename Kernel::Circular_arc_3 const & left,
-            typename Kernel::Circular_arc_3 const & right) const
-    {
-        return left.squared_radius() < right.squared_radius();
-    }
+  bool operator()(typename Kernel::Circular_arc_3 const & left,
+      typename Kernel::Circular_arc_3 const & right) const
+  {
+    return left.squared_radius() < right.squared_radius();
+  }
 };
 
-#endif
+#endif // CIRCLE_UTILS_H // vim: sw=2 et ts=2 sts=2
