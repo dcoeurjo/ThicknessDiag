@@ -10,6 +10,8 @@
 #  include <sstream>
 #endif // NDEBUG //
 
+#include <circle_utils.h>
+
 //struct Comp_arcs_from_point:
 //    std::unary_function<bool, typename Kernel::Circular_arc_3>
 //{
@@ -21,16 +23,6 @@
 
 //    typename Kernel::Point_3 point;
 //};
-
-template <typename Kernel>
-struct Comp_arcs_by_radii
-{
-    bool operator()(typename Kernel::Circular_arc_3 const & left,
-            typename Kernel::Circular_arc_3 const & right) const
-    {
-        return left.squared_radius() < right.squared_radius();
-    }
-};
 
 template <typename Kernel, class Circle_proxy>
 class Vertical_orderer
