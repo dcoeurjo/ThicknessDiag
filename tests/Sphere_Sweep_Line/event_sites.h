@@ -136,6 +136,21 @@ struct Intersection_event
   { return arcs == ev.arcs && tag == ev.tag; }
 };
 
+// Compare two events' first arc by increasing radius
+template <typename Kernel, typename Event>
+struct Comp_event_arc_radii:
+  std::unary_function<Event, bool>
+{
+  bool operator()(const Event & left,
+      const Event & right) const
+  {
+    typedef typename Kernel::Circular_arc_3 Arc;
+    const Arc & left_arc = left.arcs.first,
+          & right_arc = right.arcs.first;
+    return left_arc.squared_radius() < right_arc.squared_radius();
+  }
+};
+
 // An event site is the location where several events come in
 // conflict, and allows ordering independently of the type of
 // location, but more on the type of the underlying event.
@@ -223,27 +238,15 @@ class Normal_event_site
     // Location of event site
     typename Kernel::Point_3 _point;
 
-    // Compare circles by increasing radius
-    struct Comp_event_arc_radii:
-      std::unary_function<Normal_event<Kernel>, bool>
-    {
-      bool operator()(const Normal_event<Kernel> & left,
-          const Normal_event<Kernel> & right) const
-      {
-        typedef typename Kernel::Circular_arc_3 Arc;
-        const Arc & left_arc = left.arcs.first,
-              & right_arc = right.arcs.first;
-        return left_arc.squared_radius() < right_arc.squared_radius();
-      }
-    };
-
-    // Compare circles by decreasing radius
-    typedef std::unary_negate<Comp_event_arc_radii>
-      Comp_inv_event_arc_radii;
+    // Compare normal events' circles (increasing/decreasing)
+    typedef Comp_event_arc_radii<Kernel, Normal_event_site<Kernel> >
+      Comp_normal_event_arc_radii;
+    typedef std::unary_negate<Comp_normal_event_arc_radii>
+      Comp_normal_inv_event_arc_radii;
 
     // Start/End events
-    std::multiset<Normal_event<Kernel>, Comp_event_arc_radii> _starts;
-    std::multiset<Normal_event<Kernel>, Comp_inv_event_arc_radii> _ends;
+    std::multiset<Normal_event<Kernel>, Comp_normal_event_arc_radii> _starts;
+    std::multiset<Normal_event<Kernel>, Comp_normal_inv_event_arc_radii> _ends;
 
     // Crossing/Tangency events
     std::vector<Intersection_event<Kernel> > _cts;
