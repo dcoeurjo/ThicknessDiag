@@ -11,6 +11,7 @@
 #endif // NDEBUG //
 
 #include <circle_utils.h>
+#include <circle_proxy.h>
 
 //struct Comp_arcs_from_point:
 //    std::unary_function<bool, typename Kernel::Circular_arc_3>
@@ -24,7 +25,7 @@
 //    typename Kernel::Point_3 point;
 //};
 
-template <typename Kernel, class Circle_proxy>
+template <typename Kernel>
 class Vertical_orderer
 {
     public:
