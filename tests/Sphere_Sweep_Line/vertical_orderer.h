@@ -39,7 +39,8 @@ class Vertical_orderer
         // Concept of initial insertion:
         //  - iterators must follow STL's ForwardIterator concept
         //  - elements must be K::Circular_arc_3 arcs
-        //  - arcs must be tagged as either start or end
+        //  - arcs must be tagged as either start or end,
+        //      and correspond to normal events
         template <typename ForwardIterator>
         void initial_insert(ForwardIterator begin, ForwardIterator end)
         {
