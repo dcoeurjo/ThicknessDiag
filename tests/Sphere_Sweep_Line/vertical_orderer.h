@@ -36,6 +36,9 @@ template <typename Kernel, class Circle_proxy>
 class Vertical_orderer
 {
     public:
+        Vertical_orderer(const Circle_proxy & cp):
+            _circle_proxy(cp) {}
+
         // Concept of initial insertion:
         //  - iterators must follow STL's ForwardIterator concept
         //  - elements must be Kernel::Circular_arc_3 arcs
@@ -61,7 +64,7 @@ class Vertical_orderer
             }
 #endif // NDEBUG //
             ForwardIterator me = max_element(begin, end, 
-                    Comp_arcs_by_radii());
+                    Comp_arcs_by_radii<Kernel>());
             typename Kernel::Point_3 start_pt(me->source()),
                      end_pt(me->target());
             // TODO initial "sort and insert"
@@ -82,6 +85,9 @@ class Vertical_orderer
     private:
         // List of arcs sorted "vertically"
         std::vector<typename Kernel::Circular_arc_3> _sorted_arcs;
+
+        // Circle proxy
+        const Circle_proxy & _circle_proxy;
 };
 
 #endif

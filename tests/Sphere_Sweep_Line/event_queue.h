@@ -10,6 +10,26 @@
 #  include <sstream>
 #endif // NDEBUG //
 
+// Refactoring since events sites aren't polymorphic
+// but at least define an "occurs_before" method
+//
+// Event sites are denoted as "less than" when they are of
+// lower priority, that is if the other event site occurs
+// before the one we are working with. This garantees that
+// ordering event sites in a priority_queue this way will
+// always give us the most prioritary event via the queue's
+// "top" method.
+template <typename Event_site>
+struct Comp_event_sites:
+  std::unary_function<bool, Event_site>
+{
+  bool operator()(const Event_site & left,
+      const Event_site & right) const
+  {
+    return right.occurs_before(left);
+  }
+};
+
 template <typename Kernel>
 class Event_queue
 {
@@ -57,25 +77,6 @@ class Event_queue
     { return _normal_events.pop(); }
 
   private:
-    // Refactoring since events sites aren't polymorphic
-    // but at least define an "occurs_before" method
-    //
-    // Event sites are denoted as "less than" when they are of
-    // lower priority, that is if the other event site occurs
-    // before the one we are working with. This garantees that
-    // ordering event sites in a priority_queue this way will
-    // always give us the most prioritary event via the queue's
-    // "top" method.
-    template <typename Event_site>
-    struct Comp_event_sites: std::unary_function<bool, Event_site>
-    {
-      bool operator()(const Event_site & left,
-          const Event_site & right) const
-      {
-        return right.occurs_before(left);
-      }
-    };
-
     // Normal event sites
     typedef Comp_event_sites<Normal_event_site<Kernel> >
       Comp_normal_event_sites;
