@@ -10,14 +10,14 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-template <typename K>
+template <typename Kernel>
 class Event_queue
 {
   public:
     // Push events to our queue
-    void push(const Normal_event_site<K> & es)
+    void push(const Normal_event_site<Kernel> & es)
     { _normal_events.push(es); }
-    void push(const Polar_event_site<K> & es)
+    void push(const Polar_event_site<Kernel> & es)
     { _polar_events.push(es); }
     
     // Helper enum for returning either one of the type
@@ -48,12 +48,12 @@ class Event_queue
 
     // Pop a polar event from the queue
     // Concept: there is at least one polar event
-    Polar_event_site<K> pop_polar_event()
+    Polar_event_site<Kernel> pop_polar_event()
     { return _polar_events.pop(); }
 
     // Pop a normal event from the queue
     // Concept: there is at least one normal event
-    Normal_event_site<K> pop_normal_event()
+    Normal_event_site<Kernel> pop_normal_event()
     { return _normal_events.pop(); }
 
   private:
@@ -77,15 +77,15 @@ class Event_queue
     };
 
     // Normal event sites
-    typedef Comp_event_sites<Normal_event_site<K> >
+    typedef Comp_event_sites<Normal_event_site<Kernel> >
       Comp_normal_event_sites;
-    std::priority_queue<Normal_event_site<K>,
+    std::priority_queue<Normal_event_site<Kernel>,
       Comp_normal_event_sites> _normal_events;
 
     // Polar event sites
-    typedef Comp_event_sites<Polar_event_site<K> >
+    typedef Comp_event_sites<Polar_event_site<Kernel> >
       Comp_polar_event_sites;
-    std::priority_queue<Polar_event_site<K>,
+    std::priority_queue<Polar_event_site<Kernel>,
       Comp_polar_event_sites> _polar_events;
 };
 

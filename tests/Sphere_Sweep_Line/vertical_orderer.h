@@ -11,34 +11,34 @@
 #endif // NDEBUG //
 
 //struct Comp_arcs_from_point:
-//    std::unary_function<bool, typename K::Circular_arc_3>
+//    std::unary_function<bool, typename Kernel::Circular_arc_3>
 //{
-//    Comp_arcs_from_point(typename K::Point_3 const & p):
+//    Comp_arcs_from_point(typename Kernel::Point_3 const & p):
 //        point(p) {}
 
 //    // TODO T : type to compare ?
 //    //bool operator()(T const & left, T const & right) const;
 
-//    typename K::Point_3 point;
+//    typename Kernel::Point_3 point;
 //};
 
-template <typename K>
+template <typename Kernel>
 struct Comp_arcs_by_radii
 {
-    bool operator()(typename K::Circular_arc_3 const & left,
-            typename K::Circular_arc_3 const & right) const
+    bool operator()(typename Kernel::Circular_arc_3 const & left,
+            typename Kernel::Circular_arc_3 const & right) const
     {
         return left.squared_radius() < right.squared_radius();
     }
 };
 
-template <typename K>
+template <typename Kernel, class Circle_proxy>
 class Vertical_orderer
 {
     public:
         // Concept of initial insertion:
         //  - iterators must follow STL's ForwardIterator concept
-        //  - elements must be K::Circular_arc_3 arcs
+        //  - elements must be Kernel::Circular_arc_3 arcs
         //  - arcs must be tagged as either start or end,
         //      and correspond to normal events
         template <typename ForwardIterator>
@@ -62,17 +62,18 @@ class Vertical_orderer
 #endif // NDEBUG //
             ForwardIterator me = max_element(begin, end, 
                     Comp_arcs_by_radii());
-            typename K::Point_3 start_pt(me->source()), end_pt(me->target());
+            typename Kernel::Point_3 start_pt(me->source()),
+                     end_pt(me->target());
             // TODO initial "sort and insert"
         }
 
-        void insert(typename K::Circular_arc_3 const & arc)
+        void insert(typename Kernel::Circular_arc_3 const & arc)
         { _sorted_arcs.insert(arc); }
 
-        void remove(typename K::Circular_arc_3 const & arc)
+        void remove(typename Kernel::Circular_arc_3 const & arc)
         { _sorted_arcs.erase(arc); }
 
-        void contains(typename K::Circular_arc_3 const & arc) const
+        void contains(typename Kernel::Circular_arc_3 const & arc) const
         { return _sorted_arcs.find(arc) != _sorted_arcs.end(); }
 
         void clear()
@@ -80,7 +81,7 @@ class Vertical_orderer
 
     private:
         // List of arcs sorted "vertically"
-        std::vector<typename K::Circular_arc_3> _sorted_arcs;
+        std::vector<typename Kernel::Circular_arc_3> _sorted_arcs;
 };
 
 #endif
