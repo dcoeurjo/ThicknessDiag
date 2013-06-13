@@ -20,10 +20,6 @@ template <typename Kernel>
 class Circle_handle
 {
   public:
-    // Check if the given point lies on the circle
-    bool has_on(typename Kernel::Point_3 const & p) const
-    { return _circle.has_on(p); }
-
     // Split the circle
     //
     // Concept: points given are on the circle
@@ -46,6 +42,9 @@ class Circle_handle
       return arc;
     }
 
+    typename Kernel::Circle_3 const & circle() const
+    { return _circle; }
+
   private:
     // Bidirectional exclusive access
     friend class Circle_proxy<Kernel>;
@@ -54,32 +53,21 @@ class Circle_handle
         typename Kernel::Circle_3 const & circle):
       _cp(cp), _circle(circle) {}
 
-    Circle_proxy<Kernel> & _cp;
-    typename Kernel::Circle_3 const & _circle;
-
     typedef std::vector<boost::reference_wrapper<
       const typename Kernel::Circular_arc_3> > Arc_list;
+
+    Circle_proxy<Kernel> & _cp;
+    typename Kernel::Circle_3 const & _circle;
+    Arc_list _arcs;
 };
 
 template <typename Kernel>
 class Circle_proxy
 {
   public:
-    // Set of circles
-    typedef std::set<typename Kernel::Circle_3>
-      Circle_list;
-
-    // Circle iterators
-    // ...usual
-    typedef typename Circle_list::iterator
-      Circle_iterator;
-    // ...const
-    typedef typename Circle_list::const_iterator
-      Circle_const_iterator;
-
     // Add a circle to the proxy, computing intersections
     //  and inserting these computed intersection arcs
-    void add_circle(typename Kernel::Circle_3 const & c)
+    Circle_handle<Kernel> add_circle(typename Kernel::Circle_3 const & c)
     {
       std::pair<Circle_iterator,
         bool> it_pair = _circle_list.insert(c);
@@ -92,12 +80,30 @@ class Circle_proxy
         throw std::logic_error(oss.str());
       }
 #endif // NDEBUG //
-      // TODO
+      return make_circle_handle(it_pair.first);
     }
 
   private:
     // Bidirectional exclusive access
     friend class Circle_handle<Kernel>;
+
+    // Set of circles
+    typedef std::set<typename Kernel::Circle_3>
+      Circle_list;
+
+    // Circle iterators
+    // ...usual
+    typedef typename Circle_list::iterator
+      Circle_iterator;
+    // ...const
+    typedef typename Circle_list::const_iterator
+      Circle_const_iterator;
+
+    void circle_handle_split(Circle_handle<Kernel> & ch,
+        typename Kernel::Circular_arc_3 const & arc)
+    {
+      // TODO
+    }
 
     // Actual set of circles
     Circle_list _circle_list;
