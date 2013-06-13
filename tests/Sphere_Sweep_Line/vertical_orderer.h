@@ -11,14 +11,13 @@
 #endif // NDEBUG //
 
 #include <circle_utils.h>
-#include <circle_proxy.h>
 
-template <typename Kernel>
+template <typename Kernel, typename Sqrt>
 class Vertical_orderer
 {
   public:
-    Vertical_orderer(const Circle_proxy<Kernel> & cp):
-      _circle_proxy(cp) {}
+    Vertical_orderer(const Sqrt & sqrt):
+      _sqrt(sqrt) {}
 
     // Concept of initial insertion:
     //  - iterators must follow STL's ForwardIterator concept
@@ -41,7 +40,7 @@ class Vertical_orderer
       // Setup compare functor
       ForwardIterator me = std::max_element(begin, end, 
           Comp_arcs_by_radii<Kernel>());
-      _comp.base_arc = *me;
+      _loc.base_arc = *me;
       // TODO start point
     }
 
@@ -82,8 +81,11 @@ class Vertical_orderer
 
         // Correct the orientation of the plane s.t the normal
         // makes an acute angle with the z-axis
-        typename Kernel::Vector_3 n = plane.orthogonal_vector();
-        // TODO
+        typename Kernel::Vector_3 n = plane.orthogonal_vector(),
+                 z(0, 0, 1);
+        typename Kernel::FT one_half = 1/2;
+        if (n*z / _sqrt(n.squared_length()) >= one_half)
+        { plane = plane.opposite(); }
 
         // Point is above if it is on the plane's positive side
         if (plane.has_on_positive_side(p))
@@ -120,8 +122,8 @@ class Vertical_orderer
     // Compare functor for sorting arcs
     Locate_point_on_arc _loc;
 
-    // Circle proxy
-    const Circle_proxy<Kernel> & _circle_proxy;
+    // Square root functor
+    Sqrt _sqrt;
 };
 
 #endif // VERTICAL_ORDERER_H // vim: sw=2 et ts=2 sts=2
