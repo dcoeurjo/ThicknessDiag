@@ -147,7 +147,7 @@ struct Comp_event_arc_radii:
   bool operator()(const Event & left,
       const Event & right) const
   {
-    return Comp_arcs_by_radii<Kernel>()(left.arc.first,
+    return Comp_arcs_by_squared_radii<Kernel>()(left.arc.first,
         right.arcs.first);
   }
 };

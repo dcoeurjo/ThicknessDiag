@@ -19,6 +19,10 @@ class Vertical_orderer
     Vertical_orderer(const Sqrt & sqrt):
       _sqrt(sqrt) {}
 
+    // Compare arcs by their squared radii
+    typedef Comp_by_squared_radii<typename Kernel::Circular_arc_3>
+      Comp_arcs_by_squared_radii;
+
     // Concept of initial insertion:
     //  - iterators must follow STL's ForwardIterator concept
     //  - elements must be Kernel::Circular_arc_3 arcs
@@ -39,7 +43,7 @@ class Vertical_orderer
 
       // Setup compare functor
       ForwardIterator me = std::max_element(begin, end, 
-          Comp_arcs_by_radii<Kernel>());
+          Comp_arcs_by_squared_radii<Kernel>());
       _loc.base_arc = *me;
       // TODO start point
     }
@@ -108,7 +112,7 @@ class Vertical_orderer
       }
 
       // Used to compare arcs by radii
-      Comp_arcs_by_radii<Kernel> comp_radii;
+      Comp_arcs_by_squared_radii comp_radii;
 
       // Point to compare with
       typename Kernel::Point_3 base_start_pt;

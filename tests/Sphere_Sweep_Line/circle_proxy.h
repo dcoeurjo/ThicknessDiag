@@ -5,6 +5,7 @@
 #include <vector>
 #include <iterator>
 #include <functional>
+#include <algorithm>
 
 #ifndef NDEBUG
 #  include <stdexcept>
@@ -12,6 +13,8 @@
 #endif // NDEBUG //
 
 #include <boost/ref.hpp>
+
+#include <circle_utils.h>
 
 template <typename Kernel>
 class Circle_proxy;
@@ -34,6 +37,7 @@ class Circle_handle
         typename Kernel::Point_3 const & target)
     { return _cp.split_circle(*this, source, target); }
 
+    // Get the underlying circle
     typename Kernel::Circle_3 const & get() const
     { return _circle; }
 
@@ -56,10 +60,11 @@ template <typename Kernel>
 class Circular_arc_handle
 {
   public:
+    // Get the underlying arc
     typename Kernel::Circular_arc_3 const & get() const
     { return _arc; }
 
-    // Get the circle handle linked to this arc
+    // Get a circle handle linked to this arc
     Circle_handle<Kernel> circle()
     { return _cp.make_circle_handle(_arc.supporting_circle()); }
 
@@ -86,10 +91,10 @@ class Circle_proxy
     //  and inserting these computed intersection arcs
     Circle_handle<Kernel> add_circle(typename Kernel::Circle_3 const & c)
     {
-      std::pair<Circle_iterator,
-        bool> it_pair = _circle_list.insert(c);
+      std::pair<Circle_iterator, Circle_iterator> it_range;
+      it_range = _circle_list.equal_range(c);
 #ifndef NDEBUG
-      if (it_pair.second == false)
+      if (std::find(it_range.first, it_range.second, c) != it_range.second)
       {
         std::ostringstream oss;
         oss << "Concept violation, cannot insert twice the same"
@@ -97,7 +102,8 @@ class Circle_proxy
         throw std::logic_error(oss.str());
       }
 #endif // NDEBUG //
-      return Circle_handle<Kernel>(*this, it_pair.first);
+      Circle_iterator it = _circle_list.insert(it_range.second, c);
+      return Circle_handle<Kernel>(*this, *it);
     }
 
   private:
@@ -106,7 +112,8 @@ class Circle_proxy
     friend class Circular_arc_handle<Kernel>;
 
     // Set of circles
-    typedef std::set<typename Kernel::Circle_3> Circle_list;
+    typedef std::multiset<typename Kernel::Circle_3,
+            Comp_by_squared_radii<typename Kernel::Circle_3> > Circle_list;
 
     // Circle iterators
     // ...usual

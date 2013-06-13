@@ -3,11 +3,12 @@
 
 #include <functional>
 
-template <typename Kernel>
-struct Comp_arcs_by_radii
+template <typename Squared_radius_holder>
+struct Comp_by_squared_radii:
+  public std::unary_function<bool, Squared_radius_holder>
 {
-  bool operator()(typename Kernel::Circular_arc_3 const & left,
-      typename Kernel::Circular_arc_3 const & right) const
+  bool operator()(Squared_radius_holder const & left,
+      Squared_radius_holder const & right) const
   {
     return left.squared_radius() < right.squared_radius();
   }
