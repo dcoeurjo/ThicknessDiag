@@ -211,17 +211,7 @@ class Normal_event_site
       { add_event(*begin); }
     }
 
-    // TODO must be modified to follow CGAL's concepts
-    //  for now this simply indicates the rules to follow,
-    //  and probably doesn't actually work
-    //bool occurs_before(const Normal_event_site<Kernel> & es) const
-    //{
-    //  return _point.theta < es._point.theta
-    //    || (_point.theta == es._point.theta
-    //        && _point.z > es._point.z);
-    //}
-    //
-    // Implemented version, using lexicographic comparing. This introduces
+    // Done using lexicographic comparing. This introduces
     // the concepts that points are compared lexicographically and are
     // placed in a frame local to the sphere (ie with its origin at the
     // center of the sphere), in cylindrical coordinates.
@@ -232,8 +222,13 @@ class Normal_event_site
       return comp.fo(cp, es_cp);
     }
 
+    // Symmetric version of Polar_event_site::occurs_before
     bool occurs_before(const Polar_event_site<Kernel> & es) const
     { return es.occurs_before(*this) == false; }
+
+    // Getter for event point
+    typename Kernel::Point_3 const & point() const
+    { return _point; }
 
   private:
     // Location of event site
