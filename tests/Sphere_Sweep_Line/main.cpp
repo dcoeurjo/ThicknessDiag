@@ -19,8 +19,11 @@
 #include <CGAL/Algebraic_kernel_for_spheres_2_3.h>
 #include <CGAL/Spherical_kernel_3.h>
 #include <CGAL/Random.h>
+#include <CGAL/IO/Geomview_stream.h>
+#include <CGAL/IO/Color.h>
 
-#include <circle_proxy.h>
+#include <Geomview_stream_extension.h>
+#include <Circle_proxy.h>
 
 // Faster kernel
 typedef CGAL::Simple_cartesian<double> CK;
@@ -33,6 +36,7 @@ typedef CGAL::Exact_spherical_kernel_3 ESK;
 // Definition of actually used kernel
 typedef SK Kernel;
 
+// Geometric objects
 typedef typename Kernel::FT FT;
 typedef typename Kernel::Line_3 Line_3;
 typedef typename Kernel::Point_3 Point_3;
@@ -44,12 +48,19 @@ typedef typename Kernel::Line_arc_3 Line_arc_3;
 typedef typename Kernel::Circular_arc_3 Circular_arc_3;
 typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
+// Object intersection
 typedef CGAL::Object Object;
-
 using CGAL::intersection;
 using CGAL::object_cast;
 
+// Random numbers generator
 typedef CGAL::Random Random;
+
+// Geomview
+typedef CGAL::Geomview_stream Geomview_stream;
+typedef CGAL::Color Color;
+typedef CGAL::Geomview_panel Geomview_panel;
+using CGAL::set_panel_enabled;
 
 namespace internal {
   typedef Circle_proxy<Kernel> Circle_proxy;
@@ -112,16 +123,15 @@ namespace internal {
 
 static const Kernel::FT RAND_AMP_DEFAULT = 20;
 
-static std::string usage()
-{
-  std::ostringstream oss;
-  oss << "Usage: circle_proxy NB_SPHERES [RAND_AMP="
-    << RAND_AMP_DEFAULT << "]" << std::endl;
-  return oss.str();
-}
-
 static void do_main(int argc, const char * argv[])
 {
+  // Setup geomview
+  gv.set_wired(false);
+  gv.set_bg_color(Color(0, 0, 0));
+  gv.clear();
+  set_panel_enabled(gv, Geomview_panel::TOOLS, false);
+  set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
+
   // Parse command line arguments
   if (argc < 2)
   { throw std::runtime_error("Need number of spheres to work with"); }
@@ -273,7 +283,8 @@ int main(int argc, const char * argv[])
   }
   catch (std::runtime_error e)
   {
-    std::cerr << usage() << std::endl;
+    std::cerr << "Usage: circle_proxy NB_SPHERES [RAND_AMP="
+      << RAND_AMP_DEFAULT << "]" << std::endl;
     return EXIT_FAILURE;
   }
   catch (std::logic_error e)
