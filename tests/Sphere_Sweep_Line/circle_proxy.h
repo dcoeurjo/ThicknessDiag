@@ -85,11 +85,17 @@ template <typename Kernel>
 class Circle_proxy_adder;
 
 template <typename Kernel>
+class Circle_proxy_handle_range;
+
+template <typename Kernel>
 class Circle_proxy
 {
   public:
     // Access from outside
-    typedef Circle_proxy_adder<Kernel> Circle_adder;
+    typedef Circle_proxy_adder<Kernel>
+      Circle_adder;
+    typedef Circle_proxy_handle_range<Kernel>
+      Circle_handle_range;
 
     // Add a circle to the proxy, computing intersections
     //  and inserting these computed intersection arcs
@@ -117,6 +123,10 @@ class Circle_proxy
       return Circle_handle<Kernel>(*this, *_circle_list.insert(c));
     }
 
+    // Iterate over all circles with handles
+    Circle_handle_range circles() const
+    { return Circle_handle_range(*this); }
+
     Circle_adder adder()
     { return Circle_adder(*this); }
 
@@ -125,17 +135,16 @@ class Circle_proxy
     friend class Circle_handle<Kernel>;
     friend class Circular_arc_handle<Kernel>;
 
+    // Sole access to list and iterators
+    friend class Circle_proxy_handle_range<Kernel>;
+
     // Set of circles
     typedef std::multiset<typename Kernel::Circle_3,
             Comp_by_squared_radii<typename Kernel::Circle_3> > Circle_list;
 
-    // Circle iterators
-    // ...usual
-    typedef typename Circle_list::iterator
-      Circle_iterator;
-    // ...const
+    // Circle iterator
     typedef typename Circle_list::const_iterator
-      Circle_const_iterator;
+      Circle_iterator;
 
     // List of arcs
     typedef std::vector<typename Kernel::Circular_arc_3> Arc_list;
@@ -144,7 +153,7 @@ class Circle_proxy
     Circle_handle<Kernel> make_circle_handle(typename
         Kernel::Circle_3 const & circle) const
     {
-      Circle_const_iterator it = _circle_list.find(circle);
+      Circle_iterator it = _circle_list.find(circle);
 #ifndef NDEBUG
       if (it == _circle_list.end())
       {
@@ -194,6 +203,56 @@ class Circle_proxy_adder
     Circle_handle<Kernel>
       operator()(typename Kernel::Circle_3 const & c)
     { return _cp.add_circle(c); }
+
+  private:
+    Circle_proxy<Kernel> & _cp;
+};
+
+template <typename Kernel>
+class Circle_proxy_handle_range
+{
+  public:
+    Circle_proxy_handle_range(Circle_proxy<Kernel> & cp):
+      _cp(cp) {}
+
+    class iterator:
+      public std::iterator<std::bidirectional_iterator_tag,
+      Circle_handle<Kernel> >
+    {
+      public:
+        iterator(typename Circle_proxy<Kernel>::Circle_iterator const & it):
+          _it(it) {}
+
+        iterator & operator++()
+        { ++_it; return *this; }
+
+        iterator operator++(int)
+        { iterator tmp(*this); operator++(); return tmp; }
+
+        iterator & operator--()
+        { --_it; return *this; }
+
+        iterator operator--(int)
+        { iterator tmp(*this); operator--(); return tmp; }
+
+        bool operator==(const iterator & it)
+        { return _it == it._it; }
+
+        bool operator!=(const iterator& it)
+        { return !(*this == it); }
+
+        Circle_handle<Kernel> operator*()
+        { return *_it; }
+
+      private:
+        typename Circle_proxy<Kernel>::Circle_iterator _it;
+    };
+
+    iterator begin()
+    { return iterator(_cp._circle_list.begin()); }
+
+    iterator end()
+    { return iterator(_cp._circle_list.end()); }
 
   private:
     Circle_proxy<Kernel> & _cp;

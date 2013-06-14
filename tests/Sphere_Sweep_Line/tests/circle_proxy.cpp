@@ -87,7 +87,14 @@ namespace internal {
             void operator()(const Circle_3 & c)
             {
                 Circle_handle ch = _ca(c);
-                CGAL_assertion(c == ch.get());
+                if (c != ch.get())
+                {
+                    std::ostringstream oss;
+                    oss << "Invalid insertion of circle " << c
+                        << ", is different from inserted circle "
+                        << ch.get();
+                    throw std::runtime_error(oss.str());
+                }
             }
 
         private:
@@ -95,7 +102,7 @@ namespace internal {
     };
 }
 
-static const double RAND_AMP_DEFAULT = 20;
+static const Kernel::FT RAND_AMP_DEFAULT = 20;
 
 static std::string usage()
 {
