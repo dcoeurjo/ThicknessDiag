@@ -154,10 +154,9 @@ namespace internal {
 
       void operator()(const Circle_3 & circle)
       {
-        //Color color(random_color(_rand));
-        //_gv.set_face_color(color);
-        //_gv << color;
-        //_gv << circle.supporting_plane();
+        Color color(random_color(_rand));
+        _gv << color;
+        _gv << circle.bbox();
       }
 
     private:
@@ -189,15 +188,15 @@ static void do_main(int argc, const char * argv[])
   gv.set_wired(false);
   gv.set_bg_color(Color(0, 0, 0));
   gv.clear();
-  //set_panel_enabled(gv, Geomview_panel::TOOLS, false);
-  //set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
+  set_panel_enabled(gv, Geomview_panel::TOOLS, false);
+  set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
 
   // Random amplitude for sphere generation
   FT rand_amp = RAND_AMP_DEFAULT;
   if (argc > 2)
   {
     // Too many arguments
-    if (argc != 2)
+    if (argc != 3)
     { throw std::runtime_error("Too many arguments specified"); }
 
     // Convert rand_amp
@@ -346,7 +345,8 @@ int main(int argc, const char * argv[])
   catch (std::runtime_error e)
   {
     std::cerr << "Usage: circle_proxy NB_SPHERES [RAND_AMP="
-      << RAND_AMP_DEFAULT << "]" << std::endl;
+      << RAND_AMP_DEFAULT << "]" << std::endl
+      << e.what() << std::endl;
     return EXIT_FAILURE;
   }
   catch (std::logic_error e)
