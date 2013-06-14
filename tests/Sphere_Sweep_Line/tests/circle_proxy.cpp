@@ -8,6 +8,11 @@
 #include <iostream>
 #include <algorithm>
 
+#ifndef NDEBUG
+#  include <stdexcept>
+#  include <sstream>
+#endif // NDEBUG //
+
 #include <CGAL/Exact_spherical_kernel_3.h>
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Filtered_kernel.h>
@@ -26,15 +31,18 @@ typedef CGAL::Spherical_kernel_3<CK, AKS> SK;
 typedef CGAL::Exact_spherical_kernel_3 ESK;
 
 // Definition of actually used kernel
-typedef ESK Kernel;
+typedef SK Kernel;
 
 typedef typename Kernel::FT FT;
+typedef typename Kernel::Line_3 Line_3;
 typedef typename Kernel::Point_3 Point_3;
 typedef typename Kernel::Plane_3 Plane_3;
 typedef typename Kernel::Vector_3 Vector_3;
 typedef typename Kernel::Circle_3 Circle_3;
 typedef typename Kernel::Sphere_3 Sphere_3;
+typedef typename Kernel::Line_arc_3 Line_arc_3;
 typedef typename Kernel::Circular_arc_3 Circular_arc_3;
+typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
 typedef CGAL::Object Object;
 
@@ -44,174 +52,235 @@ using CGAL::object_cast;
 typedef CGAL::Random Random;
 
 namespace internal {
-    typedef Circle_proxy<Kernel> Circle_proxy;
-    typedef Circle_handle<Kernel> Circle_handle;
-    typedef Circular_arc_handle<Kernel> Circular_arc_handle;
+  typedef Circle_proxy<Kernel> Circle_proxy;
+  typedef Circle_handle<Kernel> Circle_handle;
+  typedef Circular_arc_handle<Kernel> Circular_arc_handle;
 
-    class Random_sphere_3
-    {
-        public:
-            Random_sphere_3(FT amp):
-                _amp(amp), _rand(),
-                _spheres() {}
+  class Random_sphere_3
+  {
+    public:
+      Random_sphere_3(FT amp):
+        _amp(amp), _rand(),
+        _spheres() {}
 
-            Sphere_3 operator()()
-            {
-                FT x = _amp*_rand.get_double();
-                FT y = _amp*_rand.get_double();
-                FT z = _amp*_rand.get_double();
-                FT r = _amp*_rand.get_double();
-                Sphere_3 s(Point_3(x, y, z), r);
-                std::list<Sphere_3>::const_iterator it;
-                it = std::find(_spheres.begin(), _spheres.end(), s);
-                if (it != _spheres.end())
-                {
-                    return (*this)();
-                }
-                _spheres.push_back(s);
-                return _spheres.back();
-            }
+      Sphere_3 operator()()
+      {
+        FT x = _amp*_rand.get_double();
+        FT y = _amp*_rand.get_double();
+        FT z = _amp*_rand.get_double();
+        FT r = _amp*_rand.get_double();
+        Sphere_3 s(Point_3(x, y, z), r);
+        std::list<Sphere_3>::const_iterator it;
+        it = std::find(_spheres.begin(), _spheres.end(), s);
+        if (it != _spheres.end())
+        {
+          return (*this)();
+        }
+        _spheres.push_back(s);
+        return _spheres.back();
+      }
 
-        private:
-            FT _amp;
-            Random _rand;
-            std::list<Sphere_3> _spheres;
-    };
+    private:
+      FT _amp;
+      Random _rand;
+      std::list<Sphere_3> _spheres;
+  };
 
-    class Add_and_check_circle
-    {
-        public:
-            Add_and_check_circle(Circle_proxy & cp):
-                _ca(cp.adder()) {}
+  class Add_and_check_circle
+  {
+    public:
+      Add_and_check_circle(Circle_proxy & cp):
+        _ca(cp.adder()) {}
 
-            void operator()(const Circle_3 & c)
-            {
-                Circle_handle ch = _ca(c);
-                if (c != ch.get())
-                {
-                    std::ostringstream oss;
-                    oss << "Invalid insertion of circle " << c
-                        << ", is different from inserted circle "
-                        << ch.get();
-                    throw std::runtime_error(oss.str());
-                }
-            }
+      void operator()(const Circle_3 & c)
+      {
+        Circle_handle ch = _ca(c);
+        if (c != ch.get())
+        {
+          std::ostringstream oss;
+          oss << "Invalid insertion of circle " << c
+            << ", is different from inserted circle "
+            << ch.get();
+          throw std::runtime_error(oss.str());
+        }
+      }
 
-        private:
-            Circle_proxy::Circle_adder _ca;
-    };
+    private:
+      Circle_proxy::Circle_adder _ca;
+  };
 }
 
 static const Kernel::FT RAND_AMP_DEFAULT = 20;
 
 static std::string usage()
 {
-    std::ostringstream oss;
-    oss << "Usage: circle_proxy NB_SPHERES [RAND_AMP="
-        << RAND_AMP_DEFAULT << "]" << std::endl;
-    return oss.str();
+  std::ostringstream oss;
+  oss << "Usage: circle_proxy NB_SPHERES [RAND_AMP="
+    << RAND_AMP_DEFAULT << "]" << std::endl;
+  return oss.str();
 }
 
 static void do_main(int argc, const char * argv[])
 {
-    // Parse command line arguments
-    if (argc < 2)
-    { throw std::runtime_error("Need number of spheres to work with"); }
+  // Parse command line arguments
+  if (argc < 2)
+  { throw std::runtime_error("Need number of spheres to work with"); }
 
-    // Amount of spheres to intersect
-    std::size_t nb_spheres;
+  // Amount of spheres to intersect
+  std::size_t nb_spheres;
 
-    // Convert nb_spheres
+  // Convert nb_spheres
+  {
+    std::istringstream iss(argv[1]);
+    if ( (iss >> nb_spheres) == false )
+    { throw std::runtime_error("Bad number format (positive integer)"); }
+  }
+
+  // Random amplitude for sphere generation
+  FT rand_amp = RAND_AMP_DEFAULT;
+  if (argc > 2)
+  {
+    // Too many arguments
+    if (argc != 2)
+    { throw std::runtime_error("Too many arguments specified"); }
+
+    // Convert rand_amp
+    std::istringstream iss(argv[2]);
+    if ( (iss >> rand_amp) == false )
+    { throw std::runtime_error("Bad number format (real number)"); }
+  }
+
+  // Circle proxy to test
+  internal::Circle_proxy cp;
+
+  // Spheres to intersect with
+  std::vector<Sphere_3> spheres;
+
+  // Generate spheres
+  std::cout << "Generating spheres" << std::endl;
+  std::generate_n(std::back_inserter(spheres), nb_spheres,
+      internal::Random_sphere_3(rand_amp));
+
+  // Print out generated spheres
+  //std::cout << "Generated spheres :" << std::endl;
+  //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
+  //{ std::cout << "[" << i << "] " << spheres[i] << std::endl; }
+
+  // Sphere intersections
+  std::vector<Circle_3> circles;
+
+  // Intersections between spheres
+  std::cout << "Computing sphere intersections" << std::endl;
+  for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
+      it != spheres.end(); it++)
+  {
+    // Sphere to intersect
+    const Sphere_3 & s1 = *it;
+
+    for (std::vector<Sphere_3>::const_iterator it2 = (it + 1);
+        it2 != spheres.end(); it2++)
     {
-        std::istringstream iss(argv[1]);
-        if ( (iss >> nb_spheres) == false )
-        { throw std::runtime_error("Bad number format (positive integer)"); }
+      // Sphere to intersect with
+      const Sphere_3 & s2 = *it2;
+
+      // Ignore self intersecting
+      if (s1 == s2) { continue; }
+
+      // Try intersection
+      Object obj = intersection(s1, s2);
+
+      // Handle intersections
+      if (obj.is_empty())
+      { continue; }
+#ifndef NDEBUG
+      else if (const Sphere_3 * s = object_cast<Sphere_3>(&obj))
+      {
+        std::ostringstream oss;
+        oss << "Forbidden intersection between two"
+          << " equal spheres " << *s
+          throw std::runtime_error(oss.str());
+      }
+#endif // NDEBUG //
+      else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
+      { circles.push_back(*c); }
+      else if (const Point_3 * p = object_cast<Point_3>(&obj))
+      { circles.push_back(Circle_3(*p, 0,
+            Line_3(s1.center(), s2.center()
+              ).perpendicular_plane(*p))); }
     }
+  }
 
-    // Random amplitude for sphere generation
-    FT rand_amp = RAND_AMP_DEFAULT;
-    if (argc > 2)
+  // Add circles to proxy
+  std::cout << "Adding circles to proxy" << std::endl;
+  std::for_each(circles.begin(), circles.end(),
+      internal::Add_and_check_circle(cp));
+
+  // Intersections between circles
+  std::cout << "Computing circle intersections" << std::endl;
+  for (std::vector<Circle_3>::const_iterator it = circles.begin();
+      it != circles.end(); it++)
+  {
+    // Circle to intersect
+    const Circle_3 & c1 = *it;
+    for (std::vector<Circle_3>::const_iterator it2 = (it + 1);
+        it2 != circles.end(); it2++)
     {
-        // Too many arguments
-        if (argc != 2)
-        { throw std::runtime_error("Too many arguments specified"); }
+      // Circle to intersect with
+      const Circle_3 & c2 = *it2;
 
-        // Convert rand_amp
-        std::istringstream iss(argv[2]);
-        if ( (iss >> rand_amp) == false )
-        { throw std::runtime_error("Bad number format (real number)"); }
-    }
+      // Ignore self intersecting
+      if (c1 == c2) { continue; }
 
-    // Circle proxy to test
-    internal::Circle_proxy cp;
+      // Do intersections
+      std::vector<Object> intersects_c12;
+      intersection(c1, c2, std::back_inserter(intersects_c12));
 
-    // Spheres to intersect with
-    std::vector<Sphere_3> spheres;
+      // Handle intersections
+      if (intersects_c12.empty() == false)
+      {
+        std::cout << "Intersection between circles " << c1
+          << " and " << c2 << std::endl;
+      }
+      for (std::vector<Object>::const_iterator it = intersects_c12.begin();
+        it != intersects_c12.end(); it++)
+      {
+        // Intersection object
+        const Object & obj = *it;
 
-    // Generate spheres
-    std::cout << "Generating spheres" << std::endl;
-    std::generate_n(std::back_inserter(spheres), nb_spheres,
-            internal::Random_sphere_3(rand_amp));
-
-    // Print out generated spheres
-    //std::cout << "Generated spheres :" << std::endl;
-    //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
-    //{ std::cout << "[" << i << "] " << spheres[i] << std::endl; }
-
-    // Do intersections
-    std::cout << "Computing intersections" << std::endl;
-    std::vector<Circle_3> intersect_circles;
-    for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
-            it != spheres.end(); it++)
-    {
-        // Sphere to intersect
-        const Sphere_3 & s1 = *it;
-
-        for (std::vector<Sphere_3>::const_iterator it2 = (it + 1);
-                it2 != spheres.end(); it2++)
+        // Handle intersections
+        if (const std::pair<Circular_arc_point_3,
+            unsigned int> * p = object_cast<std::pair<Circular_arc_point_3,
+            unsigned int> >(&obj))
         {
-            // Sphere to intersect with
-            const Sphere_3 & s2 = *it2;
-
-            // Ignore self intersecting
-            if (s1 == s2) { continue; }
-
-            // Try intersection
-            Object obj = intersection(s1, s2);
-
-            // Only handle circle intersections
-            if (obj.is_empty())
-            { continue; }
-            else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
-            { intersect_circles.push_back(*c); }
-            else if (const Point_3 * p = object_cast<Point_3>(&obj))
-            {
-                // TODO
-            }
+          std::cout << "- point [" << p->first << "],"
+            << " of multiplicity " << p->second << std::endl;
         }
+        else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
+        {
+          std::cout << "- circle " << *c << std::endl;
+        }
+      }
     }
-
-    // Add intersections to proxy
-    std::cout << "Adding intersection spheres to proxy" << std::endl;
-    std::for_each(intersect_circles.begin(), intersect_circles.end(),
-            internal::Add_and_check_circle(cp));
+  }
 }
 
 int main(int argc, const char * argv[])
 {
-    try
-    {
-        do_main(argc, argv);
-        return EXIT_SUCCESS;
-    }
-    catch (std::runtime_error e)
-    {
-        std::cerr << usage() << std::endl;
-        return EXIT_FAILURE;
-    }
-    catch (std::logic_error e)
-    {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
+  try
+  {
+    do_main(argc, argv);
+    return EXIT_SUCCESS;
+  }
+  catch (std::runtime_error e)
+  {
+    std::cerr << usage() << std::endl;
+    return EXIT_FAILURE;
+  }
+  catch (std::logic_error e)
+  {
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
 }
+
+// vim: sw=2 et ts=2 sts=2
