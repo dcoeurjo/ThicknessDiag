@@ -9,11 +9,24 @@
 #include <algorithm>
 
 #include <CGAL/Exact_spherical_kernel_3.h>
+#include <CGAL/Simple_cartesian.h>
+#include <CGAL/Filtered_kernel.h>
+#include <CGAL/Algebraic_kernel_for_spheres_2_3.h>
+#include <CGAL/Spherical_kernel_3.h>
 #include <CGAL/Random.h>
 
 #include <circle_proxy.h>
 
-typedef CGAL::Exact_spherical_kernel_3 Kernel;
+// Faster kernel
+typedef CGAL::Simple_cartesian<double> CK;
+typedef CGAL::Algebraic_kernel_for_spheres_2_3<CK::RT> AKS;
+typedef CGAL::Spherical_kernel_3<CK, AKS> SK;
+
+// Exact kernel
+typedef CGAL::Exact_spherical_kernel_3 ESK;
+
+// Definition of actually used kernel
+typedef ESK Kernel;
 
 typedef typename Kernel::FT FT;
 typedef typename Kernel::Point_3 Point_3;
@@ -64,6 +77,22 @@ namespace internal {
             Random _rand;
             std::list<Sphere_3> _spheres;
     };
+
+    class Add_and_check_circle
+    {
+        public:
+            Add_and_check_circle(Circle_proxy & cp):
+                _ca(cp.adder()) {}
+
+            void operator()(const Circle_3 & c)
+            {
+                Circle_handle ch = _ca(c);
+                CGAL_assertion(c == ch.get());
+            }
+
+        private:
+            Circle_proxy::Circle_adder _ca;
+    };
 }
 
 static const double RAND_AMP_DEFAULT = 20;
@@ -111,37 +140,54 @@ static void do_main(int argc, const char * argv[])
 
     // Spheres to intersect with
     std::vector<Sphere_3> spheres;
+
+    // Generate spheres
+    std::cout << "Generating spheres" << std::endl;
     std::generate_n(std::back_inserter(spheres), nb_spheres,
             internal::Random_sphere_3(rand_amp));
 
     // Print out generated spheres
-    std::cout << "Generated spheres :" << std::endl;
-    for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
-    { std::cout << "[" << i << "] " << spheres[i] << std::endl; }
+    //std::cout << "Generated spheres :" << std::endl;
+    //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
+    //{ std::cout << "[" << i << "] " << spheres[i] << std::endl; }
 
     // Do intersections
+    std::cout << "Computing intersections" << std::endl;
+    std::vector<Circle_3> intersect_circles;
     for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
             it != spheres.end(); it++)
     {
-        for (std::vector<Sphere_3>::const_iterator it_2 = spheres.begin();
-                it_2 != spheres.end(); it_2++)
+        // Sphere to intersect
+        const Sphere_3 & s1 = *it;
+
+        for (std::vector<Sphere_3>::const_iterator it2 = (it + 1);
+                it2 != spheres.end(); it2++)
         {
+            // Sphere to intersect with
+            const Sphere_3 & s2 = *it2;
+
             // Ignore self intersecting
-            if (it == it_2) { continue; }
+            if (s1 == s2) { continue; }
 
             // Try intersection
-            Object obj = intersection(*it, *it_2);
+            Object obj = intersection(s1, s2);
 
             // Only handle circle intersections
-            if (const Circle_3 * c1_ptr = object_cast<Circle_3>(&obj))
+            if (obj.is_empty())
+            { continue; }
+            else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
+            { intersect_circles.push_back(*c); }
+            else if (const Point_3 * p = object_cast<Point_3>(&obj))
             {
-                const Circle_3 & c1 = *c1_ptr;
-                internal::Circle_handle ch1 = cp.add_circle(c1);
-                //std::cout << "Comparing " << c1 << " and " << ch1.get() << std::endl;
-                CGAL_assertion(c1 == ch1.get());
+                // TODO
             }
         }
     }
+
+    // Add intersections to proxy
+    std::cout << "Adding intersection spheres to proxy" << std::endl;
+    std::for_each(intersect_circles.begin(), intersect_circles.end(),
+            internal::Add_and_check_circle(cp));
 }
 
 int main(int argc, const char * argv[])
@@ -153,9 +199,12 @@ int main(int argc, const char * argv[])
     }
     catch (std::runtime_error e)
     {
-        std::cerr << e.what() << std::endl
-            << std::endl
-            << usage() << std::endl;
+        std::cerr << usage() << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (std::logic_error e)
+    {
+        std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 }

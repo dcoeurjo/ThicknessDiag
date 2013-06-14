@@ -12,9 +12,7 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-#include <boost/ref.hpp>
-
-#include <circle_utils.h>
+#include <spherical_utils.h>
 
 template <typename Kernel>
 class Circle_proxy;
@@ -84,27 +82,43 @@ class Circular_arc_handle
 };
 
 template <typename Kernel>
+class Circle_proxy_adder;
+
+template <typename Kernel>
 class Circle_proxy
 {
   public:
+    // Access from outside
+    typedef Circle_proxy_adder<Kernel> Circle_adder;
+
     // Add a circle to the proxy, computing intersections
     //  and inserting these computed intersection arcs
     Circle_handle<Kernel> add_circle(typename Kernel::Circle_3 const & c)
     {
+#ifndef NDEBUG
       std::pair<Circle_iterator, Circle_iterator> it_range;
       it_range = _circle_list.equal_range(c);
-#ifndef NDEBUG
       if (std::find(it_range.first, it_range.second, c) != it_range.second)
       {
         std::ostringstream oss;
         oss << "Concept violation, cannot insert twice the same"
-          << " circle in the circle proxy";
+          << " circle in the circle proxy" << std::endl
+          << "Found range:" << std::endl;
+        for (Circle_iterator it = it_range.first;
+            it != it_range.second; it++)
+        {
+          oss << "  " << *it << std::endl;
+        }
+        oss << std::endl
+          << "Equal to: " << c << std::endl;
         throw std::logic_error(oss.str());
       }
 #endif // NDEBUG //
-      Circle_iterator it = _circle_list.insert(it_range.second, c);
-      return Circle_handle<Kernel>(*this, *it);
+      return Circle_handle<Kernel>(*this, *_circle_list.insert(c));
     }
+
+    Circle_adder adder()
+    { return Circle_adder(*this); }
 
   private:
     // Bidirectional exclusive access
@@ -168,6 +182,21 @@ class Circle_proxy
 
     // Actual set of circles
     Circle_list _circle_list;
+};
+
+template <typename Kernel>
+class Circle_proxy_adder
+{
+  public:
+    Circle_proxy_adder(Circle_proxy<Kernel> & cp):
+      _cp(cp) {}
+
+    Circle_handle<Kernel>
+      operator()(typename Kernel::Circle_3 const & c)
+    { return _cp.add_circle(c); }
+
+  private:
+    Circle_proxy<Kernel> & _cp;
 };
 
 #endif // CIRCLE_PROXY_H // vim: sw=2 et ts=2 sts=2

@@ -10,7 +10,7 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-#include <circle_utils.h>
+#include <spherical_utils.h>
 
 template <typename Kernel, typename Sqrt>
 class Vertical_orderer

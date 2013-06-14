@@ -4,6 +4,8 @@
 project( tests )
 
 
+set(CMAKE_BUILD_TYPE Debug)
+
 cmake_minimum_required(VERSION 2.6.2)
 if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 2.6)
   if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" VERSION_GREATER 2.8.3)
@@ -20,8 +22,6 @@ if ( COMMAND cmake_policy )
   cmake_policy( SET CMP0003 NEW )  
 
 endif()
-
-set(CMAKE_BUILD_TYPE Debug)
 
 # CGAL and its components
 find_package( CGAL QUIET COMPONENTS  )

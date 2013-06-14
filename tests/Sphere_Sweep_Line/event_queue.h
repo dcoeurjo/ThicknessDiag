@@ -12,7 +12,7 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-#include <circle_utils.h>
+#include <spherical_utils.h>
 
 // An event point is a point of the algorithm's base sphere
 // where something relevant for the sweep process would occur.
