@@ -67,6 +67,13 @@ namespace internal {
   typedef Circle_handle<Kernel> Circle_handle;
   typedef Circular_arc_handle<Kernel> Circular_arc_handle;
 
+  Color random_color(Random & rand)
+  {
+    return Color(rand.get_int(0, 255),
+        rand.get_int(0, 255),
+        rand.get_int(0, 255));
+  }
+
   class Random_sphere_3
   {
     public:
@@ -119,20 +126,50 @@ namespace internal {
     private:
       Circle_proxy::Circle_adder _ca;
   };
+
+  class Display_sphere_on_geomview
+  {
+    public:
+      Display_sphere_on_geomview(Geomview_stream & gv):
+        _gv(gv) {}
+
+      void operator()(const Sphere_3 & sphere)
+      {
+        Color color(random_color(_rand));
+        //_gv.set_face_color(color);
+        _gv << color;
+        _gv << sphere;
+      }
+
+    private:
+      Geomview_stream & _gv;
+      Random _rand;
+  };
+
+  class Display_circle_on_geomview
+  {
+    public:
+      Display_circle_on_geomview(Geomview_stream & gv):
+        _gv(gv) {}
+
+      void operator()(const Circle_3 & circle)
+      {
+        //Color color(random_color(_rand));
+        //_gv.set_face_color(color);
+        //_gv << color;
+        //_gv << circle.supporting_plane();
+      }
+
+    private:
+      Geomview_stream & _gv;
+      Random _rand;
+  };
 }
 
 static const Kernel::FT RAND_AMP_DEFAULT = 20;
 
 static void do_main(int argc, const char * argv[])
 {
-  // Setup geomview
-  Geomview_stream gv;
-  gv.set_wired(false);
-  gv.set_bg_color(Color(0, 0, 0));
-  gv.clear();
-  set_panel_enabled(gv, Geomview_panel::TOOLS, false);
-  set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
-
   // Parse command line arguments
   if (argc < 2)
   { throw std::runtime_error("Need number of spheres to work with"); }
@@ -146,6 +183,14 @@ static void do_main(int argc, const char * argv[])
     if ( (iss >> nb_spheres) == false )
     { throw std::runtime_error("Bad number format (positive integer)"); }
   }
+
+  // Setup geomview
+  Geomview_stream gv;
+  gv.set_wired(false);
+  gv.set_bg_color(Color(0, 0, 0));
+  gv.clear();
+  //set_panel_enabled(gv, Geomview_panel::TOOLS, false);
+  //set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
 
   // Random amplitude for sphere generation
   FT rand_amp = RAND_AMP_DEFAULT;
@@ -172,10 +217,16 @@ static void do_main(int argc, const char * argv[])
   std::generate_n(std::back_inserter(spheres), nb_spheres,
       internal::Random_sphere_3(rand_amp));
 
-  // Print out generated spheres
+  // Show generated spheres on standard output
   //std::cout << "Generated spheres :" << std::endl;
   //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
-  //{ std::cout << "[" << i << "] " << spheres[i] << std::endl; }
+  //{ std::cout << "[" << i << "] - " << spheres[i] << std::endl; }
+
+  // Show generated spheres on Geomview
+  std::for_each(spheres.begin(), spheres.end(),
+      internal::Display_sphere_on_geomview(gv));
+  gv.look_recenter();
+  while (std::cin.get() != '\n');
 
   // Sphere intersections
   std::vector<Circle_3> circles;
@@ -220,6 +271,12 @@ static void do_main(int argc, const char * argv[])
               ).perpendicular_plane(*p))); }
     }
   }
+
+  // Show generated circles on Geomview
+  std::for_each(circles.begin(), circles.end(),
+      internal::Display_circle_on_geomview(gv));
+  gv.look_recenter();
+  while (std::cin.get() != '\n');
 
   // Add circles to proxy
   std::cout << "Adding circles to proxy" << std::endl;
@@ -269,6 +326,10 @@ static void do_main(int argc, const char * argv[])
         else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
         {
           std::cout << "- circle " << *c << std::endl;
+        }
+        else
+        {
+          std::cout << "Unhandled intersection" << std::endl;
         }
       }
     }
