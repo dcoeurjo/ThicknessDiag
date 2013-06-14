@@ -12,7 +12,7 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-#include <spherical_utils.h>
+#include <Spherical_utils.h>
 
 template <typename Kernel>
 class Circle_proxy;

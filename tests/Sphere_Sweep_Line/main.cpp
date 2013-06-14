@@ -34,7 +34,7 @@ typedef CGAL::Spherical_kernel_3<CK, AKS> SK;
 typedef CGAL::Exact_spherical_kernel_3 ESK;
 
 // Definition of actually used kernel
-typedef SK Kernel;
+typedef ESK Kernel;
 
 // Geometric objects
 typedef typename Kernel::FT FT;
@@ -126,6 +126,7 @@ static const Kernel::FT RAND_AMP_DEFAULT = 20;
 static void do_main(int argc, const char * argv[])
 {
   // Setup geomview
+  Geomview_stream gv;
   gv.set_wired(false);
   gv.set_bg_color(Color(0, 0, 0));
   gv.clear();
@@ -207,7 +208,7 @@ static void do_main(int argc, const char * argv[])
       {
         std::ostringstream oss;
         oss << "Forbidden intersection between two"
-          << " equal spheres " << *s
+          << " equal spheres " << *s;
           throw std::runtime_error(oss.str());
       }
 #endif // NDEBUG //
