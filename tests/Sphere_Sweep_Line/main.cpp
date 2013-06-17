@@ -8,11 +8,6 @@
 #include <iostream>
 #include <algorithm>
 
-#ifndef NDEBUG
-#  include <stdexcept>
-#  include <sstream>
-#endif // NDEBUG //
-
 #include <CGAL/Exact_spherical_kernel_3.h>
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Filtered_kernel.h>
@@ -135,10 +130,8 @@ namespace internal {
 
       void operator()(const Sphere_3 & sphere)
       {
-        Color color(random_color(_rand));
-        //_gv.set_face_color(color);
-        _gv << color;
-        _gv << sphere;
+        _gv << random_color(_rand)
+          << sphere;
       }
 
     private:
@@ -154,9 +147,8 @@ namespace internal {
 
       void operator()(const Circle_3 & circle)
       {
-        Color color(random_color(_rand));
-        _gv << color;
-        _gv << circle.bbox();
+        _gv << random_color(_rand)
+          << circle.bbox();
       }
 
     private:
