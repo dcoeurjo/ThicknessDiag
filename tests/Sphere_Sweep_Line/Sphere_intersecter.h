@@ -12,7 +12,9 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-#include <boost/ref.hpp>
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/Bbox_3.h>
 
 #include <Spherical_utils.h>
 
@@ -20,6 +22,7 @@ template <typename Kernel>
 class Sphere_intersecter
 {
   // Geometric objects bundle
+  typedef CGAL::Bbox_3 Bbox_3;
   typedef typename Kernel::Point_3 Point_3;
   typedef typename Kernel::Sphere_3 Sphere_3;
   typedef typename Kernel::Circle_3 Circle_3;
@@ -36,17 +39,33 @@ class Sphere_intersecter
   friend class Sphere_iterator;
   friend class Sphere_iterator_range;
 
-  // Extension of boost::reference_wrapper. The only
+  // Similar to boost::reference_wrapper. The only
   // difference lies in the fact that we don't want
   // objects of this type to be constructed otherwise
   // than via the main class (better encapsulation).
   template <typename T>
-  class Handle: public boost::reference_wrapper<T>
+  class Handle
   {
     friend class Sphere_intersecter<Kernel>;
 
-    Handle(T & t):
-      boost::reference_wrapper<T>(t) {}
+    public:
+      Handle():
+        _t(0) {}
+
+      const T * get_pointer() const
+      { return _t; }
+
+      T & get() const
+      { return *_t; }
+
+      operator T& () const
+      { return get(); }
+
+    private:
+      Handle(T & t):
+        _t(&t) {}
+
+      T * _t;
   };
 
   public:
@@ -64,11 +83,37 @@ class Sphere_intersecter
 
     typedef Comp_handle_ptr<Sphere_handle> Comp_sphere_handle_ptr;
 
-    // List of actual geometrical objects
-    typedef std::multiset<Sphere_3,
-            Comp_by_squared_radii<Sphere_3> > Sphere_list;
-    typedef std::multiset<Circle_3,
-            Comp_by_squared_radii<Circle_3> > Circle_list;
+    // AABB Tree primitive for locating spheres
+    class AABB_primitive
+    {
+      public:
+        typedef Point_3 Point;
+        typedef const Sphere_3 & Datum;
+        typedef Sphere_handle Id;
+
+        AABB_primitive(const Id & id):
+          _sphere_handle(id) {}
+
+        Datum datum() const
+        { return _sphere_handle.get(); }
+
+        Id id() const
+        { return _sphere_handle; }
+
+        Point reference_point() const
+        { CGAL::Bbox_3 bbox = datum().bbox();
+          return Point(bbox.xmin(), bbox.ymin(), bbox.zmin()); }
+
+      private:
+        Id _sphere_handle;
+    };
+
+    // AABB tree of spheres
+    typedef CGAL::AABB_tree<CGAL::AABB_traits<Kernel,
+            AABB_primitive> > Sphere_tree;
+
+    // Actual list of spheres (used only for storage)
+    typedef std::list<Sphere_3> Sphere_storage;
 
     // Link between a sphere intersection and the source spheres
     typedef std::map<Sphere_handle, std::map<Sphere_handle,
@@ -119,101 +164,36 @@ class Sphere_intersecter
     Sphere_insert_iterator insert_iterator()
     { return Sphere_insert_iterator(*this); }
 
-    class Sphere_iterator_range;
-
-    class Sphere_iterator:
-      public std::iterator<std::input_iterator_tag, Sphere_handle>
-    {
-      // Friend access
-      friend class Sphere_iterator_range;
-
-      // Internal shortcuts
-      typedef typename Sphere_list::const_iterator real_iterator;
-
-      public:
-        Sphere_iterator & operator++()
-        { ++_it; return *this; }
-
-        Sphere_iterator operator++(int)
-        { Sphere_iterator tmp(*this);
-          ++(*this); return tmp; }
-
-        bool operator==(const Sphere_iterator & sit) const
-        { return _it == sit._it; }
-
-        bool operator!=(const Sphere_iterator & sit) const
-        { return !(*this == sit); }
-
-        Sphere_handle operator*()
-        { return Sphere_handle(*_it); }
-
-      private:
-        Sphere_iterator(const real_iterator & it):
-          _it(it) {}
-
-        real_iterator _it;
-    };
-
-    class Sphere_iterator_range
-    {
-      // Friend access
-      friend class Sphere_intersecter<Kernel>;
-
-      public:
-        Sphere_iterator begin() const
-        { return Sphere_iterator(_si._sphere_list.begin()); }
-
-        Sphere_iterator end() const
-        { return Sphere_iterator(_si._sphere_list.end()); }
-
-      private:
-        Sphere_iterator_range(const Sphere_intersecter<Kernel> & si):
-          _si(si) {}
-
-        const Sphere_intersecter<Kernel> & _si;
-    };
-
-    Sphere_iterator_range spheres() const
-    { return Sphere_iterator_range(*this); }
+    template <typename UnaryFunction>
+    void sphere_traversal(const UnaryFunction & uf)
+    { std::for_each(_sphere_storage.begin(),
+          _sphere_storage.end(), uf); }
 
   private:
     // Insert sphere and setup intersection links.
     // Precondition: sphere isn't yet inserted
     Sphere_handle setup_new_sphere(const Sphere_3 & s)
     {
-      // Shortcut
-      typedef typename Sphere_list::const_iterator Sphere_list_const_iterator;
+      // Store a copy of the inserted sphere and insert
+      // a handle of this inserted sphere in the Tree
+      _sphere_storage.push_back(s);
+      const Sphere_3 & s1 = _sphere_storage.back();
+      _sphere_tree.insert(AABB_primitive(Sphere_handle(s1)));
 
-#ifndef NDEBUG // Check precondition
-      std::pair<Sphere_list_const_iterator,
-        Sphere_list_const_iterator> it_range = _sphere_list.equal_range(s);
-      if (std::find(it_range.first, it_range.second, s) != it_range.second)
-      {
-        std::ostringstream oss;
-        oss << "Concept violation, cannot insert twice the same"
-          << " sphere in the sphere proxy" << std::endl
-          << "Found range:" << std::endl;
-        for (Sphere_list_const_iterator it = it_range.first;
-            it != it_range.second; it++)
-        {
-          oss << "  " << *it << std::endl;
-        }
-        oss << std::endl
-          << "Equal to: " << s << std::endl;
-        throw std::logic_error(oss.str());
-      }
-#endif // NDEBUG //
+      // Bug fix for assertion failure
+      if (_sphere_tree.size() == 1)
+      { return Sphere_handle(s1); }
 
-      // Insert the sphere (needed here for compare by address)
-      Sphere_handle sh(*_sphere_list.insert(s));
+      // Find intersected balls
+      std::vector<Sphere_handle> intersected;
+      _sphere_tree.all_intersected_primitives(s1,
+          std::back_inserter(intersected));
 
-      // Compute its intersections
-      // TODO use AABB Tree
-      for (Sphere_list_const_iterator it = _sphere_list.begin();
-          it != _sphere_list.end(); it++)
+      // Compute intersections
+      for (typename std::vector<Sphere_handle>::const_iterator
+          it = intersected.begin(); it != intersected.end(); it++)
       {
         // Syntaxic sugar
-        const Sphere_3 & s1 = sh.get();
         const Sphere_3 & s2 = *it;
 
         // Skip inserted sphere
@@ -256,12 +236,12 @@ class Sphere_intersecter
           continue; }
       }
 
-      return sh;
+      return Sphere_handle(s1);
     }
 
     // Precondition: this particular intersection hasn't been
     // inserted until now.
-    Circle_handle setup_new_circle(const Sphere_3 & s1,
+    void setup_new_circle(const Sphere_3 & s1,
         const Sphere_3 & s2,
         const Circle_3 & c)
     {
@@ -269,25 +249,25 @@ class Sphere_intersecter
 #ifndef NDEBUG
       // TODO check precondition
 #endif // NDEBUG //
-      Circle_handle ch(*_circle_list.insert(c));
-      _circle_intersects[sh1].insert(std::make_pair(sh2, ch));
-      _circle_intersects[sh2].insert(std::make_pair(sh1, ch));
-      setup_circle_intersections_on_sphere(s1, ch.get());
-      setup_circle_intersections_on_sphere(s2, ch.get());
-      return ch;
+      //Circle_handle ch(*_circle_list.insert(c));
+      //_circle_intersects[sh1].insert(std::make_pair(sh2, ch));
+      //_circle_intersects[sh2].insert(std::make_pair(sh1, ch));
+      //setup_circle_intersections_on_sphere(s1, ch.get());
+      //setup_circle_intersections_on_sphere(s2, ch.get());
     }
 
     void setup_circle_intersections_on_sphere(const Sphere_3 & s,
         const Circle_3 & c)
     {
-      _circles_on_sphere[Sphere_handle(s)].push_back(Circle_handle(c));
+      //_circles_on_sphere[Sphere_handle(s)].push_back(Circle_handle(c));
       // TODO handle intersection between circles
     }
 
-    Sphere_list _sphere_list;
-    Circle_list _circle_list;
-    Circle_intersects _circle_intersects;
-    Circles_on_sphere _circles_on_sphere;
+    Sphere_tree _sphere_tree;
+    Sphere_storage _sphere_storage;
+
+    //Circle_intersects _circle_intersects;
+    //Circles_on_sphere _circles_on_sphere;
 };
 
 #endif // SPHERE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2

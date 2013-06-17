@@ -186,9 +186,7 @@ static void do_main(int argc, const char * argv[])
   //{ std::cout << "[" << i << "] - " << spheres[i] << std::endl; }
 
   // Show added spheres on Geomview
-  internal::Sphere_intersecter::Sphere_iterator_range spheres = si.spheres();
-  std::for_each(spheres.begin(), spheres.end(),
-      internal::Display_sphere_on_geomview(gv));
+  si.sphere_traversal(internal::Display_sphere_on_geomview(gv));
   gv.look_recenter();
   while (std::cin.get() != '\n');
 
