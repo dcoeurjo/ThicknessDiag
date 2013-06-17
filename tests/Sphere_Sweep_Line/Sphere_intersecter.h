@@ -3,13 +3,18 @@
 
 #include <set>
 #include <map>
+#include <vector>
+#include <iterator>
 #include <algorithm>
-#include <Spherical_utils.h>
 
 #ifndef NDEBUG
 #  include <stdexcept>
 #  include <sstream>
 #endif // NDEBUG //
+
+#include <boost/ref.hpp>
+
+#include <Spherical_utils.h>
 
 template <typename Kernel>
 class Sphere_intersecter
@@ -18,6 +23,7 @@ class Sphere_intersecter
   typedef typename Kernel::Point_3 Point_3;
   typedef typename Kernel::Sphere_3 Sphere_3;
   typedef typename Kernel::Circle_3 Circle_3;
+  typedef typename Kernel::Line_3 Line_3;
   typedef typename Kernel::Circular_arc_3 Circular_arc_3;
   typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
@@ -26,37 +32,25 @@ class Sphere_intersecter
   typedef typename Kernel::Assign_3 Assign_3;
   typedef typename Kernel::Intersect_3 Intersect_3;
 
-  // Similar to boost::reference_wrapper (follows the
-  // same interface as this one). The only difference
-  // is that we don't want objects of this type to
-  // be constructed otherwise than via the main class.
+  // Internal shortcuts for readability
+  typedef Sphere_intersecter<Kernel> Self;
+
+  // Extension of boost::reference_wrapper. The only
+  // difference lies in the fact that we don't want
+  // objects of this type to be constructed otherwise
+  // than via the main class (better encapsulation).
   template <typename T>
-  class Handle
+  class Handle: public boost::reference_wrapper<T>
   {
-    public:
-      typedef T type;
+    friend class Sphere_intersecter<Kernel>;
 
-      const type & get() const
-      { return _impl; }
-
-      const type * get_pointer() const
-      { return &_impl; }
-
-      operator type& () const 
-      { return _impl; }
-
-    private:
-      friend class Sphere_intersecter<Kernel>;
-
-      Handle(const type & i):
-        _impl(i) {}
-
-      const type & _impl;
+    Handle(T & t):
+      boost::reference_wrapper<T>(t) {}
   };
 
   public:
-    typedef Handle<Sphere_3> Sphere_handle;
-    typedef Handle<Circle_3> Circle_handle;
+    typedef Handle<const Sphere_3> Sphere_handle;
+    typedef Handle<const Circle_3> Circle_handle;
 
   private:
     template <typename Handle>
@@ -64,24 +58,10 @@ class Sphere_intersecter
     {
       bool operator()(const Handle & x,
           const Handle & y) const
-      {
-        return x.get_pointer() < y.get_pointer();
-      }
+      { return &x < &y; }
     };
 
-    typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
-
-    struct Comp_sphere_handle_pair
-    {
-      bool operator()(const Sphere_handle_pair & x,
-          const Sphere_handle_pair & y) const
-      {
-        Comp_handle_ptr<Sphere_handle> comp_handle;
-        return comp_handle(x.first, y.first)
-          || (!comp_handle(y.first, x.first)
-              && comp_handle(x.second, y.second));
-      }
-    };
+    typedef Comp_handle_ptr<Sphere_handle> Comp_sphere_handle_ptr;
 
     // List of actual geometrical objects
     typedef std::multiset<Sphere_3,
@@ -90,8 +70,13 @@ class Sphere_intersecter
             Comp_by_squared_radii<Circle_3> > Circle_list;
 
     // Link between a sphere intersection and the source spheres
-    typedef std::map<Sphere_handle_pair, Circle_handle,
-            Comp_sphere_handle_pair> Circle_intersects;
+    typedef std::map<Sphere_handle, std::map<Sphere_handle,
+            Circle_handle, Comp_sphere_handle_ptr>,
+            Comp_sphere_handle_ptr> Circle_intersects;
+
+    // Link between a sphere and the circles on it
+    typedef std::map<Sphere_handle, std::vector<Circle_handle>,
+            Comp_sphere_handle_ptr> Circles_on_sphere;
 
   public:
     Sphere_handle add_sphere(const Sphere_3 & s)
@@ -103,6 +88,35 @@ class Sphere_intersecter
       for (; begin != end; begin++)
       { add_sphere(*begin); }
     }
+
+    class Sphere_insert_iterator:
+      public std::iterator<std::output_iterator_tag,
+      void, void, void, void>
+    {
+      public:
+        Sphere_insert_iterator & operator=(const Sphere_3 & s)
+        { _si.add_sphere(s); 
+        return *this; }
+
+        Sphere_insert_iterator & operator++()
+        { return *this; }
+        Sphere_insert_iterator & operator++(int)
+        { return *this; }
+
+        Sphere_insert_iterator & operator*()
+        { return *this; }
+
+      private:
+        friend class Sphere_intersecter<Kernel>;
+
+        Sphere_insert_iterator(Self & si):
+          _si(si) {}
+
+        Self & _si;
+    };
+
+    Sphere_insert_iterator insert_iterator()
+    { return Sphere_insert_iterator(*this); }
 
   private:
     // Insert sphere and setup intersection links.
@@ -136,11 +150,12 @@ class Sphere_intersecter
       Sphere_handle sh(*_sphere_list.insert(s));
 
       // Compute its intersections
+      // TODO use AABB Tree
       for (Sphere_iterator it = _sphere_list.begin();
           it != _sphere_list.end(); it++)
       {
         // Syntaxic sugar
-        const Sphere_3 & s1 = sh;
+        const Sphere_3 & s1 = sh.get();
         const Sphere_3 & s2 = *it;
 
         // Try intersection
@@ -153,12 +168,13 @@ class Sphere_intersecter
         // Assign function object
         Assign_3 assign;
 
-#if 0 && !defined(NDEBUG)
-        if (const Sphere_3 * sp = object_cast<Sphere_3>(&obj))
+#ifndef NDEBUG // Check precondition
+        Sphere_3 sp;
+        if (assign(sp, obj))
         {
           std::ostringstream oss;
           oss << "Forbidden intersection between two"
-            << " equal spheres " << *sp;
+            << " equal spheres " << sp;
           throw std::runtime_error(oss.str());
         }
 #endif // NDEBUG //
@@ -187,19 +203,29 @@ class Sphere_intersecter
         const Sphere_3 & s2,
         const Circle_3 & c)
     {
-      Sphere_handle_pair p(Sphere_handle(s1), Sphere_handle(s2));
+      Sphere_handle sh1(s1), sh2(s2);
 #ifndef NDEBUG
-      // TODO
+      // TODO check precondition
 #endif // NDEBUG //
       Circle_handle ch(*_circle_list.insert(c));
-      _circle_intersects[p] = ch;
+      _circle_intersects[sh1].insert(std::make_pair(sh2, ch));
+      _circle_intersects[sh2].insert(std::make_pair(sh1, ch));
+      setup_circle_intersections_on_sphere(s1, ch.get());
+      setup_circle_intersections_on_sphere(s2, ch.get());
       return ch;
+    }
+
+    void setup_circle_intersections_on_sphere(const Sphere_3 & s,
+        const Circle_3 & c)
+    {
+      _circles_on_sphere[Sphere_handle(s)].push_back(Circle_handle(c));
+      // TODO handle intersection between circles
     }
 
     Sphere_list _sphere_list;
     Circle_list _circle_list;
-
     Circle_intersects _circle_intersects;
+    Circles_on_sphere _circles_on_sphere;
 };
 
 #endif // SPHERE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2
