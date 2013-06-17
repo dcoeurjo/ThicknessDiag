@@ -32,8 +32,9 @@ class Sphere_intersecter
   typedef typename Kernel::Assign_3 Assign_3;
   typedef typename Kernel::Intersect_3 Intersect_3;
 
-  // Internal shortcuts for readability
-  typedef Sphere_intersecter<Kernel> Self;
+  // Friend access
+  friend class Sphere_iterator;
+  friend class Sphere_iterator_range;
 
   // Extension of boost::reference_wrapper. The only
   // difference lies in the fact that we don't want
@@ -109,14 +110,71 @@ class Sphere_intersecter
       private:
         friend class Sphere_intersecter<Kernel>;
 
-        Sphere_insert_iterator(Self & si):
+        Sphere_insert_iterator(Sphere_intersecter<Kernel> & si):
           _si(si) {}
 
-        Self & _si;
+        Sphere_intersecter<Kernel> & _si;
     };
 
     Sphere_insert_iterator insert_iterator()
     { return Sphere_insert_iterator(*this); }
+
+    class Sphere_iterator_range;
+
+    class Sphere_iterator:
+      public std::iterator<std::input_iterator_tag, Sphere_handle>
+    {
+      // Friend access
+      friend class Sphere_iterator_range;
+
+      // Internal shortcuts
+      typedef typename Sphere_list::const_iterator real_iterator;
+
+      public:
+        Sphere_iterator & operator++()
+        { ++_it; return *this; }
+
+        Sphere_iterator operator++(int)
+        { Sphere_iterator tmp(*this);
+          ++(*this); return tmp; }
+
+        bool operator==(const Sphere_iterator & sit) const
+        { return _it == sit._it; }
+
+        bool operator!=(const Sphere_iterator & sit) const
+        { return !(*this == sit); }
+
+        Sphere_handle operator*()
+        { return Sphere_handle(*_it); }
+
+      private:
+        Sphere_iterator(const real_iterator & it):
+          _it(it) {}
+
+        real_iterator _it;
+    };
+
+    class Sphere_iterator_range
+    {
+      // Friend access
+      friend class Sphere_intersecter<Kernel>;
+
+      public:
+        Sphere_iterator begin() const
+        { return Sphere_iterator(_si._sphere_list.begin()); }
+
+        Sphere_iterator end() const
+        { return Sphere_iterator(_si._sphere_list.end()); }
+
+      private:
+        Sphere_iterator_range(const Sphere_intersecter<Kernel> & si):
+          _si(si) {}
+
+        const Sphere_intersecter<Kernel> & _si;
+    };
+
+    Sphere_iterator_range spheres() const
+    { return Sphere_iterator_range(*this); }
 
   private:
     // Insert sphere and setup intersection links.
@@ -124,18 +182,18 @@ class Sphere_intersecter
     Sphere_handle setup_new_sphere(const Sphere_3 & s)
     {
       // Shortcut
-      typedef typename Sphere_list::const_iterator Sphere_iterator;
+      typedef typename Sphere_list::const_iterator Sphere_list_const_iterator;
 
 #ifndef NDEBUG // Check precondition
-      std::pair<Sphere_iterator, Sphere_iterator> it_range;
-      it_range = _sphere_list.equal_range(s);
+      std::pair<Sphere_list_const_iterator,
+        Sphere_list_const_iterator> it_range = _sphere_list.equal_range(s);
       if (std::find(it_range.first, it_range.second, s) != it_range.second)
       {
         std::ostringstream oss;
         oss << "Concept violation, cannot insert twice the same"
           << " sphere in the sphere proxy" << std::endl
           << "Found range:" << std::endl;
-        for (Sphere_iterator it = it_range.first;
+        for (Sphere_list_const_iterator it = it_range.first;
             it != it_range.second; it++)
         {
           oss << "  " << *it << std::endl;
@@ -151,12 +209,16 @@ class Sphere_intersecter
 
       // Compute its intersections
       // TODO use AABB Tree
-      for (Sphere_iterator it = _sphere_list.begin();
+      for (Sphere_list_const_iterator it = _sphere_list.begin();
           it != _sphere_list.end(); it++)
       {
         // Syntaxic sugar
         const Sphere_3 & s1 = sh.get();
         const Sphere_3 & s2 = *it;
+
+        // Skip inserted sphere
+        if (s1 == s2)
+        { continue; }
 
         // Try intersection
         Object_3 obj = Intersect_3()(s1, s2);

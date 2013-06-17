@@ -151,12 +151,12 @@ static void do_main(int argc, const char * argv[])
   }
 
   // Setup geomview
-  //Geomview_stream gv;
-  //gv.set_wired(false);
-  //gv.set_bg_color(Color(0, 0, 0));
-  //gv.clear();
-  //set_panel_enabled(gv, Geomview_panel::TOOLS, false);
-  //set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
+  Geomview_stream gv;
+  gv.set_wired(false);
+  gv.set_bg_color(Color(0, 0, 0));
+  gv.clear();
+  set_panel_enabled(gv, Geomview_panel::TOOLS, false);
+  set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
 
   // Random amplitude for sphere generation
   FT rand_amp = RAND_AMP_DEFAULT;
@@ -185,11 +185,12 @@ static void do_main(int argc, const char * argv[])
   //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
   //{ std::cout << "[" << i << "] - " << spheres[i] << std::endl; }
 
-  // Show generated spheres on Geomview
-  //std::for_each(spheres.begin(), spheres.end(),
-  //    internal::Display_sphere_on_geomview(gv));
-  //gv.look_recenter();
-  //while (std::cin.get() != '\n');
+  // Show added spheres on Geomview
+  internal::Sphere_intersecter::Sphere_iterator_range spheres = si.spheres();
+  std::for_each(spheres.begin(), spheres.end(),
+      internal::Display_sphere_on_geomview(gv));
+  gv.look_recenter();
+  while (std::cin.get() != '\n');
 
   // Show generated circles on Geomview
   //std::for_each(circles.begin(), circles.end(),
