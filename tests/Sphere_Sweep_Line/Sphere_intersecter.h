@@ -16,7 +16,6 @@
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
-#include <CGAL/Bbox_3.h>
 
 #include <Spherical_utils.h>
 
@@ -24,7 +23,6 @@ template <typename Kernel>
 class Sphere_intersecter
 {
   // Geometric objects bundle
-  typedef CGAL::Bbox_3 Bbox_3;
   typedef typename Kernel::Point_3 Point_3;
   typedef typename Kernel::Sphere_3 Sphere_3;
   typedef typename Kernel::Circle_3 Circle_3;
