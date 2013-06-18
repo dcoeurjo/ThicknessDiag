@@ -53,23 +53,25 @@ class Sphere_intersecter
     friend class AABB_handle_primitive<T>;
 
     public:
+      typedef T Type;
+
       Handle():
         _t(0) {}
 
-      const T * get_pointer() const
+      const Type * get_pointer() const
       { return _t; }
 
-      T & get() const
+      Type & get() const
       { return *_t; }
 
-      operator T& () const
+      operator Type& () const
       { return get(); }
 
     private:
-      Handle(T & t):
+      Handle(Type & t):
         _t(&t) {}
 
-      T * _t;
+      Type * _t;
   };
 
   public:
@@ -91,11 +93,11 @@ class Sphere_intersecter
     {
       public:
         typedef Point_3 Point;
-        typedef const T & Datum;
         typedef Handle<const T> Id;
+        typedef typename Id::Type & Datum;
 
-        AABB_handle_primitive(const T & t):
-          _handle(t) {}
+        AABB_handle_primitive(Datum d):
+          _handle(d) {}
 
         Datum datum() const
         { return _handle.get(); }
@@ -112,8 +114,9 @@ class Sphere_intersecter
     };
 
     // AABB tree of spheres
+    typedef AABB_handle_primitive<Sphere_3> AABB_sphere_primitive;
     typedef CGAL::AABB_tree<CGAL::AABB_traits<Kernel,
-            AABB_handle_primitive<Sphere_3> > > Sphere_tree;
+            AABB_sphere_primitive> > Sphere_tree;
 
     // Actual list of spheres (used only for storage)
     typedef std::list<Sphere_3> Sphere_storage;
@@ -245,7 +248,7 @@ class Sphere_intersecter
       // a handle of this inserted sphere in the Tree
       _sphere_storage.push_back(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.back();
-      _sphere_tree.insert(AABB_handle_primitive<Sphere_3>(s1));
+      _sphere_tree.insert(AABB_sphere_primitive(s1));
 
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
