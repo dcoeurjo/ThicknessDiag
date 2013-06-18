@@ -12,6 +12,8 @@
 #  include <sstream>
 #endif // NDEBUG //
 
+#include <boost/utility.hpp>
+
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
 #include <CGAL/Bbox_3.h>
@@ -101,7 +103,7 @@ class Sphere_intersecter
         { return _sphere_handle; }
 
         Point reference_point() const
-        { CGAL::Bbox_3 bbox = datum().bbox();
+        { BOOST_AUTO(bbox, _sphere_handle.get().bbox());
           return Point(bbox.xmin(), bbox.ymin(), bbox.zmin()); }
 
       private:
