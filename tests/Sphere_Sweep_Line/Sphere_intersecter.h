@@ -164,10 +164,62 @@ class Sphere_intersecter
     Sphere_insert_iterator insert_iterator()
     { return Sphere_insert_iterator(*this); }
 
-    template <typename UnaryFunction>
-    void sphere_traversal(const UnaryFunction & uf)
-    { std::for_each(_sphere_storage.begin(),
-          _sphere_storage.end(), uf); }
+    class Sphere_iterator_range;
+
+    class Sphere_iterator:
+      public std::iterator<std::input_iterator_tag, Sphere_handle>
+    {
+      // Friend access
+      friend class Sphere_iterator_range;
+
+      // Internal shortcuts
+      typedef typename Sphere_storage::const_iterator real_iterator;
+
+      public:
+        Sphere_iterator & operator++()
+        { ++_it; return *this; }
+
+        Sphere_iterator operator++(int)
+        { Sphere_iterator tmp(*this);
+          ++(*this); return tmp; }
+
+        bool operator==(const Sphere_iterator & sit) const
+        { return _it == sit._it; }
+
+        bool operator!=(const Sphere_iterator & sit) const
+        { return !(*this == sit); }
+
+        Sphere_handle operator*()
+        { return Sphere_handle(*_it); }
+
+      private:
+        Sphere_iterator(const real_iterator & it):
+          _it(it) {}
+
+        real_iterator _it;
+    };
+
+    class Sphere_iterator_range
+    {
+      // Friend access
+      friend class Sphere_intersecter<Kernel>;
+
+      public:
+        Sphere_iterator begin() const
+        { return Sphere_iterator(_si._sphere_storage.begin()); }
+
+        Sphere_iterator end() const
+        { return Sphere_iterator(_si._sphere_storage.end()); }
+
+      private:
+        Sphere_iterator_range(const Sphere_intersecter<Kernel> & si):
+          _si(si) {}
+
+        const Sphere_intersecter<Kernel> & _si;
+    };
+
+    Sphere_iterator_range spheres() const
+    { return Sphere_iterator_range(*this); }
 
   private:
     // Insert sphere and setup intersection links.
