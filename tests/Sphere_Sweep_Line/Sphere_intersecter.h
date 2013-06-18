@@ -11,6 +11,7 @@
 #endif // NDEBUG //
 
 #include <boost/utility.hpp>
+#include <boost/progress.hpp>
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -110,6 +111,10 @@ class Sphere_intersecter
 
     // Actual list of spheres (used only for storage)
     typedef std::list<Sphere_3> Sphere_storage;
+    // ...same for circles
+    typedef std::list<Circle_3> Circle_storage;
+    // Note that we cannot use a vector since the address should remain
+    // the same after the first insertion
 
     // Link between a sphere intersection and the source spheres
     typedef std::map<Sphere_handle, std::map<Sphere_handle,
@@ -122,7 +127,13 @@ class Sphere_intersecter
 
   public:
     Sphere_handle add_sphere(const Sphere_3 & s)
-    { return setup_new_sphere(s); }
+    {
+      // Time insert operation
+      boost::progress_timer t;
+
+      // Setup new sphere
+      return setup_new_sphere(s);
+    }
 
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
@@ -251,14 +262,15 @@ class Sphere_intersecter
         // Try intersection
         Object_3 obj = Intersect_3()(s1, s2);
 
-        // Handle empty intersection
-        if (obj.is_empty())
-        { continue; }
-
-        // Assign function object
-        Assign_3 assign;
-
 #ifndef NDEBUG // Check precondition
+        if (obj.is_empty())
+        {
+          std::ostringstream oss;
+          oss << "Forbidden empty intersection between"
+            << " two spheres " << s1 << " and " << s2;
+          throw std::runtime_error(oss.str());
+        }
+
         Sphere_3 sp;
         if (assign(sp, obj))
         {
@@ -268,6 +280,9 @@ class Sphere_intersecter
           throw std::runtime_error(oss.str());
         }
 #endif // NDEBUG //
+
+        // Assign function object
+        Assign_3 assign;
 
         // Intersection along a circle
         Circle_3 c;
@@ -287,19 +302,36 @@ class Sphere_intersecter
       return Sphere_handle(s1);
     }
 
-    // Precondition: this particular intersection hasn't been
-    // inserted until now.
+    // Preconditions:
+    //  - the given spheres are those persisted in memory
+    //    (unchecked in debug mode)
+    //  - this particular intersection hasn't been
+    //    inserted until now
     void setup_new_circle(const Sphere_3 & s1,
         const Sphere_3 & s2,
         const Circle_3 & c)
     {
+      // Construct handles and setup links in appropriate maps
       Sphere_handle sh1(s1), sh2(s2);
-#ifndef NDEBUG
-      // TODO check precondition
+      BOOST_AUTO(sh1_map, _circle_intersects[sh1]);
+      BOOST_AUTO(sh2_map, _circle_intersects[sh2]);
+
+#ifndef NDEBUG // Check precondition(s)
+      if (sh1_map.find(sh2) != sh1_map.end()
+          || sh2_map.find(sh1) != sh2_map.end())
+      {
+        std::ostringstream oss;
+          oss << "Forbidden second intersection setup with the"
+            << " same spheres";
+          throw std::runtime_error(oss.str());
+      }
 #endif // NDEBUG //
-      //Circle_handle ch(*_circle_list.insert(c));
-      //_circle_intersects[sh1].insert(std::make_pair(sh2, ch));
-      //_circle_intersects[sh2].insert(std::make_pair(sh1, ch));
+      
+      // Store the circle of intersection
+      _circle_storage.push_back(c);
+      Circle_handle ch(_circle_storage.back());
+      _circle_intersects[sh1].insert(std::make_pair(sh2, ch));
+      _circle_intersects[sh2].insert(std::make_pair(sh1, ch));
       //setup_circle_intersections_on_sphere(s1, ch.get());
       //setup_circle_intersections_on_sphere(s2, ch.get());
     }
@@ -311,10 +343,13 @@ class Sphere_intersecter
       // TODO handle intersection between circles
     }
 
+    // Sphere bundle
     Sphere_tree _sphere_tree;
     Sphere_storage _sphere_storage;
 
-    //Circle_intersects _circle_intersects;
+    // Circle bundle
+    Circle_storage _circle_storage;
+    Circle_intersects _circle_intersects;
     //Circles_on_sphere _circles_on_sphere;
 };
 

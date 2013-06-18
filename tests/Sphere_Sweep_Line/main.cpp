@@ -14,10 +14,13 @@
 #include <CGAL/Algebraic_kernel_for_spheres_2_3.h>
 #include <CGAL/Spherical_kernel_3.h>
 #include <CGAL/Random.h>
-#include <CGAL/IO/Geomview_stream.h>
-#include <CGAL/IO/Color.h>
 
-#include <Geomview_stream_extension.h>
+#ifdef DISPLAY_ON_GEOMVIEW
+#  include <CGAL/IO/Geomview_stream.h>
+#  include <CGAL/IO/Color.h>
+#  include <Geomview_stream_extension.h>
+#endif // DISPLAY_ON_GEOMVIEW //
+
 #include <Sphere_intersecter.h>
 
 // Faster kernel
@@ -51,24 +54,20 @@ using CGAL::object_cast;
 // Random numbers generator
 typedef CGAL::Random Random;
 
-// Geomview
+#ifdef DISPLAY_ON_GEOMVIEW // Geomview
 typedef CGAL::Geomview_stream Geomview_stream;
 typedef CGAL::Color Color;
 typedef CGAL::Geomview_panel Geomview_panel;
 using CGAL::set_panel_enabled;
+#endif // DISPLAY_ON_GEOMVIEW //
 
 namespace internal {
   typedef Sphere_intersecter<Kernel> Sphere_intersecter;
 
-  Color random_color(Random & rand)
-  {
-    return Color(rand.get_int(0, 255),
-        rand.get_int(0, 255),
-        rand.get_int(0, 255));
-  }
-
   class Random_sphere_3
   {
+    typedef std::vector<Sphere_3> Sphere_list;
+
     public:
       Random_sphere_3(FT amp):
         _amp(amp), _rand(),
@@ -81,8 +80,8 @@ namespace internal {
         FT z = _amp*_rand.get_double();
         FT r = _amp*_rand.get_double();
         Sphere_3 s(Point_3(x, y, z), r);
-        std::list<Sphere_3>::const_iterator it;
-        it = std::find(_spheres.begin(), _spheres.end(), s);
+        Sphere_list::const_iterator it = std::find(_spheres.begin(),
+            _spheres.end(), s);
         if (it != _spheres.end())
         {
           return (*this)();
@@ -94,8 +93,16 @@ namespace internal {
     private:
       FT _amp;
       Random _rand;
-      std::list<Sphere_3> _spheres;
+      Sphere_list _spheres;
   };
+
+#ifdef DISPLAY_ON_GEOMVIEW
+  Color random_color(Random & rand)
+  {
+    return Color(rand.get_int(0, 255),
+        rand.get_int(0, 255),
+        rand.get_int(0, 255));
+  }
 
   class Display_sphere_on_geomview
   {
@@ -113,26 +120,10 @@ namespace internal {
       Geomview_stream & _gv;
       Random _rand;
   };
-
-  class Display_circle_on_geomview
-  {
-    public:
-      Display_circle_on_geomview(Geomview_stream & gv):
-        _gv(gv) {}
-
-      void operator()(const Circle_3 & circle)
-      {
-        _gv << random_color(_rand)
-          << circle.bbox();
-      }
-
-    private:
-      Geomview_stream & _gv;
-      Random _rand;
-  };
+#endif // DISPLAY_ON_GEOMVIEW //
 }
 
-static const Kernel::FT RAND_AMP_DEFAULT = 20;
+static const Kernel::FT RAND_AMP_DEFAULT = 100;
 
 static void do_main(int argc, const char * argv[])
 {
@@ -150,6 +141,7 @@ static void do_main(int argc, const char * argv[])
     { throw std::runtime_error("Bad number format (positive integer)"); }
   }
 
+#ifdef DISPLAY_ON_GEOMVIEW
   // Setup geomview
   Geomview_stream gv;
   gv.set_wired(false);
@@ -157,6 +149,7 @@ static void do_main(int argc, const char * argv[])
   gv.clear();
   set_panel_enabled(gv, Geomview_panel::TOOLS, false);
   set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
+#endif // DISPLAY_ON_GEOMVIEW //
 
   // Random amplitude for sphere generation
   FT rand_amp = RAND_AMP_DEFAULT;
@@ -176,28 +169,27 @@ static void do_main(int argc, const char * argv[])
   internal::Sphere_intersecter si;
 
   // Generate spheres
-  std::cout << "Generating spheres" << std::endl;
+  //std::cout << "Generating spheres..." << std::flush;
   std::generate_n(si.insert_iterator(), nb_spheres,
       internal::Random_sphere_3(rand_amp));
+  //std::cout << "done." << std::endl;
 
   // Show generated spheres on standard output
   //std::cout << "Generated spheres :" << std::endl;
   //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
   //{ std::cout << "[" << i << "] - " << spheres[i] << std::endl; }
 
+#ifdef DISPLAY_ON_GEOMVIEW
   // Show added spheres on Geomview
+  //std::cout << "Displaying spheres on Geomview..." << std::flush;
   internal::Sphere_intersecter::Sphere_iterator_range
     spheres = si.spheres();
   std::for_each(spheres.begin(), spheres.end(),
       internal::Display_sphere_on_geomview(gv));
   gv.look_recenter();
+  //std::cout << "done." << std::endl;
   while (std::cin.get() != '\n');
-
-  // Show generated circles on Geomview
-  //std::for_each(circles.begin(), circles.end(),
-  //    internal::Display_circle_on_geomview(gv));
-  //gv.look_recenter();
-  //while (std::cin.get() != '\n');
+#endif // DISPLAY_ON_GEOMVIEW //
 }
 
 int main(int argc, const char * argv[])
