@@ -15,7 +15,7 @@
 #include <CGAL/Spherical_kernel_3.h>
 #include <CGAL/Random.h>
 
-#define DISPLAY_ON_GEOMVIEW
+#define DISPLAY_ON_GEOMVIEW // FIXME remove ?
 
 #ifdef DISPLAY_ON_GEOMVIEW
 #  include <CGAL/IO/Geomview_stream.h>
@@ -38,20 +38,9 @@ typedef ESK Kernel;
 
 // Geometric objects
 typedef typename Kernel::FT FT;
-typedef typename Kernel::Line_3 Line_3;
 typedef typename Kernel::Point_3 Point_3;
-typedef typename Kernel::Plane_3 Plane_3;
-typedef typename Kernel::Vector_3 Vector_3;
 typedef typename Kernel::Circle_3 Circle_3;
 typedef typename Kernel::Sphere_3 Sphere_3;
-typedef typename Kernel::Line_arc_3 Line_arc_3;
-typedef typename Kernel::Circular_arc_3 Circular_arc_3;
-typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
-
-// Object intersection
-typedef CGAL::Object Object;
-using CGAL::intersection;
-using CGAL::object_cast;
 
 // Random numbers generator
 typedef CGAL::Random Random;
@@ -61,69 +50,61 @@ typedef CGAL::Geomview_stream Geomview_stream;
 typedef CGAL::Color Color;
 typedef CGAL::Geomview_panel Geomview_panel;
 using CGAL::set_panel_enabled;
+
+Color random_color(Random & rand)
+{ return Color(rand.get_int(0, 255),
+    rand.get_int(0, 255),
+    rand.get_int(0, 255)); }
+
+class Display_sphere_on_geomview
+{
+  public:
+    Display_sphere_on_geomview(Geomview_stream & gv):
+      _gv(gv) {}
+
+    void operator()(const Sphere_3 & sphere)
+    { _gv << random_color(_rand) << sphere; }
+
+  private:
+    Geomview_stream & _gv;
+    Random _rand;
+};
+
 #endif // DISPLAY_ON_GEOMVIEW //
 
-namespace internal {
-  typedef Sphere_intersecter<Kernel> Sphere_intersecter;
+typedef Sphere_intersecter<Kernel> SI;
 
-  class Random_sphere_3
+class Random_sphere_3
+{
+  typedef std::vector<Sphere_3> Sphere_list;
+
+  public:
+  Random_sphere_3(FT amp):
+    _amp(amp), _rand(),
+    _spheres() {}
+
+  Sphere_3 operator()()
   {
-    typedef std::vector<Sphere_3> Sphere_list;
-
-    public:
-      Random_sphere_3(FT amp):
-        _amp(amp), _rand(),
-        _spheres() {}
-
-      Sphere_3 operator()()
-      {
-        FT x = _amp*_rand.get_double();
-        FT y = _amp*_rand.get_double();
-        FT z = _amp*_rand.get_double();
-        FT r = _amp*_rand.get_double();
-        Sphere_3 s(Point_3(x, y, z), r);
-        Sphere_list::const_iterator it = std::find(_spheres.begin(),
-            _spheres.end(), s);
-        if (it != _spheres.end())
-        {
-          return (*this)();
-        }
-        _spheres.push_back(s);
-        return _spheres.back();
-      }
-
-    private:
-      FT _amp;
-      Random _rand;
-      Sphere_list _spheres;
-  };
-
-#ifdef DISPLAY_ON_GEOMVIEW
-  Color random_color(Random & rand)
-  {
-    return Color(rand.get_int(0, 255),
-        rand.get_int(0, 255),
-        rand.get_int(0, 255));
+    FT x = _amp*_rand.get_double();
+    FT y = _amp*_rand.get_double();
+    FT z = _amp*_rand.get_double();
+    FT r = _amp*_rand.get_double();
+    Sphere_3 s(Point_3(x, y, z), r);
+    Sphere_list::const_iterator it = std::find(_spheres.begin(),
+        _spheres.end(), s);
+    if (it != _spheres.end())
+    {
+      return (*this)();
+    }
+    _spheres.push_back(s);
+    return _spheres.back();
   }
 
-  class Display_sphere_on_geomview
-  {
-    public:
-      Display_sphere_on_geomview(Geomview_stream & gv):
-        _gv(gv) {}
-
-      void operator()(const Sphere_3 & sphere)
-      {
-        _gv << random_color(_rand)
-          << sphere;
-      }
-
-    private:
-      Geomview_stream & _gv;
-      Random _rand;
-  };
-#endif // DISPLAY_ON_GEOMVIEW //
-}
+  private:
+  FT _amp;
+  Random _rand;
+  Sphere_list _spheres;
+};
 
 static const Kernel::FT RAND_AMP_DEFAULT = 100;
 
@@ -168,26 +149,20 @@ static void do_main(int argc, const char * argv[])
   }
 
   // Circle proxy to test
-  internal::Sphere_intersecter si;
+  SI si;
 
   // Generate spheres
   //std::cout << "Generating spheres..." << std::flush;
   std::generate_n(si.insert_iterator(), nb_spheres,
-      internal::Random_sphere_3(rand_amp));
+      Random_sphere_3(rand_amp));
   //std::cout << "done." << std::endl;
-
-  // Show generated spheres on standard output
-  //std::cout << "Generated spheres :" << std::endl;
-  //for (std::vector<Sphere_3>::size_type i = 0; i < spheres.size(); i++)
-  //{ std::cout << "[" << i << "] - " << spheres[i] << std::endl; }
 
 #ifdef DISPLAY_ON_GEOMVIEW
   // Show added spheres on Geomview
   //std::cout << "Displaying spheres on Geomview..." << std::flush;
-  internal::Sphere_intersecter::Sphere_iterator_range
-    spheres = si.spheres();
+  SI::Sphere_iterator_range spheres = si.spheres();
   std::for_each(spheres.begin(), spheres.end(),
-      internal::Display_sphere_on_geomview(gv));
+      Display_sphere_on_geomview(gv));
   gv.look_recenter();
   //std::cout << "done." << std::endl;
   while (std::cin.get() != '\n');
@@ -201,14 +176,14 @@ int main(int argc, const char * argv[])
     do_main(argc, argv);
     return EXIT_SUCCESS;
   }
-  catch (std::runtime_error e)
+  catch (std::logic_error e)
   {
     std::cerr << "Usage: circle_proxy NB_SPHERES [RAND_AMP="
       << RAND_AMP_DEFAULT << "]" << std::endl
       << e.what() << std::endl;
     return EXIT_FAILURE;
   }
-  catch (std::logic_error e)
+  catch (std::runtime_error e)
   {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
