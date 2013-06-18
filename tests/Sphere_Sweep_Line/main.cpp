@@ -15,8 +15,6 @@
 #include <CGAL/Spherical_kernel_3.h>
 #include <CGAL/Random.h>
 
-#define DISPLAY_ON_GEOMVIEW // FIXME remove ?
-
 #ifdef DISPLAY_ON_GEOMVIEW
 #  include <CGAL/IO/Geomview_stream.h>
 #  include <CGAL/IO/Color.h>

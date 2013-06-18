@@ -11,6 +11,9 @@
 #endif // NDEBUG //
 
 #include <boost/utility.hpp>
+#ifdef TIME_INSERT
+#  include <boost/progress.hpp>
+#endif // TIME_INSERT //
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -134,7 +137,11 @@ class Sphere_intersecter
   public:
     // Setup new sphere
     Sphere_handle add_sphere(const Sphere_3 & s)
-    { return new_sphere(s); }
+    {
+#ifdef TIME_INSERT
+      boost::progress_timer t;
+#endif // TIME_INSERT //
+      return new_sphere(s); }
 
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
