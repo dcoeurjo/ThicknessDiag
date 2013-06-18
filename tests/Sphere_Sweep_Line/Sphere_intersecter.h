@@ -1,11 +1,9 @@
 #ifndef SPHERE_INTERSECTER_H
 #define SPHERE_INTERSECTER_H
 
-#include <set>
 #include <map>
 #include <vector>
 #include <iterator>
-#include <algorithm>
 
 #ifndef NDEBUG
 #  include <stdexcept>
@@ -16,8 +14,6 @@
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
-
-#include <Spherical_utils.h>
 
 template <typename Kernel>
 class Sphere_intersecter
