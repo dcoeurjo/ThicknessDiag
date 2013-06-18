@@ -11,7 +11,6 @@
 #endif // NDEBUG //
 
 #include <boost/utility.hpp>
-#include <boost/progress.hpp>
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -36,6 +35,10 @@ class Sphere_intersecter
   friend class Sphere_iterator;
   friend class Sphere_iterator_range;
 
+  // AABB primitive for tree usage
+  template <typename T>
+  class AABB_handle_primitive;
+
   // Similar to boost::reference_wrapper. The only
   // difference lies in the fact that we don't want
   // objects of this type to be constructed otherwise
@@ -44,6 +47,7 @@ class Sphere_intersecter
   class Handle
   {
     friend class Sphere_intersecter<Kernel>;
+    friend class AABB_handle_primitive<T>;
 
     public:
       Handle():
@@ -78,62 +82,59 @@ class Sphere_intersecter
       { return &x < &y; }
     };
 
-    typedef Comp_handle_ptr<Sphere_handle> Comp_sphere_handle_ptr;
-
     // AABB Tree primitive for locating spheres
-    class AABB_primitive
+    template <typename T>
+    class AABB_handle_primitive
     {
       public:
         typedef Point_3 Point;
-        typedef const Sphere_3 & Datum;
-        typedef Sphere_handle Id;
+        typedef const T & Datum;
+        typedef Handle<const T> Id;
 
-        AABB_primitive(const Id & id):
-          _sphere_handle(id) {}
+        AABB_handle_primitive(const T & t):
+          _handle(t) {}
 
         Datum datum() const
-        { return _sphere_handle.get(); }
+        { return _handle.get(); }
 
         Id id() const
-        { return _sphere_handle; }
+        { return _handle; }
 
         Point reference_point() const
-        { BOOST_AUTO(bbox, _sphere_handle.get().bbox());
+        { BOOST_AUTO(bbox, _handle.get().bbox());
           return Point(bbox.xmin(), bbox.ymin(), bbox.zmin()); }
 
       private:
-        Id _sphere_handle;
+        Id _handle;
     };
 
     // AABB tree of spheres
     typedef CGAL::AABB_tree<CGAL::AABB_traits<Kernel,
-            AABB_primitive> > Sphere_tree;
+            AABB_handle_primitive<Sphere_3> > > Sphere_tree;
 
     // Actual list of spheres (used only for storage)
     typedef std::list<Sphere_3> Sphere_storage;
     // ...same for circles
     typedef std::list<Circle_3> Circle_storage;
+    // ...and for arcs
     // Note that we cannot use a vector since the address should remain
     // the same after the first insertion
 
     // Link between a sphere intersection and the source spheres
+    typedef Comp_handle_ptr<Sphere_handle> Comp_sphere_handle_ptr;
     typedef std::map<Sphere_handle, std::map<Sphere_handle,
             Circle_handle, Comp_sphere_handle_ptr>,
-            Comp_sphere_handle_ptr> Circle_intersects;
+            Comp_sphere_handle_ptr> Spheres_to_circle_link;
 
-    // Link between a sphere and the circles on it
-    typedef std::map<Sphere_handle, std::vector<Circle_handle>,
-            Comp_sphere_handle_ptr> Circles_on_sphere;
+    // Link between a circle and the spheres intersecting
+    typedef Comp_handle_ptr<Circle_handle> Comp_circle_handle_ptr;
+    typedef std::map<Circle_handle, std::pair<Sphere_handle, Sphere_handle>,
+            Comp_circle_handle_ptr> Circle_to_spheres_link;
 
   public:
+    // Setup new sphere
     Sphere_handle add_sphere(const Sphere_3 & s)
-    {
-      // Time insert operation
-      boost::progress_timer t;
-
-      // Setup new sphere
-      return setup_new_sphere(s);
-    }
+    { return new_sphere(s); }
 
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
@@ -231,13 +232,13 @@ class Sphere_intersecter
   private:
     // Insert sphere and setup intersection links.
     // Precondition: sphere isn't yet inserted
-    Sphere_handle setup_new_sphere(const Sphere_3 & s)
+    Sphere_handle new_sphere(const Sphere_3 & s)
     {
       // Store a copy of the inserted sphere and insert
       // a handle of this inserted sphere in the Tree
       _sphere_storage.push_back(s);
       const Sphere_3 & s1 = _sphere_storage.back();
-      _sphere_tree.insert(AABB_primitive(Sphere_handle(s1)));
+      _sphere_tree.insert(AABB_handle_primitive<Sphere_3>(s1));
 
       // Bug fix for assertion failure
       if (_sphere_tree.size() == 1)
@@ -287,13 +288,13 @@ class Sphere_intersecter
         // Intersection along a circle
         Circle_3 c;
         if (assign(c, obj))
-        { setup_new_circle(s1, s2, c);
+        { new_sphere_intersection(s1, s2, c);
           continue; }
 
         // Intersection along a point
         Point_3 p;
         if (assign(p, obj))
-        { setup_new_circle(s1, s2, Circle_3(p, 0,
+        { new_sphere_intersection(s1, s2, Circle_3(p, 0,
               Line_3(s1.center(), s2.center()
                 ).perpendicular_plane(p)));
           continue; }
@@ -307,40 +308,13 @@ class Sphere_intersecter
     //    (unchecked in debug mode)
     //  - this particular intersection hasn't been
     //    inserted until now
-    void setup_new_circle(const Sphere_3 & s1,
-        const Sphere_3 & s2,
-        const Circle_3 & c)
+    void new_sphere_intersection(const Sphere_3 & s1,
+        const Sphere_3 & s2, const Circle_3 & c)
     {
-      // Construct handles and setup links in appropriate maps
-      Sphere_handle sh1(s1), sh2(s2);
-      BOOST_AUTO(sh1_map, _circle_intersects[sh1]);
-      BOOST_AUTO(sh2_map, _circle_intersects[sh2]);
-
-#ifndef NDEBUG // Check precondition(s)
-      if (sh1_map.find(sh2) != sh1_map.end()
-          || sh2_map.find(sh1) != sh2_map.end())
-      {
-        std::ostringstream oss;
-          oss << "Forbidden second intersection setup with the"
-            << " same spheres";
-          throw std::runtime_error(oss.str());
-      }
-#endif // NDEBUG //
-      
       // Store the circle of intersection
       _circle_storage.push_back(c);
-      Circle_handle ch(_circle_storage.back());
-      _circle_intersects[sh1].insert(std::make_pair(sh2, ch));
-      _circle_intersects[sh2].insert(std::make_pair(sh1, ch));
-      //setup_circle_intersections_on_sphere(s1, ch.get());
-      //setup_circle_intersections_on_sphere(s2, ch.get());
-    }
-
-    void setup_circle_intersections_on_sphere(const Sphere_3 & s,
-        const Circle_3 & c)
-    {
-      //_circles_on_sphere[Sphere_handle(s)].push_back(Circle_handle(c));
-      // TODO handle intersection between circles
+      const Circle_3 & ch(_circle_storage.back());
+      // TODO setup intersections between circles on the same sphere
     }
 
     // Sphere bundle
@@ -349,8 +323,6 @@ class Sphere_intersecter
 
     // Circle bundle
     Circle_storage _circle_storage;
-    Circle_intersects _circle_intersects;
-    //Circles_on_sphere _circles_on_sphere;
 };
 
 #endif // SPHERE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2

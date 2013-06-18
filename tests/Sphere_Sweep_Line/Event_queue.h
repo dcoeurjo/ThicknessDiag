@@ -12,7 +12,7 @@
 #  include <sstream>
 #endif // NDEBUG //
 
-#include <spherical_utils.h>
+#include <Spherical_utils.h>
 
 // An event point is a point of the algorithm's base sphere
 // where something relevant for the sweep process would occur.
@@ -30,7 +30,6 @@
 // for the { Start, End } tag.
 //
 // Current solution is a enum.
-template <typename Kernel>
 struct Tagged_event
 {
   enum Tag_type {
@@ -45,7 +44,7 @@ struct Tagged_event
   bool is_end() const
   { return tag == End; }
 
-  bool operator==(const Tagged_event<Kernel> & ev) const
+  bool operator==(const Tagged_event & ev) const
   { return tag == ev.tag; }
 };
 
@@ -53,14 +52,14 @@ struct Tagged_event
 //  - the pair of arcs defining its circle 
 //  - a tag { Start, End }
 template <typename Kernel>
-struct Normal_event: Tagged_event<Kernel>
+struct Normal_event: Tagged_event
 {
   std::pair<typename Kernel::Circular_arc_3,
     typename Kernel::Circular_arc_3> arcs;
 
   bool operator==(const Normal_event<Kernel> & ev) const
   {
-    return Tagged_event<Kernel>::operator==(ev)
+    return Tagged_event::operator==(ev)
       && arcs == ev.args;
   }
 };
@@ -77,7 +76,7 @@ struct Normal_event: Tagged_event<Kernel>
 // of the very similar structure of these two. Difference
 // between these is done by accessing the polarity flag.
 template <typename Kernel>
-struct Polar_event: Tagged_event<Kernel>
+struct Polar_event: Tagged_event
 {
   typename Kernel::Circular_arc_3 arc;
 
@@ -107,7 +106,7 @@ struct Polar_event: Tagged_event<Kernel>
 
   bool operator==(const Polar_event<Kernel> & ev) const
   {
-    return Tagged_event<Kernel>::operator==(ev)
+    return Tagged_event::operator==(ev)
       && arc == ev.arc
       && polarity == ev.polarity
       && pole == ev.pole;
@@ -147,7 +146,7 @@ struct Comp_event_arc_radii:
   bool operator()(const Event & left,
       const Event & right) const
   {
-    return Comp_arcs_by_squared_radii<Kernel>()(left.arc.first,
+    return Comp_by_squared_radii<typename Kernel::Circular_arc_3>()(left.arc.first,
         right.arcs.first);
   }
 };
