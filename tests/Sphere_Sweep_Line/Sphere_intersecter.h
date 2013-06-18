@@ -232,74 +232,68 @@ class Sphere_intersecter
   private:
     // Insert sphere and setup intersection links.
     // Precondition: sphere isn't yet inserted
-    Sphere_handle new_sphere(const Sphere_3 & s)
+    Sphere_handle new_sphere(const Sphere_3 & sphere_to_insert)
     {
       // Store a copy of the inserted sphere and insert
       // a handle of this inserted sphere in the Tree
-      _sphere_storage.push_back(s);
+      _sphere_storage.push_back(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.back();
       _sphere_tree.insert(AABB_handle_primitive<Sphere_3>(s1));
 
-      // Bug fix for assertion failure
-      if (_sphere_tree.size() == 1)
-      { return Sphere_handle(s1); }
-
-      // Find intersected balls
-      std::vector<Sphere_handle> intersected;
-      _sphere_tree.all_intersected_primitives(s1,
-          std::back_inserter(intersected));
-
-      // Compute intersections
-      for (typename std::vector<Sphere_handle>::const_iterator
-          it = intersected.begin(); it != intersected.end(); it++)
+      // No need to test for intersections when there is only one element
+      if (_sphere_tree.size() > 1)
       {
-        // Syntaxic sugar
-        const Sphere_3 & s2 = *it;
+        // Find intersected balls
+        std::vector<Sphere_handle> intersected;
+        _sphere_tree.all_intersected_primitives(s1,
+            std::back_inserter(intersected));
 
-        // Skip inserted sphere
-        if (s1 == s2)
-        { continue; }
-
-        // Try intersection
-        Object_3 obj = Intersect_3()(s1, s2);
-
-#ifndef NDEBUG // Check precondition
-        if (obj.is_empty())
-        {
-          std::ostringstream oss;
-          oss << "Forbidden empty intersection between"
-            << " two spheres " << s1 << " and " << s2;
-          throw std::runtime_error(oss.str());
-        }
-
-        Sphere_3 sp;
-        if (assign(sp, obj))
-        {
-          std::ostringstream oss;
-          oss << "Forbidden intersection between two"
-            << " equal spheres " << sp;
-          throw std::runtime_error(oss.str());
-        }
-#endif // NDEBUG //
-
-        // Assign function object
+        // Intersection function objects
+        Intersect_3 intersection;
         Assign_3 assign;
 
-        // Intersection along a circle
-        Circle_3 c;
-        if (assign(c, obj))
-        { new_sphere_intersection(s1, s2, c);
-          continue; }
+        // Compute intersections
+        for (typename std::vector<Sphere_handle>::const_iterator
+            it = intersected.begin(); it != intersected.end(); it++)
+        {
+          // Syntaxic sugar
+          const Sphere_3 & s2 = *it;
 
-        // Intersection along a point
-        Point_3 p;
-        if (assign(p, obj))
-        { new_sphere_intersection(s1, s2, Circle_3(p, 0,
-              Line_3(s1.center(), s2.center()
-                ).perpendicular_plane(p)));
-          continue; }
+          // Skip inserted sphere (comparing by address is *much* faster,
+          // and valid since we only store the sphere once, and pass around
+          // handles holding a const reference to this sphere)
+          if (&s1 == &s2)
+          { continue; }
+
+          // Try intersection
+          Object_3 obj = intersection(s1, s2);
+
+          // Intersection along a circle
+          Circle_3 c;
+          if (assign(c, obj))
+          { new_sphere_intersection(s1, s2, c);
+            continue; }
+
+          // Intersection along a point
+          Point_3 p;
+          if (assign(p, obj))
+          { new_sphere_intersection(s1, s2, Circle_3(p, 0,
+                Line_3(s1.center(), s2.center()
+                  ).perpendicular_plane(p)));
+            continue; }
+
+#ifndef DEBUG // Check edge case of intersection along the same sphere
+          Sphere_3 sp;
+          if (assign(sp, obj))
+          {
+            std::ostringstream oss;
+            oss << "Forbidden intersection between two"
+              << " equal spheres " << sp;
+            throw std::runtime_error(oss.str());
+          }
+#endif // NDEBUG //
+        }
       }
-
       return Sphere_handle(s1);
     }
 
