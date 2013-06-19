@@ -55,6 +55,12 @@ if(WITH_GEOMVIEW_DISPLAY)
     endif()
 endif()
 
+set(WITH_CPP0X_MODE_DESCRIPTION "Set this option to compile in C++0x mode")
+option(WITH_CPP0X_MODE ${WITH_CPP0X_MODE_DESCRIPTION} FALSE)
+if(WITH_CPP0X_MODE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+endif()
+
 # link the executable to CGAL and third-party libraries
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${PROJECT_NAME})
