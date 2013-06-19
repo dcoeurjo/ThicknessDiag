@@ -151,10 +151,6 @@ class Sphere_intersecter
     typedef typename AABB_handle_tree<Sphere_handle>::Type Sphere_handle_tree;
     typedef typename Sphere_handle_tree::Primitive Sphere_primitive;
 
-    // AABB tree of circles
-    typedef typename AABB_handle_tree<Circle_handle>::Type Circle_handle_tree;
-    typedef typename Circle_handle_tree::Primitive Circle_primitive;
-
     // Actual list of spheres (used only for storage). Note that
     // we cannot use a vector since the address should remain
     // the same after the first insertion. The linked list defined
@@ -166,9 +162,6 @@ class Sphere_intersecter
     typedef LINKED_LIST<Sphere_3> Sphere_storage;
     // ...same for circles
     typedef LINKED_LIST<Circle_3> Circle_storage;
-    // ...and for circle trees
-    typedef SHARED_PTR<Circle_handle_tree> Circle_handle_tree_ptr;
-    typedef LINKED_LIST<Circle_handle_tree_ptr> Circle_handle_tree_storage;
 
     // Compare functor for handles
     template <typename Handle>
@@ -186,9 +179,8 @@ class Sphere_intersecter
     { typedef std::map<Handle, Mapped, Comp> Type; };
 
     // Link between a sphere and the intersection circles on it
-    typedef Handle<Circle_handle_tree> Circle_handle_tree_handle;
     typedef typename Handle_map<Sphere_handle,
-            Circle_handle_tree_handle>::Type Spheres_to_circle_link;
+            std::vector<Circle_handle> >::Type Spheres_to_circle_link;
 
     // Link between a circle and the spheres intersecting
     typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
@@ -399,43 +391,13 @@ class Sphere_intersecter
     {
       PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_circle_on_sphere");
 
-      // Setup the circle tree if is hasn't yet been
-      INFER_AUTO(it, _stcl.find(sh));
-      if (it == _stcl.end())
-      { it = _stcl.insert(std::make_pair(sh,
-            make_circle_handle_tree_handle())).first; }
+      // Setup the new circle
+      _stcl[sh].push_back(ch);
 
-      // Insert the new circle in the appropriate tree
-      Circle_handle_tree & ch_tree = it->second.get();
-      ch_tree.insert(Circle_primitive(ch));
-
-      // No need to test for intersections when there is only one element
-      if (ch_tree.size() > 1)
-      {
-        // Container receiving intersected circles
-        std::vector<Circle_handle> intersected;
-
-        // Find intersected balls
-        ch_tree.all_intersected_primitives(ch.get(),
-            std::inserter(intersected, intersected.begin()));
-
-        // Handle intersections
-        for (INFER_AUTO(it, intersected.begin());
-            it != intersected.end(); it++)
-        { handle_circle_intersection(ch, *it); }
-      }
-    }
-
-    Circle_handle_tree_handle make_circle_handle_tree_handle()
-    {
-      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::make_circle_handle_tree_handle");
-
-      // Allocate and store the new tree
-      Circle_handle_tree_ptr cht_ptr(new Circle_handle_tree());
-      _circle_handle_tree_storage.push_front(cht_ptr);
-
-      // Return a handle to the newly allocated memory
-      return Circle_handle_tree_handle(*cht_ptr);
+      // Handle intersections
+      for (INFER_AUTO(it, _circle_storage.begin());
+          it != _circle_storage.end(); it++)
+      { handle_circle_intersection(ch, *it); }
     }
 
     void handle_circle_intersection(const Circle_handle & ch1,
@@ -487,7 +449,6 @@ class Sphere_intersecter
 
     // Circle bundle
     Circle_storage _circle_storage;
-    Circle_handle_tree_storage _circle_handle_tree_storage;
 
     // Spheres <-> Circles
     Spheres_to_circle_link _stcl;
