@@ -102,14 +102,6 @@ class Sphere_intersecter
     typedef Handle<const Circle_3> Circle_handle;
 
   private:
-    template <typename Handle>
-    struct Comp_handle_ptr
-    {
-      bool operator()(const Handle & x,
-          const Handle & y) const
-      { return &x < &y; }
-    };
-
     // AABB Tree primitive for locating spheres
     template <typename T>
     class AABB_handle_primitive
@@ -150,12 +142,19 @@ class Sphere_intersecter
     // Note that we cannot use a vector since the address should remain
     // the same after the first insertion
 
+    // Compare functor for handles
+    template <typename Handle>
+    struct Comp_handle_by_ptr
+    { bool operator()(const Handle & x,
+          const Handle & y) const
+      { return x.get_pointer() < y.get_pointer(); } };
+
     // Templated typedef for mapping from handle to something (major
     // refactoring for links)
     template <typename Handle, typename Mapped>
     struct Handle_map
     { typedef std::map<Handle, Mapped,
-              Comp_handle_ptr<Handle> > Type; };
+      Comp_handle_by_ptr<Handle> > Type; };
 
     // Link between a sphere intersection and the source spheres
     // ...sphere -> circle link (single)
