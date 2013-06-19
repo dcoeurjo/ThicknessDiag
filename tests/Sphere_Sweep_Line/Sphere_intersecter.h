@@ -8,18 +8,17 @@
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 #  include <forward_list>
 #  define LINKED_LIST std::forward_list
-#  define BOOST_AUTO(x, y) auto x(y)
+#  define INFER_AUTO(x, y) auto x(y)
 #else
 #  include <list>
 #  define LINKED_LIST std::list
+#  define INFER_AUTO BOOST_AUTO
 #endif // //
 
 #ifndef NDEBUG
 #  include <stdexcept>
 #  include <sstream>
 #endif // NDEBUG //
-
-#include <boost/utility.hpp>
 
 #ifdef PROFILING_MODE
 #  include <string>
@@ -131,7 +130,7 @@ class Sphere_intersecter
         { return _handle; }
 
         Point reference_point() const
-        { BOOST_AUTO(bbox, _handle.get().bbox());
+        { INFER_AUTO(bbox, _handle.get().bbox());
           return Point(bbox.xmin(), bbox.ymin(), bbox.zmin()); }
 
       private:
@@ -374,8 +373,8 @@ class Sphere_intersecter
       const Circle_3 & ch(_circle_storage.front());
 
       // Prepare the links
-      BOOST_AUTO(sh1_link, _stcl[sh1]);
-      BOOST_AUTO(sh2_link, _stcl[sh2]);
+      INFER_AUTO(sh1_link, _stcl[sh1]);
+      INFER_AUTO(sh2_link, _stcl[sh2]);
 
 #ifndef NDEBUG // Check preconditions
       if (sh1_link.find(sh2) != sh1_link.end()
