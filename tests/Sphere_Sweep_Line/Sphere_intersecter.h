@@ -5,12 +5,22 @@
 #include <vector>
 #include <iterator>
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#  include <forward_list>
+#  define LINKED_LIST std::forward_list
+#  define BOOST_AUTO(x, y) auto x(y)
+#else
+#  include <list>
+#  define LINKED_LIST std::list
+#endif // //
+
 #ifndef NDEBUG
 #  include <stdexcept>
 #  include <sstream>
 #endif // NDEBUG //
 
 #include <boost/utility.hpp>
+
 #ifdef PROFILING_MODE
 #  include <string>
 #  include <iostream>
@@ -134,9 +144,9 @@ class Sphere_intersecter
             AABB_sphere_primitive> > Sphere_tree;
 
     // Actual list of spheres (used only for storage)
-    typedef std::list<Sphere_3> Sphere_storage;
+    typedef LINKED_LIST<Sphere_3> Sphere_storage;
     // ...same for circles
-    typedef std::list<Circle_3> Circle_storage;
+    typedef LINKED_LIST<Circle_3> Circle_storage;
     // ...and for arcs
     // TODO
     // Note that we cannot use a vector since the address should remain
@@ -276,8 +286,8 @@ class Sphere_intersecter
 
       // Store a copy of the inserted sphere and insert
       // a handle of this inserted sphere in the Tree
-      _sphere_storage.push_back(sphere_to_insert);
-      const Sphere_3 & s1 = _sphere_storage.back();
+      _sphere_storage.push_front(sphere_to_insert);
+      const Sphere_3 & s1 = _sphere_storage.front();
       _sphere_tree.insert(AABB_sphere_primitive(s1));
       Sphere_handle sh1(s1);
 
@@ -360,8 +370,8 @@ class Sphere_intersecter
       PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_sphere_intersection");
 
       // Store the circle of intersection
-      _circle_storage.push_back(c);
-      const Circle_3 & ch(_circle_storage.back());
+      _circle_storage.push_front(c);
+      const Circle_3 & ch(_circle_storage.front());
 
       // Prepare the links
       BOOST_AUTO(sh1_link, _stcl[sh1]);
