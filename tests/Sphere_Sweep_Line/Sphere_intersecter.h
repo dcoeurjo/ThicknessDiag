@@ -3,16 +3,20 @@
 
 #include <map>
 #include <vector>
+#include <memory>
 #include <iterator>
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 #  include <forward_list>
 #  define LINKED_LIST std::forward_list
 #  define INFER_AUTO(x, y) auto x(y)
+#  define SHARED_PTR std::shared_ptr
 #else
 #  include <list>
+#  include <boost/shared_ptr.hpp>
 #  define LINKED_LIST std::list
 #  define INFER_AUTO BOOST_AUTO
+#  define SHARED_PTR boost::shared_ptr
 #endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
 #ifndef NDEBUG
@@ -90,13 +94,13 @@ class Sphere_intersecter
       Handle():
         _t(0) {}
 
-      const Type * get_pointer() const
+      Type * get_pointer() const
       { return _t; }
 
       Type & get() const
       { return *_t; }
 
-      operator Type& () const
+      operator Type&() const
       { return get(); }
 
     private:
@@ -137,10 +141,19 @@ class Sphere_intersecter
         Id _handle;
     };
 
+    // Template typedef for AABB tree of handles
+    template <typename Handle>
+    struct AABB_handle_tree
+    { typedef CGAL::AABB_tree<CGAL::AABB_traits<Kernel,
+      AABB_handle_primitive<typename Handle::Type> > > Type; };
+
     // AABB tree of spheres
-    typedef AABB_handle_primitive<Sphere_3> AABB_sphere_primitive;
-    typedef CGAL::AABB_tree<CGAL::AABB_traits<Kernel,
-            AABB_sphere_primitive> > Sphere_tree;
+    typedef typename AABB_handle_tree<Sphere_handle>::Type Sphere_handle_tree;
+    typedef typename Sphere_handle_tree::Primitive Sphere_primitive;
+
+    // AABB tree of circles
+    typedef typename AABB_handle_tree<Circle_handle>::Type Circle_handle_tree;
+    typedef typename Circle_handle_tree::Primitive Circle_primitive;
 
     // Actual list of spheres (used only for storage). Note that
     // we cannot use a vector since the address should remain
@@ -153,8 +166,9 @@ class Sphere_intersecter
     typedef LINKED_LIST<Sphere_3> Sphere_storage;
     // ...same for circles
     typedef LINKED_LIST<Circle_3> Circle_storage;
-    // ...and for arcs
-    // TODO
+    // ...and for circle trees
+    typedef SHARED_PTR<Circle_handle_tree> Circle_handle_tree_ptr;
+    typedef LINKED_LIST<Circle_handle_tree_ptr> Circle_handle_tree_storage;
 
     // Compare functor for handles
     template <typename Handle>
@@ -164,19 +178,17 @@ class Sphere_intersecter
       { return x.get_pointer() < y.get_pointer(); } };
 
     // Templated typedef for mapping from handle to something (major
-    // refactoring for links)
-    template <typename Handle, typename Mapped>
+    // refactoring for links). Default comparaison is done by handle's
+    // pointer object's address.
+    template <typename Handle, typename Mapped,
+       typename Comp = Comp_handle_by_ptr<Handle> >
     struct Handle_map
-    { typedef std::map<Handle, Mapped,
-      Comp_handle_by_ptr<Handle> > Type; };
+    { typedef std::map<Handle, Mapped, Comp> Type; };
 
-    // Link between a sphere intersection and the source spheres
-    // ...sphere -> circle link (single)
+    // Link between a sphere and the intersection circles on it
+    typedef Handle<Circle_handle_tree> Circle_handle_tree_handle;
     typedef typename Handle_map<Sphere_handle,
-            Circle_handle>::Type Sphere_to_circle_single_link;
-    // .. sphere -> sphere -> circle link (double)
-    typedef typename Handle_map<Sphere_handle,
-            Sphere_to_circle_single_link>::Type Spheres_to_circle_link;
+            Circle_handle_tree_handle>::Type Spheres_to_circle_link;
 
     // Link between a circle and the spheres intersecting
     typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
@@ -290,7 +302,7 @@ class Sphere_intersecter
       // a handle of this inserted sphere in the Tree
       _sphere_storage.push_front(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.front();
-      _sphere_tree.insert(AABB_sphere_primitive(s1));
+      _sphere_tree.insert(Sphere_primitive(s1));
       Sphere_handle sh1(s1);
 
       // No need to test for intersections when there is only one element
@@ -300,19 +312,13 @@ class Sphere_intersecter
         std::vector<Sphere_handle> intersected;
 
         // Find intersected balls
-        _sphere_tree.all_intersected_primitives(s1,
+        _sphere_tree.all_intersected_primitives(sh1.get().bbox(),
             std::inserter(intersected, intersected.begin()));
 
-        // Compute intersections
+        // Handle intersections
         for (INFER_AUTO(it, intersected.begin());
             it != intersected.end(); it++)
-        {
-          // Syntaxic sugar
-          const Sphere_3 & s2 = *it;
-
-          // Handles for the spheres
-          handle_sphere_intersection(sh1, Sphere_handle(s2));
-        }
+        { handle_sphere_intersection(sh1, *it); }
       }
       return sh1;
     }
@@ -338,6 +344,9 @@ class Sphere_intersecter
 
       // Try intersection
       Object_3 obj = intersection(s1, s2);
+
+      if (obj.is_empty())
+      { return; }
 
       // Intersection along a circle
       Circle_3 c;
@@ -377,24 +386,7 @@ class Sphere_intersecter
       _circle_storage.push_front(c);
       const Circle_3 & ch(_circle_storage.front());
 
-      // Prepare the links
-      INFER_AUTO(sh1_link, _stcl[sh1]);
-      INFER_AUTO(sh2_link, _stcl[sh2]);
-
-#ifndef NDEBUG // Check preconditions
-      if (sh1_link.find(sh2) != sh1_link.end()
-          || sh2_link.find(sh1) != sh2_link.end())
-      {
-        std::ostringstream oss;
-        oss << "Forbidden second insertion of the same sphere intersection"
-          << " between " << sh1.get() << " and " << sh2.get();
-        throw std::runtime_error(oss.str());
-      }
-#endif // NDEBUG //
-
       // Setup the links
-      sh1_link[sh2] = ch;
-      sh2_link[sh1] = ch;
       _ctsl[ch] = Sphere_handle_pair(sh1, sh2);
 
       // Compute the intersections between circles on each sphere
@@ -406,10 +398,48 @@ class Sphere_intersecter
         const Circle_handle & ch)
     {
       PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_circle_on_sphere");
+
+      // Setup the circle tree if is hasn't yet been
+      INFER_AUTO(it, _stcl.find(sh));
+      if (it == _stcl.end())
+      {
+        Circle_handle_tree_handle chth = make_circle_handle_tree_handle();
+        it = _stcl.insert(std::make_pair(sh, chth)).first;
+      }
+
+      // Insert the new circle in the appropriate tree
+      Circle_handle_tree & ch_tree = it->second.get();
+      ch_tree.insert(Circle_primitive(ch));
+
+      // No need to test for intersections when there is only one element
+      if (ch_tree.size() > 1)
+      {
+        // Container receiving intersected circles
+        std::vector<Circle_handle> intersected;
+
+        // Find intersected balls
+        ch_tree.all_intersected_primitives(ch.get().bbox(),
+            std::inserter(intersected, intersected.begin()));
+
+        // Handle intersections
+        for (INFER_AUTO(it, intersected.begin());
+            it != intersected.end(); it++)
+        { handle_circle_intersection(ch, *it); }
+      }
+    }
+
+    Circle_handle_tree_handle make_circle_handle_tree_handle()
+    {
+      // Allocate and store the new tree
+      Circle_handle_tree_ptr cht_ptr(new Circle_handle_tree());
+      _circle_handle_tree_storage.push_front(cht_ptr);
+
+      // Return a handle to the newly allocated memory
+      return Circle_handle_tree_handle(*cht_ptr);
     }
 
     void handle_circle_intersection(const Circle_handle & ch1,
-        const Circle_handle & ch2/* TODO */)
+        const Circle_handle & ch2)
     {
       //// Ignore self intersecting
       //if (c1 == c2) { return; }
@@ -450,12 +480,12 @@ class Sphere_intersecter
     }
 
     // Sphere bundle
-    Sphere_tree _sphere_tree;
+    Sphere_handle_tree _sphere_tree;
     Sphere_storage _sphere_storage;
 
     // Circle bundle
     Circle_storage _circle_storage;
-    // TODO setup circle tree (maped from sphere ?)
+    Circle_handle_tree_storage _circle_handle_tree_storage;
 
     // Spheres <-> Circles
     Spheres_to_circle_link _stcl;
