@@ -11,9 +11,32 @@
 #endif // NDEBUG //
 
 #include <boost/utility.hpp>
-#ifdef TIME_INSERT
-#  include <boost/progress.hpp>
-#endif // TIME_INSERT //
+#ifdef PROFILING_MODE
+#  include <string>
+#  include <iostream>
+#  include <boost/timer.hpp>
+#  define PROFILE_SCOPE_WITH_NAME(s) priv::profiling_timer t(s)
+
+namespace priv {
+  class profiling_timer
+  {
+    public:
+      profiling_timer(const std::string & name):
+        _name(name), _timer() {}
+
+      ~profiling_timer()
+      { std::cout << _name << " "
+        << _timer.elapsed() << std::endl; }
+
+    private:
+      const std::string _name;
+      boost::timer _timer;
+  };
+}
+
+#else
+#  define PROFILE_SCOPE_WITH_NAME(s)
+#endif // PROFILING_MODE //
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -134,17 +157,14 @@ class Sphere_intersecter
 
     // Link between a circle and the spheres intersecting
     typedef Comp_handle_ptr<Circle_handle> Comp_circle_handle_ptr;
-    typedef std::map<Circle_handle, std::pair<Sphere_handle, Sphere_handle>,
+    typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
+    typedef std::map<Circle_handle, Sphere_handle_pair,
             Comp_circle_handle_ptr> Circle_to_spheres_link;
 
   public:
     // Setup new sphere
     Sphere_handle add_sphere(const Sphere_3 & s)
-    {
-#ifdef TIME_INSERT
-      boost::progress_timer t;
-#endif // TIME_INSERT //
-      return new_sphere(s); }
+    { return new_sphere(s); }
 
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
@@ -244,11 +264,14 @@ class Sphere_intersecter
     // Precondition: sphere isn't yet inserted
     Sphere_handle new_sphere(const Sphere_3 & sphere_to_insert)
     {
+      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_sphere");
+
       // Store a copy of the inserted sphere and insert
       // a handle of this inserted sphere in the Tree
       _sphere_storage.push_back(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.back();
       _sphere_tree.insert(AABB_sphere_primitive(s1));
+      Sphere_handle sh1(s1);
 
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
@@ -258,10 +281,6 @@ class Sphere_intersecter
         _sphere_tree.all_intersected_primitives(s1,
             std::back_inserter(intersected));
 
-        // Intersection function objects
-        Intersect_3 intersection;
-        Assign_3 assign;
-
         // Compute intersections
         for (typename std::vector<Sphere_handle>::const_iterator
             it = intersected.begin(); it != intersected.end(); it++)
@@ -269,56 +288,102 @@ class Sphere_intersecter
           // Syntaxic sugar
           const Sphere_3 & s2 = *it;
 
-          // Skip inserted sphere (comparing by address is *much* faster,
-          // and valid since we only store the sphere once, and pass around
-          // handles holding a const reference to this sphere)
-          if (&s1 == &s2)
-          { continue; }
-
-          // Try intersection
-          Object_3 obj = intersection(s1, s2);
-
-          // Intersection along a circle
-          Circle_3 c;
-          if (assign(c, obj))
-          { new_sphere_intersection(s1, s2, c);
-            continue; }
-
-          // Intersection along a point
-          Point_3 p;
-          if (assign(p, obj))
-          { new_sphere_intersection(s1, s2, Circle_3(p, 0,
-                Line_3(s1.center(), s2.center()
-                  ).perpendicular_plane(p)));
-            continue; }
-
-#ifndef DEBUG // Check edge case of intersection along the same sphere
-          Sphere_3 sp;
-          if (assign(sp, obj))
-          {
-            std::ostringstream oss;
-            oss << "Forbidden intersection between two"
-              << " equal spheres " << sp;
-            throw std::runtime_error(oss.str());
-          }
-#endif // NDEBUG //
+          // Handles for the spheres
+          handle_sphere_intersection(sh1, Sphere_handle(s2));
         }
       }
-      return Sphere_handle(s1);
+      return sh1;
+    }
+
+    void handle_sphere_intersection(const Sphere_handle & sh1,
+        const Sphere_handle & sh2)
+    {
+      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::handle_sphere_intersection");
+
+      // More syntaxic sugar
+      typename Sphere_handle::Type & s1 = sh1.get();
+      typename Sphere_handle::Type & s2 = sh2.get();
+
+      // Intersection function objects
+      Intersect_3 intersection;
+      Assign_3 assign;
+
+      // Skip inserted sphere (comparing by address is *much* faster,
+      // and valid since we only store the sphere once, and pass around
+      // handles holding a const reference to this sphere)
+      if (&s1 == &s2)
+      { return; }
+
+      // Try intersection
+      Object_3 obj = intersection(s1, s2);
+
+      // Intersection along a circle
+      Circle_3 c;
+      if (assign(c, obj))
+      { new_sphere_intersection(sh1, sh2, c);
+        return; }
+
+      // Intersection along a point
+      Point_3 p;
+      if (assign(p, obj))
+      { new_sphere_intersection(sh1, sh2, Circle_3(p, 0,
+            Line_3(s1.center(), s2.center()
+              ).perpendicular_plane(p)));
+      return; }
+
+#ifndef NDEBUG // Check edge case of intersection along the same sphere
+      Sphere_3 sp;
+      if (assign(sp, obj))
+      {
+        std::ostringstream oss;
+        oss << "Forbidden intersection between two"
+          << " equal spheres " << sp;
+        throw std::runtime_error(oss.str());
+      }
+#endif // NDEBUG //
     }
 
     // Preconditions:
-    //  - the given spheres are those persisted in memory
-    //    (unchecked in debug mode)
     //  - this particular intersection hasn't been
-    //    inserted until now
-    void new_sphere_intersection(const Sphere_3 & s1,
-        const Sphere_3 & s2, const Circle_3 & c)
+    //    inserted until now (checked only for sphere -> circle link)
+    void new_sphere_intersection(const Sphere_handle & sh1,
+        const Sphere_handle & sh2, const Circle_3 & c)
     {
+      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_sphere_intersection");
+
       // Store the circle of intersection
       _circle_storage.push_back(c);
       const Circle_3 & ch(_circle_storage.back());
-      // TODO setup intersections between circles on the same sphere
+
+      // Prepare the links
+      BOOST_AUTO(sh1_link, _stcl[sh1]);
+      BOOST_AUTO(sh2_link, _stcl[sh2]);
+
+#ifndef NDEBUG // Check preconditions
+      if (sh1_link.find(sh2) != sh1_link.end()
+          || sh2_link.find(sh1) != sh2_link.end())
+      {
+        std::ostringstream oss;
+        oss << "Forbidden second insertion of the same sphere intersection"
+          << " between " << sh1.get() << " and " << sh2.get();
+        throw std::runtime_error(oss.str());
+      }
+#endif // NDEBUG //
+
+      // Setup the links
+      sh1_link[sh2] = ch;
+      sh2_link[sh1] = ch;
+      _ctsl[ch] = Sphere_handle_pair(sh1, sh2);
+
+      // Compute the intersections between circles on each sphere
+      new_circle_on_sphere(sh1, ch);
+      new_circle_on_sphere(sh2, ch);
+    }
+
+    void new_circle_on_sphere(const Sphere_handle & sh,
+        const Circle_handle & ch)
+    {
+      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_circle_on_sphere");
     }
 
     // Sphere bundle
@@ -327,6 +392,10 @@ class Sphere_intersecter
 
     // Circle bundle
     Circle_storage _circle_storage;
+
+    // Spheres <-> Circles
+    Spheres_to_circle_link _stcl;
+    Circle_to_spheres_link _ctsl;
 };
 
 #endif // SPHERE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2
