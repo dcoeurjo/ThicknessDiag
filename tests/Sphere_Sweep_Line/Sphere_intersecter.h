@@ -146,20 +146,29 @@ class Sphere_intersecter
     // ...same for circles
     typedef std::list<Circle_3> Circle_storage;
     // ...and for arcs
+    // TODO
     // Note that we cannot use a vector since the address should remain
     // the same after the first insertion
 
+    // Templated typedef for mapping from handle to something (major
+    // refactoring for links)
+    template <typename Handle, typename Mapped>
+    struct Handle_map
+    { typedef std::map<Handle, Mapped,
+              Comp_handle_ptr<Handle> > Type; };
+
     // Link between a sphere intersection and the source spheres
-    typedef Comp_handle_ptr<Sphere_handle> Comp_sphere_handle_ptr;
-    typedef std::map<Sphere_handle, std::map<Sphere_handle,
-            Circle_handle, Comp_sphere_handle_ptr>,
-            Comp_sphere_handle_ptr> Spheres_to_circle_link;
+    // ...sphere -> circle link (single)
+    typedef typename Handle_map<Sphere_handle,
+            Circle_handle>::Type Sphere_to_circle_single_link;
+    // .. sphere -> sphere -> circle link (double)
+    typedef typename Handle_map<Sphere_handle,
+            Sphere_to_circle_single_link>::Type Spheres_to_circle_link;
 
     // Link between a circle and the spheres intersecting
-    typedef Comp_handle_ptr<Circle_handle> Comp_circle_handle_ptr;
     typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
-    typedef std::map<Circle_handle, Sphere_handle_pair,
-            Comp_circle_handle_ptr> Circle_to_spheres_link;
+    typedef typename Handle_map<Circle_handle,
+            Sphere_handle_pair>::Type Circle_to_spheres_link;
 
   public:
     // Setup new sphere
