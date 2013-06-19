@@ -402,10 +402,8 @@ class Sphere_intersecter
       // Setup the circle tree if is hasn't yet been
       INFER_AUTO(it, _stcl.find(sh));
       if (it == _stcl.end())
-      {
-        Circle_handle_tree_handle chth = make_circle_handle_tree_handle();
-        it = _stcl.insert(std::make_pair(sh, chth)).first;
-      }
+      { it = _stcl.insert(std::make_pair(sh,
+            make_circle_handle_tree_handle())).first; }
 
       // Insert the new circle in the appropriate tree
       Circle_handle_tree & ch_tree = it->second.get();
@@ -430,6 +428,8 @@ class Sphere_intersecter
 
     Circle_handle_tree_handle make_circle_handle_tree_handle()
     {
+      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::make_circle_handle_tree_handle");
+
       // Allocate and store the new tree
       Circle_handle_tree_ptr cht_ptr(new Circle_handle_tree());
       _circle_handle_tree_storage.push_front(cht_ptr);
@@ -441,6 +441,8 @@ class Sphere_intersecter
     void handle_circle_intersection(const Circle_handle & ch1,
         const Circle_handle & ch2)
     {
+      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::handle_circle_intersection");
+
       //// Ignore self intersecting
       //if (c1 == c2) { return; }
 
