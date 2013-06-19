@@ -296,12 +296,12 @@ class Sphere_intersecter
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
       {
-        // Container receiving 
+        // Container receiving intersected spheres
         std::vector<Sphere_handle> intersected;
 
         // Find intersected balls
         _sphere_tree.all_intersected_primitives(s1,
-            std::front_inserter(intersected));
+            std::back_inserter(intersected));
 
         // Compute intersections
         for (INFER_AUTO(it, intersected.begin());
@@ -409,7 +409,7 @@ class Sphere_intersecter
     }
 
     void handle_circle_intersection(const Circle_handle & ch1,
-        const Circle_handle & ch2, )
+        const Circle_handle & ch2/* TODO */)
     {
       //// Ignore self intersecting
       //if (c1 == c2) { return; }
