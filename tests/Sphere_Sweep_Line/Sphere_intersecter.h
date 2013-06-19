@@ -312,7 +312,7 @@ class Sphere_intersecter
         std::vector<Sphere_handle> intersected;
 
         // Find intersected balls
-        _sphere_tree.all_intersected_primitives(sh1.get().bbox(),
+        _sphere_tree.all_intersected_primitives(sh1.get(),
             std::inserter(intersected, intersected.begin()));
 
         // Handle intersections
@@ -418,7 +418,7 @@ class Sphere_intersecter
         std::vector<Circle_handle> intersected;
 
         // Find intersected balls
-        ch_tree.all_intersected_primitives(ch.get().bbox(),
+        ch_tree.all_intersected_primitives(ch.get(),
             std::inserter(intersected, intersected.begin()));
 
         // Handle intersections
