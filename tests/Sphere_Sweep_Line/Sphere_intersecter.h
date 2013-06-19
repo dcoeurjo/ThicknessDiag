@@ -301,7 +301,7 @@ class Sphere_intersecter
 
         // Find intersected balls
         _sphere_tree.all_intersected_primitives(s1,
-            std::back_inserter(intersected));
+            std::inserter(intersected, intersected.begin()));
 
         // Compute intersections
         for (INFER_AUTO(it, intersected.begin());
