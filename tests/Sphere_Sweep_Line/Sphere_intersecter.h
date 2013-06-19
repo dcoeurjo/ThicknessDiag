@@ -190,10 +190,8 @@ class Sphere_intersecter
 
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
-    {
-      for (; begin != end; begin++)
-      { add_sphere(*begin); }
-    }
+    { for (; begin != end; begin++)
+      { add_sphere(*begin); } }
 
     class Sphere_insert_iterator:
       public std::iterator<std::output_iterator_tag,
@@ -298,14 +296,16 @@ class Sphere_intersecter
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
       {
-        // Find intersected balls
+        // Container receiving 
         std::vector<Sphere_handle> intersected;
+
+        // Find intersected balls
         _sphere_tree.all_intersected_primitives(s1,
-            std::back_inserter(intersected));
+            std::front_inserter(intersected));
 
         // Compute intersections
-        for (typename std::vector<Sphere_handle>::const_iterator
-            it = intersected.begin(); it != intersected.end(); it++)
+        for (INFER_AUTO(it, intersected.begin());
+            it != intersected.end(); it++)
         {
           // Syntaxic sugar
           const Sphere_3 & s2 = *it;
@@ -408,12 +408,54 @@ class Sphere_intersecter
       PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_circle_on_sphere");
     }
 
+    void handle_circle_intersection(const Circle_handle & ch1,
+        const Circle_handle & ch2, )
+    {
+      //// Ignore self intersecting
+      //if (c1 == c2) { return; }
+
+      //// Do intersections
+      //std::vector<Object> intersected;
+      //intersection(c1, c2, std::back_inserter(intersects_c12));
+
+      //// Handle intersections
+      //if (intersects_c12.empty() == false)
+      //{
+      //  std::cout << "Intersection between circles " << c1
+      //    << " and " << c2 << std::endl;
+      //}
+      //for (std::vector<Object>::const_iterator it = intersects_c12.begin();
+      //    it != intersects_c12.end(); it++)
+      //{
+      //  // Intersection object
+      //  const Object & obj = *it;
+
+      //  // Handle intersections
+      //  if (const std::pair<Circular_arc_point_3,
+      //      unsigned int> * p = object_cast<std::pair<Circular_arc_point_3,
+      //      unsigned int> >(&obj))
+      //  {
+      //    std::cout << "- point [" << p->first << "],"
+      //      << " of multiplicity " << p->second << std::endl;
+      //  }
+      //  else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
+      //  {
+      //    std::cout << "- circle " << *c << std::endl;
+      //  }
+      //  else
+      //  {
+      //    std::cout << "Unhandled intersection" << std::endl;
+      //  }
+      //}
+    }
+
     // Sphere bundle
     Sphere_tree _sphere_tree;
     Sphere_storage _sphere_storage;
 
     // Circle bundle
     Circle_storage _circle_storage;
+    // TODO setup circle tree (maped from sphere ?)
 
     // Spheres <-> Circles
     Spheres_to_circle_link _stcl;
