@@ -13,7 +13,7 @@
 #  include <list>
 #  define LINKED_LIST std::list
 #  define INFER_AUTO BOOST_AUTO
-#endif // //
+#endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
 #ifndef NDEBUG
 #  include <stdexcept>
@@ -142,14 +142,19 @@ class Sphere_intersecter
     typedef CGAL::AABB_tree<CGAL::AABB_traits<Kernel,
             AABB_sphere_primitive> > Sphere_tree;
 
-    // Actual list of spheres (used only for storage)
+    // Actual list of spheres (used only for storage). Note that
+    // we cannot use a vector since the address should remain
+    // the same after the first insertion. The linked list defined
+    // by the LINKED_LIST macro is sure to support constant-time
+    // insertion and lookup at the *front* of the list.
+    // This list is optimized for memory efficiency when compiling,
+    // with the C++0x version by using a singly linked list,
+    // which is the main usage of this storage system.
     typedef LINKED_LIST<Sphere_3> Sphere_storage;
     // ...same for circles
     typedef LINKED_LIST<Circle_3> Circle_storage;
     // ...and for arcs
     // TODO
-    // Note that we cannot use a vector since the address should remain
-    // the same after the first insertion
 
     // Compare functor for handles
     template <typename Handle>
