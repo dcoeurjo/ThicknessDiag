@@ -20,7 +20,7 @@
 #endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
 #ifndef NDEBUG
-#  include <stdexcept>
+#  include <CGAL/assertions.h>
 #  include <sstream>
 #endif // NDEBUG //
 
@@ -68,6 +68,7 @@ class Sphere_intersecter
   // Intersection bundle
   typedef typename Kernel::Object_3 Object_3;
   typedef typename Kernel::Assign_3 Assign_3;
+  typedef typename Kernel::Do_intersect_3 Do_intersect_3;
   typedef typename Kernel::Intersect_3 Intersect_3;
 
   // Friend access
@@ -340,40 +341,28 @@ class Sphere_intersecter
       if (&s1 == &s2)
       { return; }
 
-      // Intersection function objects
-      Assign_3 assign;
-      Intersect_3 intersection;
+      // Insertion of two equal spheres is forbidden here
+      CGAL_assertion(s1 != s2);
 
       // Try intersection
-      Object_3 obj = intersection(s1, s2);
+      Object_3 obj = Intersect_3()(s1, s2);
 
+      // No intersection -> end
       if (obj.is_empty())
       { return; }
 
       // Intersection along a circle
-      Circle_3 c;
-      if (assign(c, obj))
-      { new_sphere_intersection(sh1, sh2, c);
+      Circle_3 it_circle;
+      if (Assign_3()(it_circle, obj))
+      { new_sphere_intersection(sh1, sh2, it_circle);
         return; }
 
       // Intersection along a point
-      Point_3 p;
-      if (assign(p, obj))
-      { new_sphere_intersection(sh1, sh2, Circle_3(p, 0,
-            Line_3(s1.center(), s2.center()
-              ).perpendicular_plane(p)));
-      return; }
-
-#ifndef NDEBUG // Check edge case of intersection along the same sphere
-      Sphere_3 sp;
-      if (assign(sp, obj))
-      {
-        std::ostringstream oss;
-        oss << "Forbidden intersection between two"
-          << " equal spheres " << sp;
-        throw std::runtime_error(oss.str());
-      }
-#endif // NDEBUG //
+      Point_3 it_point;
+      if (Assign_3()(it_point, obj))
+      { new_sphere_intersection(sh1, sh2, Circle_3(it_point, 0, 
+              Line_3(s1.center(), s2.center()).perpendicular_plane(it_point)));
+        return; }
     }
 
     // Preconditions:
@@ -405,7 +394,7 @@ class Sphere_intersecter
       Circle_link & sphere_circles = _stcl[sh];
       sphere_circles.insert(sphere_circles.begin(), ch);
 
-      Handle intersections
+      // Handle intersections
       for (INFER_AUTO(it, sphere_circles.begin());
           it != sphere_circles.end(); it++)
       { handle_circle_intersection(ch, *it); }
@@ -423,13 +412,9 @@ class Sphere_intersecter
       // Ignore self intersecting
       if (&c1 == &c2) { return; }
 
-      // Intersection function objects
-      Assign_3 assign;
-      Intersect_3 intersection;
-
       // Do intersections
       std::vector<Object_3> intersected;
-      intersection(c1, c2, std::inserter(intersected, intersected.begin()));
+      Intersect_3()(c1, c2, std::inserter(intersected, intersected.begin()));
 
       // Handle intersections
       if (intersected.empty() == false)
@@ -442,13 +427,13 @@ class Sphere_intersecter
         { continue; }
 
         std::pair<Circular_arc_point_3, unsigned int> cap;
-        if (assign(cap, *it))
+        if (Assign_3()(cap, *it))
         { std::cout << "- point [" << cap.first << "],"
             << " of multiplicity " << cap.second << std::endl;
           continue; }
 
         Circle_3 c;
-        if (assign(c, *it))
+        if (Assign_3()(c, *it))
         { std::cout << "- circle " << c << std::endl;
           continue; }
 
