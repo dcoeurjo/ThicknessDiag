@@ -103,6 +103,12 @@ class Sphere_intersecter
       operator Type&() const
       { return get(); }
 
+      bool operator<(const Handle<T> & h) const
+      { return _t < h._t; }
+
+      bool operator==(const Handle<T> & h) const
+      { return _t == h._t; }
+
     private:
       Handle(Type & t):
         _t(&t) {}
@@ -113,6 +119,14 @@ class Sphere_intersecter
   public:
     typedef Handle<const Sphere_3> Sphere_handle;
     typedef Handle<const Circle_3> Circle_handle;
+
+    Sphere_intersecter():
+      _sphere_tree(), _sphere_storage(),
+      _circle_storage(), _stcl(), _ctsl() {} 
+
+    // Make non copyable/assignable
+    Sphere_intersecter(const Sphere_intersecter<Kernel> &);
+    Sphere_intersecter & operator=(const Sphere_intersecter<Kernel> &);
 
   private:
     // AABB Tree primitive for locating spheres
@@ -163,24 +177,17 @@ class Sphere_intersecter
     // ...same for circles
     typedef LINKED_LIST<Circle_3> Circle_storage;
 
-    // Compare functor for handles
-    template <typename Handle>
-    struct Comp_handle_by_ptr
-    { bool operator()(const Handle & x,
-          const Handle & y) const
-      { return x.get_pointer() < y.get_pointer(); } };
-
     // Templated typedef for mapping from handle to something (major
     // refactoring for links). Default comparaison is done by handle's
     // pointer object's address.
-    template <typename Handle, typename Mapped,
-       typename Comp = Comp_handle_by_ptr<Handle> >
+    template <typename Handle, typename Mapped>
     struct Handle_map
-    { typedef std::map<Handle, Mapped, Comp> Type; };
+    { typedef std::map<Handle, Mapped> Type; };
 
     // Link between a sphere and the intersection circles on it
     typedef typename Handle_map<Sphere_handle,
             std::vector<Circle_handle> >::Type Spheres_to_circle_link;
+    typedef typename Spheres_to_circle_link::mapped_type Circle_link;
 
     // Link between a circle and the spheres intersecting
     typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
@@ -288,14 +295,16 @@ class Sphere_intersecter
     // Precondition: sphere isn't yet inserted
     Sphere_handle new_sphere(const Sphere_3 & sphere_to_insert)
     {
-      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_sphere");
+      PROFILE_SCOPE_WITH_NAME("new_sphere");
 
       // Store a copy of the inserted sphere and insert
       // a handle of this inserted sphere in the Tree
       _sphere_storage.push_front(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.front();
-      _sphere_tree.insert(Sphere_primitive(s1));
       Sphere_handle sh1(s1);
+      { PROFILE_SCOPE_WITH_NAME("new_sphere::tree_insert");
+        _sphere_tree.insert(Sphere_primitive(s1)); }
+      CGAL_assertion(_sphere_tree.empty() == false);
 
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
@@ -304,8 +313,9 @@ class Sphere_intersecter
         std::vector<Sphere_handle> intersected;
 
         // Find intersected balls
-        _sphere_tree.all_intersected_primitives(sh1.get(),
-            std::inserter(intersected, intersected.begin()));
+        { PROFILE_SCOPE_WITH_NAME("new_sphere_all_intersected_primitives");
+          _sphere_tree.all_intersected_primitives(sh1.get(),
+              std::inserter(intersected, intersected.begin())); }
 
         // Handle intersections
         for (INFER_AUTO(it, intersected.begin());
@@ -318,21 +328,21 @@ class Sphere_intersecter
     void handle_sphere_intersection(const Sphere_handle & sh1,
         const Sphere_handle & sh2)
     {
-      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::handle_sphere_intersection");
+      PROFILE_SCOPE_WITH_NAME("handle_sphere_intersection");
 
-      // More syntaxic sugar
+      // *More* syntaxic sugar
       typename Sphere_handle::Type & s1 = sh1.get();
       typename Sphere_handle::Type & s2 = sh2.get();
-
-      // Intersection function objects
-      Intersect_3 intersection;
-      Assign_3 assign;
 
       // Skip inserted sphere (comparing by address is *much* faster,
       // and valid since we only store the sphere once, and pass around
       // handles holding a const reference to this sphere)
       if (&s1 == &s2)
       { return; }
+
+      // Intersection function objects
+      Assign_3 assign;
+      Intersect_3 intersection;
 
       // Try intersection
       Object_3 obj = intersection(s1, s2);
@@ -372,11 +382,11 @@ class Sphere_intersecter
     void new_sphere_intersection(const Sphere_handle & sh1,
         const Sphere_handle & sh2, const Circle_3 & c)
     {
-      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_sphere_intersection");
+      PROFILE_SCOPE_WITH_NAME("new_sphere_intersection");
 
       // Store the circle of intersection
       _circle_storage.push_front(c);
-      const Circle_3 & ch(_circle_storage.front());
+      Circle_handle ch(_circle_storage.front());
 
       // Setup the links
       _ctsl[ch] = Sphere_handle_pair(sh1, sh2);
@@ -389,58 +399,61 @@ class Sphere_intersecter
     void new_circle_on_sphere(const Sphere_handle & sh,
         const Circle_handle & ch)
     {
-      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::new_circle_on_sphere");
+      PROFILE_SCOPE_WITH_NAME("new_circle_on_sphere");
 
       // Setup the new circle
-      _stcl[sh].push_back(ch);
+      Circle_link & sphere_circles = _stcl[sh];
+      sphere_circles.insert(sphere_circles.begin(), ch);
 
-      // Handle intersections
-      for (INFER_AUTO(it, _circle_storage.begin());
-          it != _circle_storage.end(); it++)
+      Handle intersections
+      for (INFER_AUTO(it, sphere_circles.begin());
+          it != sphere_circles.end(); it++)
       { handle_circle_intersection(ch, *it); }
     }
 
     void handle_circle_intersection(const Circle_handle & ch1,
         const Circle_handle & ch2)
     {
-      PROFILE_SCOPE_WITH_NAME("Sphere_intersecter::handle_circle_intersection");
+      PROFILE_SCOPE_WITH_NAME("handle_circle_intersection");
 
-      //// Ignore self intersecting
-      //if (c1 == c2) { return; }
+      // *More* syntaxic sugar
+      typename Circle_handle::Type & c1 = ch1.get();
+      typename Circle_handle::Type & c2 = ch2.get();
 
-      //// Do intersections
-      //std::vector<Object> intersected;
-      //intersection(c1, c2, std::back_inserter(intersects_c12));
+      // Ignore self intersecting
+      if (&c1 == &c2) { return; }
 
-      //// Handle intersections
-      //if (intersects_c12.empty() == false)
-      //{
-      //  std::cout << "Intersection between circles " << c1
-      //    << " and " << c2 << std::endl;
-      //}
-      //for (std::vector<Object>::const_iterator it = intersects_c12.begin();
-      //    it != intersects_c12.end(); it++)
-      //{
-      //  // Intersection object
-      //  const Object & obj = *it;
+      // Intersection function objects
+      Assign_3 assign;
+      Intersect_3 intersection;
 
-      //  // Handle intersections
-      //  if (const std::pair<Circular_arc_point_3,
-      //      unsigned int> * p = object_cast<std::pair<Circular_arc_point_3,
-      //      unsigned int> >(&obj))
-      //  {
-      //    std::cout << "- point [" << p->first << "],"
-      //      << " of multiplicity " << p->second << std::endl;
-      //  }
-      //  else if (const Circle_3 * c = object_cast<Circle_3>(&obj))
-      //  {
-      //    std::cout << "- circle " << *c << std::endl;
-      //  }
-      //  else
-      //  {
-      //    std::cout << "Unhandled intersection" << std::endl;
-      //  }
-      //}
+      // Do intersections
+      std::vector<Object_3> intersected;
+      intersection(c1, c2, std::inserter(intersected, intersected.begin()));
+
+      // Handle intersections
+      if (intersected.empty() == false)
+      { std::cout << "Intersection between circles " << &c1
+          << " and " << &c2 << std::endl; }
+      for (INFER_AUTO(it, intersected.begin());
+          it != intersected.end(); it++)
+      {
+        if (it->is_empty())
+        { continue; }
+
+        std::pair<Circular_arc_point_3, unsigned int> cap;
+        if (assign(cap, *it))
+        { std::cout << "- point [" << cap.first << "],"
+            << " of multiplicity " << cap.second << std::endl;
+          continue; }
+
+        Circle_3 c;
+        if (assign(c, *it))
+        { std::cout << "- circle " << c << std::endl;
+          continue; }
+
+        std::cout << "Unhandled intersection" << std::endl;
+      }
     }
 
     // Sphere bundle

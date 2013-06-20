@@ -32,7 +32,11 @@ typedef CGAL::Spherical_kernel_3<CK, AKS> SK;
 typedef CGAL::Exact_spherical_kernel_3 ESK;
 
 // Definition of actually used kernel
-typedef ESK Kernel;
+#ifdef USE_EXACT_KERNEL
+#  define Kernel ESK
+#else
+#  define Kernel SK
+#endif // USE_EXACT_KERNEL
 
 // Geometric objects
 typedef typename Kernel::FT FT;
