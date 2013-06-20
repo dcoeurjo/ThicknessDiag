@@ -161,8 +161,13 @@ class Polar_event_site;
 template <typename Kernel>
 class Normal_event_site
 {
+  typedef typename Kernel::Point_3 Point_3;
+  typedef typename Kernel::Circle_3 Point_3;
+  typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
+  typedef typename Kernel::CompareThetaZ_3 CompareThetaZ_3;
+
   public:
-    Normal_event_site(typename Kernel::Point_3 const & p):
+    Normal_event_site(Point_3 const & p):
       _point(p), _starts(),
       _ends(), _cts() {}
 
@@ -170,7 +175,7 @@ class Normal_event_site
     void add_event(const Normal_event<Kernel> & ev)
     {
 #ifndef NDEBUG // Check that events added to the site are *valid*
-      typename Kernel::Circle_3 c(ev.arcs.first.supporting_circle()),
+      Circle_3 c(ev.arcs.first.supporting_circle()),
                ac(ev.arcs.second.supporting_circle());
 
       // Both arcs of event should lie on the same circle
@@ -216,9 +221,8 @@ class Normal_event_site
     // center of the sphere), in cylindrical coordinates.
     bool occurs_before(const Normal_event_site<Kernel> & es) const
     {
-      typename Kernel::CompareThetaZ_3 comp;
-      typename Kernel::Circular_arc_point_3 cp(_point), es_cp(es._point);
-      return comp.fo(cp, es_cp);
+      Circular_arc_point_3 cp(_point), es_cp(es._point);
+      return CompareThetaZ_3()(cp, es_cp);
     }
 
     // Symmetric version of Polar_event_site::occurs_before
@@ -226,12 +230,12 @@ class Normal_event_site
     { return es.occurs_before(*this) == false; }
 
     // Getter for event point
-    typename Kernel::Point_3 const & point() const
+    Point_3 const & point() const
     { return _point; }
 
   private:
     // Location of event site
-    typename Kernel::Point_3 _point;
+    Point_3 _point;
 
     // Compare normal events' circles (increasing/decreasing)
     typedef Comp_event_arc_radii<Kernel, Normal_event_site<Kernel> >
