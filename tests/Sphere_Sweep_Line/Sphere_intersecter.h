@@ -414,7 +414,7 @@ class Sphere_intersecter
 
       // Do intersections
       std::vector<Object_3> intersected;
-      Intersect_3()(c1, c2, std::inserter(intersected, intersected.begin()));
+      Intersect_3()(c1, c2, std::back_inserter(intersected));
 
       // Handle intersections
       if (intersected.empty())
@@ -425,13 +425,13 @@ class Sphere_intersecter
         std::pair<Circular_arc_point_3,
           unsigned int> cap;
         if (Assign_3()(cap, intersected[0]))
-        { // do something...
+        { new_circle_tangency(ch1, ch2, cap.first);
           return; }
 
         // Intersection is necessarily a circle
         Circle_3 c;
         CGAL_assertion(Assign_3()(c, intersected[0]));
-        // do something...
+        new_circle_equality(ch1, ch2);
       }
       else // Crossing
       {
@@ -440,12 +440,30 @@ class Sphere_intersecter
 
         std::pair<Circular_arc_point_3,
           unsigned int> cap1, cap2;
-        CGAL_assertion(Assign_3()(cap1, intersected[0]));
-        CGAL_assertion(cap1.second == 1);
-        CGAL_assertion(Assign_3()(cap2, intersected[1]));
-        CGAL_assertion(cap2.second == 1);
-        // do something...
+        CGAL_assertion(Assign_3()(cap1, intersected[0])
+            && Assign_3()(cap2, intersected[1]));
+        CGAL_assertion(cap1.second == 1 && cap2.second == 1);
+        new_circle_crossing(ch1, ch2, std::make_pair(cap1.first, cap2.first));
       }
+    }
+
+    void new_circle_tangency(const Circle_handle & ch1,
+        const Circle_handle & ch2, const Circular_arc_point_3 & cap)
+    {
+      // TODO
+    }
+
+    void new_circle_equality(const Circle_handle & ch1,
+        const Circle_handle & ch2)
+    {
+      // TODO
+    }
+
+    void new_circle_crossing(const Circle_handle & ch1,
+        const Circle_handle & ch2, const std::pair<Circular_arc_point_3,
+        Circular_arc_point_3> & cap_pair)
+    {
+      // TODO
     }
 
     // Sphere bundle
