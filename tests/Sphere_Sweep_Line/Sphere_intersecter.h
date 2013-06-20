@@ -417,27 +417,34 @@ class Sphere_intersecter
       Intersect_3()(c1, c2, std::inserter(intersected, intersected.begin()));
 
       // Handle intersections
-      if (intersected.empty() == false)
-      { std::cout << "Intersection between circles " << &c1
-          << " and " << &c2 << std::endl; }
-      for (INFER_AUTO(it, intersected.begin());
-          it != intersected.end(); it++)
+      if (intersected.empty())
+      { return; }
+      else if (intersected.size() == 1) // Equality | Tangency
       {
-        if (it->is_empty())
-        { continue; }
+        // Test if intersection is a point -> tangency
+        std::pair<Circular_arc_point_3,
+          unsigned int> cap;
+        if (Assign_3()(cap, intersected[0]))
+        { // do something...
+          return; }
 
-        std::pair<Circular_arc_point_3, unsigned int> cap;
-        if (Assign_3()(cap, *it))
-        { std::cout << "- point [" << cap.first << "],"
-            << " of multiplicity " << cap.second << std::endl;
-          continue; }
-
+        // Intersection is necessarily a circle
         Circle_3 c;
-        if (Assign_3()(c, *it))
-        { std::cout << "- circle " << c << std::endl;
-          continue; }
+        CGAL_assertion(Assign_3()(c, intersected[0]));
+        // do something...
+      }
+      else // Crossing
+      {
+        // There is necessarily two intersections
+        CGAL_assertion(intersected.size() == 2);
 
-        std::cout << "Unhandled intersection" << std::endl;
+        std::pair<Circular_arc_point_3,
+          unsigned int> cap1, cap2;
+        CGAL_assertion(Assign_3()(cap1, intersected[0]));
+        CGAL_assertion(cap1.second == 1);
+        CGAL_assertion(Assign_3()(cap2, intersected[1]));
+        CGAL_assertion(cap2.second == 1);
+        // do something...
       }
     }
 
