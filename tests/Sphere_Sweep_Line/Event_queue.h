@@ -146,8 +146,8 @@ struct Comp_event_arc_radii:
   bool operator()(const Event & left,
       const Event & right) const
   {
-    return Comp_by_squared_radii<typename Kernel::Circular_arc_3>()(left.arc.first,
-        right.arcs.first);
+    typedef typename Kernel::Circular_arc_3 Arc_type;
+    return Comp_by_squared_radii<Arc_type>()(left.arc.first, right.arcs.first);
   }
 };
 
@@ -162,7 +162,7 @@ template <typename Kernel>
 class Normal_event_site
 {
   typedef typename Kernel::Point_3 Point_3;
-  typedef typename Kernel::Circle_3 Point_3;
+  typedef typename Kernel::Circle_3 Circle_3;
   typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
   typedef typename Kernel::CompareThetaZ_3 CompareThetaZ_3;
 
