@@ -19,11 +19,6 @@
 #  define SHARED_PTR boost::shared_ptr
 #endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
-#ifndef NDEBUG
-#  include <CGAL/assertions.h>
-#  include <sstream>
-#endif // NDEBUG //
-
 #ifdef PROFILING_MODE
 #  include <string>
 #  include <iostream>
@@ -51,8 +46,23 @@ namespace priv {
 #  define PROFILE_SCOPE_WITH_NAME(s)
 #endif // PROFILING_MODE //
 
+#include <CGAL/assertions.h>
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
+
+#define DELEGATE_COMPARAISON_OPERATORS(cl, mem) \
+  bool operator<(const cl & o) const            \
+  { return mem < o.mem; }                       \
+  bool operator>(const cl & o) const            \
+  { return mem > o.mem; }                       \
+  bool operator<=(const cl & o) const           \
+  { return mem <= o.mem; }                      \
+  bool operator>=(const cl & o) const           \
+  { return mem >= o.mem; }                      \
+  bool operator==(const cl & o) const           \
+  { return mem == o.mem; }                      \
+  bool operator!=(const cl & o) const           \
+  { return mem != o.mem; }
 
 template <typename Kernel>
 class Sphere_intersecter
@@ -95,20 +105,22 @@ class Sphere_intersecter
       Handle():
         _t(0) {}
 
-      Type * get_pointer() const
+      Type * const ptr() const
       { return _t; }
 
-      Type & get() const
+      Type & ref() const
       { return *_t; }
 
-      operator Type&() const
-      { return get(); }
+      Type & operator*() const
+      { return ref(); }
 
-      bool operator<(const Handle<T> & h) const
-      { return _t < h._t; }
+      Type * const operator->() const
+      { return ptr(); }
 
-      bool operator==(const Handle<T> & h) const
-      { return _t == h._t; }
+      Type * const operator&() const
+      { return ptr(); }
+
+      DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)
 
     private:
       Handle(Type & t):
@@ -143,13 +155,13 @@ class Sphere_intersecter
           _handle(d) {}
 
         Datum datum() const
-        { return _handle.get(); }
+        { return *_handle; }
 
         Id id() const
         { return _handle; }
 
         Point reference_point() const
-        { INFER_AUTO(bbox, _handle.get().bbox());
+        { INFER_AUTO(bbox, _handle->bbox());
           return Point(bbox.xmin(), bbox.ymin(), bbox.zmin()); }
 
       private:
@@ -196,9 +208,73 @@ class Sphere_intersecter
             Sphere_handle_pair>::Type Circle_to_spheres_link;
 
   public:
-    // Setup new sphere
-    Sphere_handle add_sphere(const Sphere_3 & s)
-    { return new_sphere(s); }
+    // Add a new sphere
+    Sphere_handle add_sphere(const Sphere_3 & sphere_to_insert)
+    {
+      // Store a copy of the inserted sphere and insert
+      // a handle of this inserted sphere in the Tree
+      _sphere_storage.push_front(sphere_to_insert);
+      const Sphere_3 & s1 = _sphere_storage.front();
+      Sphere_handle sh1(s1);
+      { PROFILE_SCOPE_WITH_NAME("new_sphere::tree_insert");
+        _sphere_tree.insert(Sphere_primitive(s1)); }
+      CGAL_assertion(_sphere_tree.empty() == false);
+
+      // No need to test for intersections when there is only one element
+      if (_sphere_tree.size() > 1)
+      {
+        // Container receiving intersected spheres
+        std::vector<Sphere_handle> intersected;
+
+        // Find intersected balls
+        { PROFILE_SCOPE_WITH_NAME("new_sphere_all_intersected_primitives");
+          _sphere_tree.all_intersected_primitives(*sh1,
+              std::inserter(intersected, intersected.begin())); }
+
+          // Handle intersections
+          for (INFER_AUTO(it, intersected.begin());
+              it != intersected.end(); it++)
+          {
+            // Syntaxic sugar
+            Sphere_handle sh2(*it);
+            const Sphere_3 & s2 = *sh2;
+
+            // Skip inserted sphere (comparing by address is *much* faster,
+            // and valid since we only store the sphere once, and pass around
+            // handles holding a const reference to this sphere)
+            if (&s1 == &s2)
+            { continue; }
+
+            // Insertion of two equal spheres is forbidden here
+            CGAL_assertion(s1 != s2);
+
+            // Try intersection
+            Object_3 obj = Intersect_3()(s1, s2);
+
+            // No intersection -> end
+            if (obj.is_empty())
+            { continue; }
+
+            // Different intersections
+            Circle_3 it_circle;
+            Point_3 it_point;
+            if (Assign_3()(it_circle, obj) == false && Assign_3()(it_point, obj))
+            { Line_3 it_line(s1.center(), s2.center());
+              it_circle = Circle_3(it_point, 0,
+                  it_line.perpendicular_plane(it_point)); }
+
+              // Store the circle of intersection
+              _circle_storage.push_front(it_circle);
+              Circle_handle ch(_circle_storage.front());
+
+              // Setup the links
+              _ctsl[ch] = Sphere_handle_pair(sh1, sh2);
+              Circle_link & sc1 = _stcl[sh1]; sc1.insert(sc1.begin(), ch);
+              Circle_link & sc2 = _stcl[sh2]; sc2.insert(sc2.begin(), ch);
+          }
+      }
+      return sh1;
+    }
 
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
@@ -292,180 +368,6 @@ class Sphere_intersecter
     { return Sphere_iterator_range(*this); }
 
   private:
-    // Insert sphere and setup intersection links.
-    // Precondition: sphere isn't yet inserted
-    Sphere_handle new_sphere(const Sphere_3 & sphere_to_insert)
-    {
-      PROFILE_SCOPE_WITH_NAME("new_sphere");
-
-      // Store a copy of the inserted sphere and insert
-      // a handle of this inserted sphere in the Tree
-      _sphere_storage.push_front(sphere_to_insert);
-      const Sphere_3 & s1 = _sphere_storage.front();
-      Sphere_handle sh1(s1);
-      { PROFILE_SCOPE_WITH_NAME("new_sphere::tree_insert");
-        _sphere_tree.insert(Sphere_primitive(s1)); }
-      CGAL_assertion(_sphere_tree.empty() == false);
-
-      // No need to test for intersections when there is only one element
-      if (_sphere_tree.size() > 1)
-      {
-        // Container receiving intersected spheres
-        std::vector<Sphere_handle> intersected;
-
-        // Find intersected balls
-        { PROFILE_SCOPE_WITH_NAME("new_sphere_all_intersected_primitives");
-          _sphere_tree.all_intersected_primitives(sh1.get(),
-              std::inserter(intersected, intersected.begin())); }
-
-        // Handle intersections
-        for (INFER_AUTO(it, intersected.begin());
-            it != intersected.end(); it++)
-        { handle_sphere_intersection(sh1, *it); }
-      }
-      return sh1;
-    }
-
-    void handle_sphere_intersection(const Sphere_handle & sh1,
-        const Sphere_handle & sh2)
-    {
-      PROFILE_SCOPE_WITH_NAME("handle_sphere_intersection");
-
-      // *More* syntaxic sugar
-      typename Sphere_handle::Type & s1 = sh1.get();
-      typename Sphere_handle::Type & s2 = sh2.get();
-
-      // Skip inserted sphere (comparing by address is *much* faster,
-      // and valid since we only store the sphere once, and pass around
-      // handles holding a const reference to this sphere)
-      if (&s1 == &s2)
-      { return; }
-
-      // Insertion of two equal spheres is forbidden here
-      CGAL_assertion(s1 != s2);
-
-      // Try intersection
-      Object_3 obj = Intersect_3()(s1, s2);
-
-      // No intersection -> end
-      if (obj.is_empty())
-      { return; }
-
-      // Intersection along a circle
-      Circle_3 it_circle;
-      if (Assign_3()(it_circle, obj))
-      { new_sphere_intersection(sh1, sh2, it_circle);
-        return; }
-
-      // Intersection along a point
-      Point_3 it_point;
-      if (Assign_3()(it_point, obj))
-      { new_sphere_intersection(sh1, sh2, Circle_3(it_point, 0, 
-              Line_3(s1.center(), s2.center()).perpendicular_plane(it_point)));
-        return; }
-    }
-
-    // Preconditions:
-    //  - this particular intersection hasn't been
-    //    inserted until now (checked only for sphere -> circle link)
-    void new_sphere_intersection(const Sphere_handle & sh1,
-        const Sphere_handle & sh2, const Circle_3 & c)
-    {
-      PROFILE_SCOPE_WITH_NAME("new_sphere_intersection");
-
-      // Store the circle of intersection
-      _circle_storage.push_front(c);
-      Circle_handle ch(_circle_storage.front());
-
-      // Setup the links
-      _ctsl[ch] = Sphere_handle_pair(sh1, sh2);
-
-      // Compute the intersections between circles on each sphere
-      new_circle_on_sphere(sh1, ch);
-      new_circle_on_sphere(sh2, ch);
-    }
-
-    void new_circle_on_sphere(const Sphere_handle & sh,
-        const Circle_handle & ch)
-    {
-      PROFILE_SCOPE_WITH_NAME("new_circle_on_sphere");
-
-      // Setup the new circle
-      Circle_link & sphere_circles = _stcl[sh];
-      sphere_circles.insert(sphere_circles.begin(), ch);
-
-      // Handle intersections
-      for (INFER_AUTO(it, sphere_circles.begin());
-          it != sphere_circles.end(); it++)
-      { handle_circle_intersection(ch, *it); }
-    }
-
-    void handle_circle_intersection(const Circle_handle & ch1,
-        const Circle_handle & ch2)
-    {
-      PROFILE_SCOPE_WITH_NAME("handle_circle_intersection");
-
-      // *More* syntaxic sugar
-      typename Circle_handle::Type & c1 = ch1.get();
-      typename Circle_handle::Type & c2 = ch2.get();
-
-      // Ignore self intersecting
-      if (&c1 == &c2) { return; }
-
-      // Do intersections
-      std::vector<Object_3> intersected;
-      Intersect_3()(c1, c2, std::back_inserter(intersected));
-
-      // Handle intersections
-      if (intersected.empty())
-      { return; }
-      else if (intersected.size() == 1) // Equality | Tangency
-      {
-        // Test if intersection is a point -> tangency
-        std::pair<Circular_arc_point_3,
-          unsigned int> cap;
-        if (Assign_3()(cap, intersected[0]))
-        { new_circle_tangency(ch1, ch2, cap.first);
-          return; }
-
-        // Intersection is necessarily a circle
-        Circle_3 c;
-        CGAL_assertion(Assign_3()(c, intersected[0]));
-        new_circle_equality(ch1, ch2);
-      }
-      else // Crossing
-      {
-        // There is necessarily two intersections
-        CGAL_assertion(intersected.size() == 2);
-
-        std::pair<Circular_arc_point_3,
-          unsigned int> cap1, cap2;
-        CGAL_assertion(Assign_3()(cap1, intersected[0])
-            && Assign_3()(cap2, intersected[1]));
-        CGAL_assertion(cap1.second == 1 && cap2.second == 1);
-        new_circle_crossing(ch1, ch2, std::make_pair(cap1.first, cap2.first));
-      }
-    }
-
-    void new_circle_tangency(const Circle_handle & ch1,
-        const Circle_handle & ch2, const Circular_arc_point_3 & cap)
-    {
-      // TODO
-    }
-
-    void new_circle_equality(const Circle_handle & ch1,
-        const Circle_handle & ch2)
-    {
-      // TODO
-    }
-
-    void new_circle_crossing(const Circle_handle & ch1,
-        const Circle_handle & ch2, const std::pair<Circular_arc_point_3,
-        Circular_arc_point_3> & cap_pair)
-    {
-      // TODO
-    }
-
     // Sphere bundle
     Sphere_handle_tree _sphere_tree;
     Sphere_storage _sphere_storage;
