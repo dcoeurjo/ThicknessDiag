@@ -142,15 +142,14 @@ class Sphere_intersecter
       if (_sphere_tree.size() > 1)
       {
         // Container receiving intersected spheres
-        std::vector<Sphere_handle> intersected;
+        std::vector<Sphere_handle> it_spheres;
 
         // Find intersected balls
         _sphere_tree.all_intersected_primitives(*sh1,
-            std::inserter(intersected, intersected.begin()));
+            std::inserter(it_spheres, it_spheres.begin()));
 
         // Handle intersections
-        for (INFER_AUTO(it, intersected.begin());
-            it != intersected.end(); it++)
+        for (INFER_AUTO(it, it_spheres.begin()); it != it_spheres.end(); it++)
         {
           // Syntaxic sugar
           Sphere_handle sh2(*it);
