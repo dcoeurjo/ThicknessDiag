@@ -105,6 +105,9 @@ class Sphere_intersecter
       Handle():
         _t(0) {}
 
+      bool is_null() const
+      { return _t == 0; }
+
       Type * const ptr() const
       { return _t; }
 
