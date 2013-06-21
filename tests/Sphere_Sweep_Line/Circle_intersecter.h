@@ -60,4 +60,4 @@ class Circle_intersecter
     }
 };
 
-#endif // CIRCLE_INTERSECTER_H //
+#endif // CIRCLE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2

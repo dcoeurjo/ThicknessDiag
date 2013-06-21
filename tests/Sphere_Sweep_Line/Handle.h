@@ -53,7 +53,7 @@ class Handle
     DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)
 
   private:
-    Type * _t;
+      Type * _t;
 };
 
 template <typename Iterator>
@@ -65,31 +65,31 @@ class Handle_iterator:
   typedef Handle_iterator<It> Self;
 
   public:
-  typedef Handle<typename Iterator::value_type> Handled;
+    typedef Handle<typename Iterator::value_type const> Handled;
 
-  Handle_iterator(const It & it):
-    _it(it) {}
+    Handle_iterator(const It & it):
+      _it(it) {}
 
-  Self & operator++()
-  { ++_it; return *this; }
+    Self & operator++()
+    { ++_it; return *this; }
 
-  Self operator++(int)
-  { Self tmp(*this);
-    ++(*this); return tmp; }
+    Self operator++(int)
+    { Self tmp(*this);
+      ++(*this); return tmp; }
 
-  bool operator==(const Self & sit) const
-  { return _it == sit._it; }
+    bool operator==(const Self & sit) const
+    { return _it == sit._it; }
 
-  bool operator!=(const Self & sit) const
-  { return !(*this == sit); }
+    bool operator!=(const Self & sit) const
+    { return !(*this == sit); }
 
-  Handled operator*()
-  { return Handled(*_it); }
+    Handled operator*()
+    { return Handled(*_it); }
 
   private:
-  It _it;
+    It _it;
 };
 
 #undef DELEGATE_COMPARAISON_OPERATORS // FIXME
 
-#endif // HANDLE_H //
+#endif // HANDLE_H // vim: sw=2 et ts=2 sts=2

@@ -9,37 +9,6 @@
 #include <CGAL/Random.h>
 typedef CGAL::Random Random;
 
-#ifdef DISPLAY_ON_GEOMVIEW
-#  include <CGAL/IO/Geomview_stream.h>
-#  include <CGAL/IO/Color.h>
-#  include <Geomview_stream_extension.h>
-
-typedef CGAL::Geomview_stream Geomview_stream;
-typedef CGAL::Color Color;
-typedef CGAL::Geomview_panel Geomview_panel;
-using CGAL::set_panel_enabled;
-
-Color random_color(Random & rand)
-{ return Color(rand.get_int(0, 255),
-    rand.get_int(0, 255),
-    rand.get_int(0, 255)); }
-
-class Display_sphere_on_geomview
-{
-  public:
-    Display_sphere_on_geomview(Geomview_stream & gv):
-      _gv(gv) {}
-
-    void operator()(const Sphere_3 & sphere)
-    { _gv << random_color(_rand) << sphere; }
-
-  private:
-    Geomview_stream & _gv;
-    Random _rand;
-};
-
-#endif // DISPLAY_ON_GEOMVIEW //
-
 #ifdef USE_EXACT_KERNEL // Exact (slower) kernel
 #  include <CGAL/Exact_spherical_kernel_3.h>
 
@@ -64,6 +33,37 @@ typedef typename Kernel::Sphere_3 Sphere_3;
 
 // Sphere intersecter
 typedef Sphere_intersecter<Kernel> SI;
+
+#ifdef DISPLAY_ON_GEOMVIEW
+#  include <CGAL/IO/Geomview_stream.h>
+#  include <CGAL/IO/Color.h>
+#  include <Geomview_stream_extension.h>
+
+typedef CGAL::Geomview_stream Geomview_stream;
+typedef CGAL::Color Color;
+typedef CGAL::Geomview_panel Geomview_panel;
+using CGAL::set_panel_enabled;
+
+Color random_color(Random & rand)
+{ return Color(rand.get_int(0, 255),
+    rand.get_int(0, 255),
+    rand.get_int(0, 255)); }
+
+class Display_sphere_on_geomview
+{
+  public:
+    Display_sphere_on_geomview(Geomview_stream & gv):
+      _gv(gv) {}
+
+    void operator()(const SI::Sphere_handle & sh)
+    { _gv << random_color(_rand) << *sh; }
+
+  private:
+    Geomview_stream & _gv;
+    Random _rand;
+};
+
+#endif // DISPLAY_ON_GEOMVIEW //
 
 class Random_sphere_3
 {
