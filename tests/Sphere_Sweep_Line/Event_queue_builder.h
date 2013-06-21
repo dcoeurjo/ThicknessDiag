@@ -28,10 +28,12 @@ class Event_queue_builder
 
   void make_start_end_events(const Sphere_handle & sh)
   {
+    // TODO
   }
 
   void make_crossing_tangency_events(const Sphere_handle & sh)
   {
+    // TODO
   }
 
   void do_circle_intersection(const Circle_3 & c1, const Circle_3 & c2)
@@ -75,15 +77,18 @@ class Event_queue_builder
   void handle_circle_tangency(const Circle_3 & c1, const Circle_3 & c2,
       const Circular_arc_point_3 & cap)
   {
+    // TODO
   }
 
   void handle_circle_equality(const Circle_3 & c1, const Circle_3 & c2)
   {
+    // TODO
   }
 
   void handle_circle_crossing(const Circle_3 & c1, const Circle_3 & c2,
       const std::pair<Circular_arc_point_3, Circular_arc_point_3> &)
   {
+    // TODO
   }
 
   public:
