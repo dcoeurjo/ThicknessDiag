@@ -10,13 +10,10 @@
 #  include <forward_list>
 #  define LINKED_LIST std::forward_list
 #  define INFER_AUTO(x, y) auto x(y)
-#  define SHARED_PTR std::shared_ptr
 #else
 #  include <list>
-#  include <boost/shared_ptr.hpp>
 #  define LINKED_LIST std::list
 #  define INFER_AUTO BOOST_AUTO
-#  define SHARED_PTR boost::shared_ptr
 #endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
 #include <CGAL/assertions.h>
@@ -128,15 +125,13 @@ class Sphere_intersecter
 
   public:
     // Add a new sphere
+    // Precondition: this particular sphere hasn't been inserted yet
     Sphere_handle add_sphere(const Sphere_3 & sphere_to_insert)
     {
-      // Store a copy of the inserted sphere and insert
-      // a handle of this inserted sphere in the Tree
+      // Store a copy of the inserted sphere
       _sphere_storage.push_front(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.front();
       Sphere_handle sh1(s1);
-      _sphere_tree.insert(Sphere_primitive(s1));
-      CGAL_assertion(_sphere_tree.empty() == false);
 
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
@@ -155,14 +150,8 @@ class Sphere_intersecter
           Sphere_handle sh2(*it);
           const Sphere_3 & s2 = *sh2;
 
-          // Skip inserted sphere (comparing by address is *much* faster,
-          // and valid since we only store the sphere once, and pass around
-          // handles holding a const reference to this sphere)
-          if (&s1 == &s2)
-          { continue; }
-
           // Insertion of two equal spheres is forbidden here
-          CGAL_assertion(s1 != s2);
+          CGAL_assertion(sh1 != sh2 && s1 != s2);
 
           // Try intersection
           Object_3 obj = Intersect_3()(s1, s2);
@@ -189,13 +178,11 @@ class Sphere_intersecter
             Circle_link & sc2 = _stcl[sh2]; sc2.insert(sc2.begin(), ch);
         }
       }
+      
+      // Insert a handle of the sphere in the tree
+      _sphere_tree.insert(Sphere_primitive(s1));
       return sh1;
     }
-
-    template <typename InputIterator>
-    void add_sphere(InputIterator begin, InputIterator end)
-    { for (; begin != end; begin++)
-      { add_sphere(*begin); } }
 
     typedef Sphere_intersecter_insert_iterator<Kernel>
       Sphere_insert_iterator;
@@ -226,6 +213,26 @@ class Sphere_intersecter
 
     Sphere_iterator_range spheres() const
     { return Sphere_iterator_range(*this); }
+
+    Sphere_handle find_sphere(const Sphere_3 & s) const
+    {
+      std::vector<Sphere_handle> it_spheres;
+      _sphere_tree.all_intersected_primitives(s,
+          std::inserter(it_spheres, it_spheres.begin()));
+      INFER_AUTO(it, std::find(it_spheres.begin(),
+            it_spheres.end(), s));
+      return (it != it_spheres.end()) ? *it : Sphere_handle();
+    }
+
+    template <typename OutputIterator>
+    OutputIterator circles_on_sphere(const Sphere_handle & sh,
+        OutputIterator out_it) const
+    {
+      INFER_AUTO(it, _stcl.find(sh));
+      CGAL_assertion(it != _stcl.end());
+      std::copy(it->second.begin(), it->second.end(), out_it);
+      return out_it;
+    }
 
   private:
     // Sphere bundle
