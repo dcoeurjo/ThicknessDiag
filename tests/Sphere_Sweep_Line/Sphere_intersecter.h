@@ -37,6 +37,82 @@
   bool operator!=(const cl & o) const           \
   { return mem != o.mem; }
 
+// Handle class, emulating pointer functionality
+// while hiding ownership (a handle doesn't own the
+// pointed member object)
+template <typename T>
+class Handle
+{
+  public:
+    typedef T Type;
+
+    Handle():
+      _t(0) {}
+
+    Handle(Type & t):
+      _t(&t) {}
+
+    bool is_null() const
+    { return _t == 0; }
+
+    Type * const ptr() const
+    { return _t; }
+
+    Type & ref() const
+    { return *_t; }
+
+    Type & operator*() const
+    { return ref(); }
+
+    Type * const operator->() const
+    { return ptr(); }
+
+    Type * const operator&() const
+    { return ptr(); }
+
+    DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)
+
+  private:
+    Type * _t;
+};
+
+template <typename Iterator>
+class Handle_iterator:
+  public std::iterator<std::input_iterator_tag,
+  Handle<typename Iterator::value_type> >
+{
+  typedef Iterator It;
+  typedef Handle_iterator<It> Self;
+
+  public:
+  typedef Handle<typename Iterator::value_type> Handled;
+
+  Handle_iterator(const It & it):
+    _it(it) {}
+
+  Self & operator++()
+  { ++_it; return *this; }
+
+  Self operator++(int)
+  { Self tmp(*this);
+    ++(*this); return tmp; }
+
+  bool operator==(const Self & sit) const
+  { return _it == sit._it; }
+
+  bool operator!=(const Self & sit) const
+  { return !(*this == sit); }
+
+  Handled operator*()
+  { return Handled(*_it); }
+
+  private:
+  It _it;
+};
+
+template <typename Kernel>
+class Sphere_intersecter_insert_iterator;
+
 template <typename Kernel>
 class Sphere_intersecter
 {
@@ -55,55 +131,7 @@ class Sphere_intersecter
   typedef typename Kernel::Intersect_3 Intersect_3;
 
   // Friend access
-  friend class Sphere_iterator;
   friend class Sphere_iterator_range;
-
-  // AABB primitive for tree usage
-  template <typename T>
-  class AABB_handle_primitive;
-
-  // Similar to boost::reference_wrapper. The only
-  // difference lies in the fact that we don't want
-  // objects of this type to be constructed otherwise
-  // than via the main class (better encapsulation).
-  template <typename T>
-  class Handle
-  {
-    friend class Sphere_intersecter<Kernel>;
-    friend class AABB_handle_primitive<T>;
-
-    public:
-      typedef T Type;
-
-      Handle():
-        _t(0) {}
-
-      bool is_null() const
-      { return _t == 0; }
-
-      Type * const ptr() const
-      { return _t; }
-
-      Type & ref() const
-      { return *_t; }
-
-      Type & operator*() const
-      { return ref(); }
-
-      Type * const operator->() const
-      { return ptr(); }
-
-      Type * const operator&() const
-      { return ptr(); }
-
-      DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)
-
-    private:
-      Handle(Type & t):
-        _t(&t) {}
-
-      Type * _t;
-  };
 
   public:
     typedef Handle<const Sphere_3> Sphere_handle;
@@ -255,76 +283,23 @@ class Sphere_intersecter
     { for (; begin != end; begin++)
       { add_sphere(*begin); } }
 
-    class Sphere_insert_iterator:
-      public std::iterator<std::output_iterator_tag,
-      void, void, void, void>
-    {
-      public:
-        Sphere_insert_iterator & operator=(const Sphere_3 & s)
-        { _si.add_sphere(s); 
-        return *this; }
-
-        Sphere_insert_iterator & operator++()
-        { return *this; }
-        Sphere_insert_iterator & operator++(int)
-        { return *this; }
-
-        Sphere_insert_iterator & operator*()
-        { return *this; }
-
-      private:
-        friend class Sphere_intersecter<Kernel>;
-
-        Sphere_insert_iterator(Sphere_intersecter<Kernel> & si):
-          _si(si) {}
-
-        Sphere_intersecter<Kernel> & _si;
-    };
+    typedef Sphere_intersecter_insert_iterator<Kernel>
+      Sphere_insert_iterator;
 
     Sphere_insert_iterator insert_iterator()
     { return Sphere_insert_iterator(*this); }
 
-    class Sphere_iterator_range;
-
-    class Sphere_iterator:
-      public std::iterator<std::input_iterator_tag, Sphere_handle>
-    {
-      // Friend access
-      friend class Sphere_iterator_range;
-
-      // Internal shortcuts
-      typedef typename Sphere_storage::const_iterator real_iterator;
-
-      public:
-        Sphere_iterator & operator++()
-        { ++_it; return *this; }
-
-        Sphere_iterator operator++(int)
-        { Sphere_iterator tmp(*this);
-          ++(*this); return tmp; }
-
-        bool operator==(const Sphere_iterator & sit) const
-        { return _it == sit._it; }
-
-        bool operator!=(const Sphere_iterator & sit) const
-        { return !(*this == sit); }
-
-        Sphere_handle operator*()
-        { return Sphere_handle(*_it); }
-
-      private:
-        Sphere_iterator(const real_iterator & it):
-          _it(it) {}
-
-        real_iterator _it;
-    };
+    typedef Handle_iterator<typename Sphere_storage::const_iterator>
+      Sphere_iterator;
 
     class Sphere_iterator_range
     {
-      // Friend access
-      friend class Sphere_intersecter<Kernel>;
+      typedef Sphere_intersecter<Kernel> SI;
 
       public:
+        Sphere_iterator_range(const SI & si):
+          _si(si) {}
+
         Sphere_iterator begin() const
         { return Sphere_iterator(_si._sphere_storage.begin()); }
 
@@ -332,10 +307,7 @@ class Sphere_intersecter
         { return Sphere_iterator(_si._sphere_storage.end()); }
 
       private:
-        Sphere_iterator_range(const Sphere_intersecter<Kernel> & si):
-          _si(si) {}
-
-        const Sphere_intersecter<Kernel> & _si;
+        const SI & _si;
     };
 
     Sphere_iterator_range spheres() const
@@ -352,6 +324,34 @@ class Sphere_intersecter
     // Spheres <-> Circles
     Spheres_to_circle_link _stcl;
     Circle_to_spheres_link _ctsl;
+};
+
+template <typename Kernel>
+class Sphere_intersecter_insert_iterator:
+  public std::iterator<std::output_iterator_tag,
+  void, void, void, void>
+{
+  typedef Sphere_intersecter_insert_iterator<Kernel> Self;
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename Kernel::Sphere_3 Sphere_3;
+
+  public:
+    Sphere_intersecter_insert_iterator(SI & si):
+      _si(si) {}
+
+    Self & operator=(const Sphere_3 & s)
+    { _si.add_sphere(s); 
+    return *this; }
+
+    Self & operator++()
+    { return *this; }
+    Self & operator++(int)
+    { return *this; }
+    Self & operator*()
+    { return *this; }
+
+  private:
+    SI & _si;
 };
 
 #endif // SPHERE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2
