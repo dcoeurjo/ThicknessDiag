@@ -14,6 +14,8 @@ template <typename Kernel>
 class Event_queue_builder
 {
   typedef typename Kernel::Circle_3 Circle_3;
+  typedef typename Kernel::Sphere_3 Sphere_3;
+  typedef typename Kernel::Direction_3 Direction_3;
   typedef typename Kernel::Circular_arc_3 Circular_arc_3;
   typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
@@ -22,12 +24,13 @@ class Event_queue_builder
   typedef typename Kernel::Intersect_3 Intersect_3;
 
   typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Sphere_handle Sphere_handle;
 
-  void make_start_end_events()
+  void make_start_end_events(const Sphere_handle & sh)
   {
   }
 
-  void make_crossing_tangency_events()
+  void make_crossing_tangency_events(const Sphere_handle & sh)
   {
   }
 
@@ -85,18 +88,23 @@ class Event_queue_builder
 
   public:
     Event_queue_builder(const SI & si):
-      _si(si) {}
+      _si(si), _axis_dir(0, 0, 1) {}
 
-    Event_queue<Kernel> & build()
+    Event_queue_builder & with_pole_axis(const Direction_3 & d)
+    { _axis_dir = d; }
+
+    Event_queue<Kernel> build(const Sphere_handle & sh)
     {
-      make_start_end_events();
-      make_crossing_tangency_events();
+      Event_queue<Kernel> ev_queue;
+      CGAL_assertion(_si.find_sphere(*sh).is_null() == false);
+      make_start_end_events(sh);
+      make_crossing_tangency_events(sh);
       return ev_queue;
     }
 
   private:
     SI & _si;
-    Event_queue<Kernel> & ev_queue;
+    Direction_3 _axis_dir;
 };
 
 #endif // EVENT_QUEUE_BUILDER_H // vim: sw=2 et ts=2 sts=2
