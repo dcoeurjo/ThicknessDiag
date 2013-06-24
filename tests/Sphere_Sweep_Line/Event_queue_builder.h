@@ -57,13 +57,13 @@ class Event_queue_builder
       // Normal event sites, ordered by corresponding point
       typedef Normal_event_site<Kernel> NES;
       typedef std::map<Circular_arc_point_3, NES> NES_map;
-      NES_map nes;
+      NES_map nes_map;
 
 #define ADD_IE_TO_SITE(POINT, TYPE)                              \
       { typedef std::pair<const Circular_arc_point_3, NES> pair; \
-        typename NES_map::iterator it = nes.find(POINT);         \
-        if (it == nes.end())                                     \
-        { it = nes.insert(std::make_pair(POINT,                  \
+        typename NES_map::iterator it = nes_map.find(POINT);         \
+        if (it == nes_map.end())                                     \
+        { it = nes_map.insert(std::make_pair(POINT,                  \
               NES(sh, POINT))).first; }                          \
         it->second.add_event(IE(c1, c2, IE::TYPE)); }
 
@@ -138,6 +138,13 @@ class Event_queue_builder
         }
       }
 #undef ADD_IE_TO_SITE
+
+      // Now that the normal events are all regrouped in event sites,
+      // add all the event sites to the event queue
+      for (typename NES_map::const_iterator it = nes_map.begin();
+          it != nes_map.end(); it++)
+      { ev_queue.push(it->second); }
+
       return ev_queue;
     }
 
