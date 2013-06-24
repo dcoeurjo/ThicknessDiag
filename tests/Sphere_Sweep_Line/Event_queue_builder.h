@@ -49,53 +49,62 @@ class Event_queue_builder
     // Do all intersections
     for (typename Circle_list::const_iterator it = circle_list.begin();
         it != circle_list.end(); it++)
-    { for (typename Circle_list::const_iterator it2 = it + 1;
+    {
+      const Circle_handle & ch1 = *it;
+      for (typename Circle_list::const_iterator it2 = it + 1;
           it2 != circle_list.end(); it2++)
-      { do_circle_intersection(ev_queue, *it, *it2); } }
-  }
+      {
+        // *More* syntaxic sugar
+        typedef Intersection_event<Kernel> IE;
+        const Circle_handle & ch2 = *it2;
+        const Circle_3 & c1 = *ch1;
+        const Circle_3 & c2 = *ch2;
 
-  void do_circle_intersection(EQ & ev_queue,
-      const Circle_handle & ch1,
-      const Circle_handle & ch2)
-  {
-    // *More* syntaxic sugar
-    const Circle_3 & c1 = *ch1;
-    const Circle_3 & c2 = *ch2;
+        // Intersection circles must be different
+        CGAL_assertion(ch1 != ch2 && c1 != c2);
 
-    // Intersection circles must be different
-    CGAL_assertion(ch1 != ch2 && c1 != c2);
+        // Do intersections
+        std::vector<Object_3> intersected;
+        Intersect_3()(c1, c2, std::back_inserter(intersected));
 
-    // Do intersections
-    std::vector<Object_3> intersected;
-    Intersect_3()(c1, c2, std::back_inserter(intersected));
+        // Handle intersections
+        if (intersected.empty())
+        { continue; }
+        else if (intersected.size() == 1) // Equality or Tangency
+        {
+          // Test if intersection is a point -> tangency
+          std::pair<Circular_arc_point_3, unsigned int> cap;
+          if (Assign_3()(cap, intersected[0]))
+          {
+            // Handle circle tangency
+            ev_queue.push(IE(cap.first, c1, c2, IE::Tangency));
+            continue;
+          }
 
-    // Handle intersections
-    if (intersected.empty())
-    { return; }
-    else if (intersected.size() == 1) // Equality or Tangency
-    {
-      // Test if intersection is a point -> tangency
-      std::pair<Circular_arc_point_3, unsigned int> cap;
-      if (Assign_3()(cap, intersected[0]))
-      { handle_circle_tangency(ev_queue, c1, c2, cap.first);
-        return; }
+          // Intersection is necessarily a circle
+          Circle_3 c;
+          CGAL_assertion(Assign_3()(c, intersected[0]));
+          handle_circle_equality(ev_queue, c1, c2);
+        }
+        else // Crossing
+        {
+          // There is necessarily two intersections
+          CGAL_assertion(intersected.size() == 2);
 
-      // Intersection is necessarily a circle
-      Circle_3 c;
-      CGAL_assertion(Assign_3()(c, intersected[0]));
-      handle_circle_equality(ev_queue, c1, c2);
-    }
-    else // Crossing
-    {
-      // There is necessarily two intersections
-      CGAL_assertion(intersected.size() == 2);
+          std::pair<Circular_arc_point_3, unsigned int> cap1, cap2;
+          CGAL_assertion(Assign_3()(cap1, intersected[0])
+              && Assign_3()(cap2, intersected[1]));
+          CGAL_assertion(cap1.second == 1 && cap2.second == 1);
 
-      std::pair<Circular_arc_point_3, unsigned int> cap1, cap2;
-      CGAL_assertion(Assign_3()(cap1, intersected[0])
-          && Assign_3()(cap2, intersected[1]));
-      CGAL_assertion(cap1.second == 1 && cap2.second == 1);
-      handle_circle_crossing(ev_queue, c1, c2,
-          std::make_pair(cap1.first, cap2.first));
+          // Handle circle crossing
+          // ...first point
+          ev_queue.push(IE(cap1.first, c1, c2, IE::Largest_crossing));
+          ev_queue.push(IE(cap1.first, c1, c2, IE::Smallest_crossing));
+          // ...second point
+          ev_queue.push(IE(cap2.second, c1, c2, IE::Largest_crossing));
+          ev_queue.push(IE(cap2.second, c1, c2, IE::Smallest_crossing));
+        }
+      }
     }
   }
 
@@ -103,29 +112,6 @@ class Event_queue_builder
       const Circle_3 & c1, const Circle_3 & c2) const
   {
     // TODO
-  }
-
-  void handle_circle_crossing(EQ & ev_queue, 
-      const Circle_3 & c1, const Circle_3 & c2,
-      const std::pair<Circular_arc_point_3,
-      Circular_arc_point_3> & points) const
-  {
-    // Largest (smallest) events for the two points
-    typedef Intersection_event<Kernel> IE;
-    // ...first point
-    ev_queue.push(IE(points.first, c1, c2, IE::Largest_crossing));
-    ev_queue.push(IE(points.first, c1, c2, IE::Smallest_crossing));
-    // ...second point
-    ev_queue.push(IE(points.second, c1, c2, IE::Largest_crossing));
-    ev_queue.push(IE(points.second, c1, c2, IE::Smallest_crossing));
-  }
-
-  void handle_circle_tangency(EQ & ev_queue,
-      const Circle_3 & c1, const Circle_3 & c2,
-      const Circular_arc_point_3 & cap) const
-  {
-    typedef Intersection_event<Kernel> IE;
-    ev_queue.push(IE(cap, c1, c2, IE::Tangency));
   }
 
   public:

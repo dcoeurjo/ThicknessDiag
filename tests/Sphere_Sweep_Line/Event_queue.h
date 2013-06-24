@@ -116,7 +116,7 @@ struct Polar_event: Tagged_event
 // Intersection normal events are defined by:
 //  - the intersection point (implicit, but stored for convenience)
 //  - the pair of intersecting arcs (<-> circles)
-//  - a tag { Smallest_Crossing, Largest_Crossing, Tangency }
+//  - a tag { Smallest_crossing, Largest_crossing, Tangency }
 //
 // Note: points are compared using lexicographic
 //  order away from poles. Treated as a normal event.
@@ -128,8 +128,8 @@ class Intersection_event
 
   public:
     enum Intersection_type {
-      Smallest_Crossing,
-      Largest_Crossing,
+      Smallest_crossing,
+      Largest_crossing,
       Tangency
     };
 
