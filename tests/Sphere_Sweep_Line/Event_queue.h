@@ -60,7 +60,7 @@ struct Normal_event: Tagged_event
   bool operator==(const Normal_event<Kernel> & ev) const
   {
     return Tagged_event::operator==(ev)
-      && arcs == ev.args;
+      && arcs == ev.arcs;
   }
 };
 
@@ -114,28 +114,36 @@ struct Polar_event: Tagged_event
 };
 
 // Intersection normal events are defined by:
-//  - the intersection point (implicit ?)
-//  - the pair of intersecting arcs
+//  - the intersection point (implicit, but stored for convenience)
+//  - the pair of intersecting arcs (<-> circles)
 //  - a tag { Smallest_Crossing, Largest_Crossing, Tangency }
 //
 // Note: points are compared using lexicographic
 //  order away from poles. Treated as a normal event.
 template <typename Kernel>
-struct Intersection_event
+class Intersection_event
 {
-  std::pair<typename Kernel::Circular_arc_3,
-    typename Kernel::Circular_arc_3> arcs;
+  typedef typename Kernel::Point_3 Point_3;
+  typedef typename Kernel::Circle_3 Circle_3;
 
-  enum Intersection_type {
-    Smallest_Crossing,
-    Largest_Crossing,
-    Tangency
-  };
+  public:
+    enum Intersection_type {
+      Smallest_Crossing,
+      Largest_Crossing,
+      Tangency
+    };
 
-  Intersection_type tag;
+    Point_3 point;
+    std::pair<const Circle_3 &, const Circle_3 &> circles;
+    Intersection_type tag;
 
-  bool operator==(const Intersection_event<Kernel> & ev) const
-  { return arcs == ev.arcs && tag == ev.tag; }
+    Intersection_event(const Point_3 & p, const Circle_3 & c1,
+        const Circle_3 & c2, const Intersection_type & t):
+      point(p), circles(c1, c2), tag(t)
+    { CGAL_assertion(c1.has_on(p) && c2.has_on(p)); }
+
+    bool operator==(const Intersection_event<Kernel> & ev) const
+    { return circles == ev.circles && tag == ev.tag; }
 };
 
 // Compare two events' first arc by increasing radius
@@ -147,7 +155,7 @@ struct Comp_event_arc_radii:
       const Event & right) const
   {
     typedef typename Kernel::Circular_arc_3 Arc_type;
-    return Comp_by_squared_radii<Arc_type>()(left.arc.first, right.arcs.first);
+    return Comp_by_squared_radii<Arc_type>()(left.arcs.first, right.arcs.first);
   }
 };
 
