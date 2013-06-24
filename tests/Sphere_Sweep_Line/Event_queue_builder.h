@@ -10,16 +10,6 @@
 #include <Event_queue.h>
 #include <Sphere_intersecter.h>
 
-template <typename T, typename Comp>
-struct Comp_by_point
-{
-  bool operator()(const T & left,
-      const T & right) const
-  {
-    return Comp()(left.point(), right.point());
-  }
-};
-
 template <typename Kernel>
 class Event_queue_builder
 {
@@ -33,14 +23,13 @@ class Event_queue_builder
   typedef typename Kernel::Object_3 Object_3;
   typedef typename Kernel::Assign_3 Assign_3;
   typedef typename Kernel::Intersect_3 Intersect_3;
-  typedef typename Kernel::CompareThetaZ_3 CompareThetaZ_3;
+  //typedef typename Kernel::CompareThetaZ_3 CompareThetaZ_3;
 
-  typedef Event_queue_builder<Kernel> Self;
-  typedef Event_queue<Kernel> EQ;
   typedef Sphere_intersecter<Kernel> SI;
-
   typedef typename SI::Sphere_handle Sphere_handle;
   typedef typename SI::Circle_handle Circle_handle;
+  typedef Event_queue_builder<Kernel> Self;
+  typedef Event_queue<Kernel> EQ;
 
   public:
     Event_queue_builder(const SI * si = 0):
@@ -67,12 +56,15 @@ class Event_queue_builder
 
       // Normal event sites, ordered by corresponding point
       typedef Normal_event_site<Kernel> NES;
-      std::map<Point_3, NES, Comp_by_point<NES,
-        CompareThetaZ_3> > normal_event_sites;
-#define ADD_IE_TO_SITE(POINT, TYPE)                             \
-      { Point_3 p(POINT.x(), POINT.y(), POINT.z());             \
-        normal_event_sites.insert(std::make_pair(p, NES(p))     \
-            ).first->second.add_event(IE(c1, c2, IE::TYPE)); }
+      typedef std::map<Circular_arc_point_3, NES> NES_map;
+      NES_map nes;
+
+//#define ADD_IE_TO_SITE(POINT, TYPE)                              \
+      //{ typedef std::pair<const Circular_arc_point_3, NES> pair; \
+        //typename NES_map::iterator it = nes.find(POINT);         \
+        //if (it == nes.end())                                     \
+        //{ it->second = nes[POINT] = NES(POINT); }                \
+        //it->second.add_event(IE(c1, c2, IE::TYPE)); }
 
       // Make start/end events
       // TODO
@@ -115,7 +107,7 @@ class Event_queue_builder
             if (Assign_3()(cap, intersected[0]))
             {
               // Handle circle tangency
-              ADD_IE_TO_SITE(cap.first, Tangency);
+              //ADD_IE_TO_SITE(cap.first, Tangency);
               continue;
             }
 
@@ -136,15 +128,15 @@ class Event_queue_builder
 
             // Handle circle crossing
             // ...first point
-            ADD_IE_TO_SITE(cap1.first, Largest_crossing);
-            ADD_IE_TO_SITE(cap1.first, Smallest_crossing);
+            //ADD_IE_TO_SITE(cap1.first, Largest_crossing);
+            //ADD_IE_TO_SITE(cap1.first, Smallest_crossing);
             // ...second point
-            ADD_IE_TO_SITE(cap2.first, Largest_crossing);
-            ADD_IE_TO_SITE(cap2.first, Smallest_crossing);
+            //ADD_IE_TO_SITE(cap2.first, Largest_crossing);
+            //ADD_IE_TO_SITE(cap2.first, Smallest_crossing);
           }
         }
       }
-#undef ADD_IE_TO_SITE
+//#undef ADD_IE_TO_SITE
       return ev_queue;
     }
 

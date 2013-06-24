@@ -13,6 +13,7 @@
 #endif // NDEBUG //
 
 #include <Spherical_utils.h>
+#include <Sphere_intersecter.h>
 
 // An event point is a point of the algorithm's base sphere
 // where something relevant for the sweep process would occur.
@@ -52,16 +53,15 @@ struct Tagged_event
 //  - the pair of arcs defining its circle 
 //  - a tag { Start, End }
 template <typename Kernel>
-struct Normal_event: Tagged_event
+class Normal_event: public Tagged_event
 {
-  std::pair<typename Kernel::Circular_arc_3,
-    typename Kernel::Circular_arc_3> arcs;
+  typedef typename Kernel::Circular_arc_3 Circular_arc_3;
 
-  bool operator==(const Normal_event<Kernel> & ev) const
-  {
-    return Tagged_event::operator==(ev)
-      && arcs == ev.arcs;
-  }
+  public:
+    std::pair<Circular_arc_3, Circular_arc_3> arcs;
+
+    bool operator==(const Normal_event<Kernel> & ev) const
+    { return Tagged_event::operator==(ev) && arcs == ev.arcs; }
 };
 
 // Polar events are defined by:
@@ -76,41 +76,39 @@ struct Normal_event: Tagged_event
 // of the very similar structure of these two. Difference
 // between these is done by accessing the polarity flag.
 template <typename Kernel>
-struct Polar_event: Tagged_event
+class Polar_event: public Tagged_event
 {
-  typename Kernel::Circular_arc_3 arc;
+  typedef typename Kernel::Circular_arc_3 Circular_arc_3;
 
-  enum Polarity_type {
-    Single, Dual
-  };
+  public:
+    enum Polarity_type {
+      Single, Dual
+    };
 
-  Polarity_type polarity;
+    Polarity_type polarity;
+    Circular_arc_3 arc;
 
-  bool is_single_polar() const
-  { return polarity == Single; }
+    bool is_single_polar() const
+    { return polarity == Single; }
 
-  bool is_bipolar() const
-  { return polarity == Dual; }
+    bool is_bipolar() const
+    { return polarity == Dual; }
 
-  enum Pole_type {
-    North, South
-  };
+    enum Pole_type {
+      North, South
+    };
 
-  Pole_type pole;
+    Pole_type pole;
 
-  bool is_north() const
-  { return pole == North; }
+    bool is_north() const
+    { return pole == North; }
 
-  bool is_south() const
-  { return pole == North; }
+    bool is_south() const
+    { return pole == North; }
 
-  bool operator==(const Polar_event<Kernel> & ev) const
-  {
-    return Tagged_event::operator==(ev)
-      && arc == ev.arc
-      && polarity == ev.polarity
-      && pole == ev.pole;
-  }
+    bool operator==(const Polar_event<Kernel> & ev) const
+    { return Tagged_event::operator==(ev) && arc == ev.arc
+      && polarity == ev.polarity && pole == ev.pole; }
 };
 
 // Intersection normal events are defined by:
@@ -132,7 +130,7 @@ class Intersection_event
       Tangency
     };
 
-    std::pair<const Circle_3 &, const Circle_3 &> circles;
+    std::pair<Circle_3, Circle_3> circles;
     Intersection_type tag;
 
     Intersection_event(const Circle_3 & c1, const Circle_3 & c2,
@@ -155,6 +153,13 @@ struct Comp_event_arc_radii:
     return Comp_by_squared_radii<Arc_type>()(left.arcs.first, right.arcs.first);
   }
 };
+// ...inverse
+template <typename Kernel, typename Event>
+struct Comp_event_inv_arc_radii:
+  std::unary_function<Event, bool>
+{ bool operator()(const Event & left,
+      const Event & right) const
+  { return Comp_event_arc_radii<Kernel, Event>()(right, left); } };
 
 // An event site is the location where several events come in
 // conflict, and allows ordering independently of the type of
@@ -166,14 +171,16 @@ class Polar_event_site;
 template <typename Kernel>
 class Normal_event_site
 {
-  typedef typename Kernel::Point_3 Point_3;
   typedef typename Kernel::Circle_3 Circle_3;
   typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
-  typedef typename Kernel::CompareThetaZ_3 CompareThetaZ_3;
+
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Sphere_handle Sphere_handle;
 
   public:
-    Normal_event_site(Point_3 const & p):
-      _point(p), _starts(),
+    Normal_event_site(const Sphere_handle & sh,
+        const Circular_arc_point_3 & p):
+      _sphere_handle(sh), _point(p), _starts(),
       _ends(), _cts() {}
 
     // Add a base normal event
@@ -215,42 +222,37 @@ class Normal_event_site
     // verifying the STL InputIterator concept
     template <typename InputIterator>
     void add_event(InputIterator begin, InputIterator end)
-    {
-      for (; begin != end; begin++)
-      { add_event(*begin); }
-    }
+    { for (; begin != end; begin++)
+      { add_event(*begin); } }
 
     // Done using lexicographic comparing. This introduces
     // the concepts that points are compared lexicographically and are
     // placed in a frame local to the sphere (ie with its origin at the
     // center of the sphere), in cylindrical coordinates.
     bool occurs_before(const Normal_event_site<Kernel> & es) const
-    {
-      Circular_arc_point_3 cp(_point), es_cp(es._point);
-      return CompareThetaZ_3()(cp, es_cp);
-    }
+    { return Comp_theta_z_3<Kernel>()(_point, es._point, *_sphere_handle); }
 
     // Symmetric version of Polar_event_site::occurs_before
-    bool occurs_before(const Polar_event_site<Kernel> & es) const
+    bool occurs_before(const Polar_event<Kernel> & es) const
     { return es.occurs_before(*this) == false; }
 
     // Getter for event point
-    Point_3 const & point() const
+    Circular_arc_point_3 const & point() const
     { return _point; }
 
   private:
     // Location of event site
-    Point_3 _point;
+    Circular_arc_point_3 _point;
+    // ...source sphere
+    Sphere_handle _sphere_handle;
 
     // Compare normal events' circles (increasing/decreasing)
-    typedef Comp_event_arc_radii<Kernel, Normal_event_site<Kernel> >
-      Comp_normal_event_arc_radii;
-    typedef std::unary_negate<Comp_normal_event_arc_radii>
-      Comp_normal_inv_event_arc_radii;
+    typedef Comp_event_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_arc_radii;
+    typedef Comp_event_inv_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_arc_radii;
 
     // Start/End events
-    std::multiset<Normal_event<Kernel>, Comp_normal_event_arc_radii> _starts;
-    std::multiset<Normal_event<Kernel>, Comp_normal_inv_event_arc_radii> _ends;
+    std::multiset<Normal_event<Kernel>, Comp_ne_arc_radii> _starts;
+    std::multiset<Normal_event<Kernel>, Comp_ne_inv_arc_radii> _ends;
 
     // Crossing/Tangency events
     std::vector<Intersection_event<Kernel> > _cts;
@@ -269,7 +271,7 @@ class Polar_event_site
     bool is_bipolar() const
     { return _event.is_bipolar(); }
 
-    bool occurs_before(const Normal_event_site<Kernel> & es) const
+    bool occurs_before(const Normal_event<Kernel> & es) const
     {
       return is_bipolar() || _event.is_end();
     }
@@ -293,15 +295,15 @@ class Polar_event_site
         {
           // Store the polar event site having the biggest
           // associated circle radius
-          const Polar_event_site<Kernel> & es_biggest_circle = *this;
+          const Polar_event_site<Kernel> * es_biggest_circle = this;
           if (es._event.arc.squared_radius() > _event.arc.squared_radius())
-          { es_biggest_circle = es; }
+          { es_biggest_circle = &es; }
 
           // Start -> biggest occurs first, end -> smallest occurs first
           if (_event.is_start())
-          { return es_biggest_circle == *this; }
+          { return es_biggest_circle == this; }
           else
-          { return es_biggest_circle != *this; }
+          { return !(es_biggest_circle == this); }
         }
       }
       else // Both bipolar
@@ -387,12 +389,10 @@ class Event_queue
       Comp_event_sites<Event_site> > Type; };
 
     // Normal event sites
-    typename Event_site_queue<Normal_event_site<Kernel>
-      >::Type _normal_events;
+    typename Event_site_queue<Normal_event_site<Kernel> >::Type _normal_events;
 
     // Polar event sites
-    typename Event_site_queue<Polar_event_site<Kernel>
-      >::Type _polar_events;
+    typename Event_site_queue<Polar_event_site<Kernel> >::Type _polar_events;
 };
 
 #endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2
