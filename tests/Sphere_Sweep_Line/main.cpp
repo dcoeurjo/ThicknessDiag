@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include <Sphere_intersecter.h>
+#include <Event_queue_builder.h>
 
 #include <CGAL/Random.h>
 typedef CGAL::Random Random;
@@ -33,6 +34,8 @@ typedef typename Kernel::Sphere_3 Sphere_3;
 
 // Sphere intersecter
 typedef Sphere_intersecter<Kernel> SI;
+typedef Event_queue<Kernel> EQ;
+typedef Event_queue_builder<Kernel> EQB;
 
 #ifdef DISPLAY_ON_GEOMVIEW
 #  include <CGAL/IO/Geomview_stream.h>
@@ -164,6 +167,19 @@ static void do_main(int argc, const char * argv[])
   //std::cout << "done." << std::endl;
   while (std::cin.get() != '\n');
 #endif // DISPLAY_ON_GEOMVIEW //
+
+  // Event queue filling
+  Sphere_3 s(Point_3(0, 0, 0), 42);
+  SI::Sphere_handle sh = si.add_sphere(s);
+  EQ ev_queue = EQB().with_si(si).build(sh);
+  while ( (typename EQ::Event_site_type
+        ev_type = ev_queue.next_event()) != EQ::None )
+  {
+    if (ev_type == EQ::Normal)
+    { ev_queue.pop_normal(); }
+    else/* if (ev_type == EQ::Polar)*/
+    { ev_queue.pop_polar(); }
+  }
 }
 
 int main(int argc, const char * argv[])

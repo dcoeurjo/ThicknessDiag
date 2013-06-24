@@ -123,7 +123,6 @@ struct Polar_event: Tagged_event
 template <typename Kernel>
 class Intersection_event
 {
-  typedef typename Kernel::Point_3 Point_3;
   typedef typename Kernel::Circle_3 Circle_3;
 
   public:
@@ -133,14 +132,12 @@ class Intersection_event
       Tangency
     };
 
-    Point_3 point;
     std::pair<const Circle_3 &, const Circle_3 &> circles;
     Intersection_type tag;
 
-    Intersection_event(const Point_3 & p, const Circle_3 & c1,
-        const Circle_3 & c2, const Intersection_type & t):
-      point(p), circles(c1, c2), tag(t)
-    { CGAL_assertion(c1.has_on(p) && c2.has_on(p)); }
+    Intersection_event(const Circle_3 & c1, const Circle_3 & c2,
+        const Intersection_type & t):
+      circles(c1, c2), tag(t) {}
 
     bool operator==(const Intersection_event<Kernel> & ev) const
     { return circles == ev.circles && tag == ev.tag; }
@@ -384,17 +381,18 @@ class Event_queue
     { return _normal_events.pop(); }
 
   private:
+    template <typename Event_site>
+    struct Event_site_queue
+    { typedef std::priority_queue<Event_site, std::vector<Event_site>,
+      Comp_event_sites<Event_site> > Type; };
+
     // Normal event sites
-    typedef Comp_event_sites<Normal_event_site<Kernel> >
-      Comp_normal_event_sites;
-    std::priority_queue<Normal_event_site<Kernel>,
-      Comp_normal_event_sites> _normal_events;
+    typename Event_site_queue<Normal_event_site<Kernel>
+      >::Type _normal_events;
 
     // Polar event sites
-    typedef Comp_event_sites<Polar_event_site<Kernel> >
-      Comp_polar_event_sites;
-    std::priority_queue<Polar_event_site<Kernel>,
-      Comp_polar_event_sites> _polar_events;
+    typename Event_site_queue<Polar_event_site<Kernel>
+      >::Type _polar_events;
 };
 
 #endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2

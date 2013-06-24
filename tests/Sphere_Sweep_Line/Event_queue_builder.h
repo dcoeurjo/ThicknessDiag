@@ -10,9 +10,20 @@
 #include <Event_queue.h>
 #include <Sphere_intersecter.h>
 
+template <typename T, typename Comp>
+struct Comp_by_point
+{
+  bool operator()(const T & left,
+      const T & right) const
+  {
+    return Comp()(left.point(), right.point());
+  }
+};
+
 template <typename Kernel>
 class Event_queue_builder
 {
+  typedef typename Kernel::Point_3 Point_3;
   typedef typename Kernel::Circle_3 Circle_3;
   typedef typename Kernel::Sphere_3 Sphere_3;
   typedef typename Kernel::Direction_3 Direction_3;
@@ -30,89 +41,6 @@ class Event_queue_builder
 
   typedef typename SI::Sphere_handle Sphere_handle;
   typedef typename SI::Circle_handle Circle_handle;
-
-  void make_start_end_events(const Sphere_handle & sh)
-  {
-    // TODO
-  }
-
-  void make_crossing_tangency_events(EQ & ev_queue,
-      const Sphere_handle & sh)
-  {
-    // Cleaner code with typedef
-    typedef std::vector<Circle_handle> Circle_list;
-
-    // Get the sphere's circles
-    Circle_list circle_list;
-    _si->circles_on_sphere(sh, circle_list.begin());
-
-    // Do all intersections
-    for (typename Circle_list::const_iterator it = circle_list.begin();
-        it != circle_list.end(); it++)
-    {
-      const Circle_handle & ch1 = *it;
-      for (typename Circle_list::const_iterator it2 = it + 1;
-          it2 != circle_list.end(); it2++)
-      {
-        // *More* syntaxic sugar
-        typedef Intersection_event<Kernel> IE;
-        const Circle_handle & ch2 = *it2;
-        const Circle_3 & c1 = *ch1;
-        const Circle_3 & c2 = *ch2;
-
-        // Intersection circles must be different
-        CGAL_assertion(ch1 != ch2 && c1 != c2);
-
-        // Do intersections
-        std::vector<Object_3> intersected;
-        Intersect_3()(c1, c2, std::back_inserter(intersected));
-
-        // Handle intersections
-        if (intersected.empty())
-        { continue; }
-        else if (intersected.size() == 1) // Equality or Tangency
-        {
-          // Test if intersection is a point -> tangency
-          std::pair<Circular_arc_point_3, unsigned int> cap;
-          if (Assign_3()(cap, intersected[0]))
-          {
-            // Handle circle tangency
-            ev_queue.push(IE(cap.first, c1, c2, IE::Tangency));
-            continue;
-          }
-
-          // Intersection is necessarily a circle
-          Circle_3 c;
-          CGAL_assertion(Assign_3()(c, intersected[0]));
-          handle_circle_equality(ev_queue, c1, c2);
-        }
-        else // Crossing
-        {
-          // There is necessarily two intersections
-          CGAL_assertion(intersected.size() == 2);
-
-          std::pair<Circular_arc_point_3, unsigned int> cap1, cap2;
-          CGAL_assertion(Assign_3()(cap1, intersected[0])
-              && Assign_3()(cap2, intersected[1]));
-          CGAL_assertion(cap1.second == 1 && cap2.second == 1);
-
-          // Handle circle crossing
-          // ...first point
-          ev_queue.push(IE(cap1.first, c1, c2, IE::Largest_crossing));
-          ev_queue.push(IE(cap1.first, c1, c2, IE::Smallest_crossing));
-          // ...second point
-          ev_queue.push(IE(cap2.second, c1, c2, IE::Largest_crossing));
-          ev_queue.push(IE(cap2.second, c1, c2, IE::Smallest_crossing));
-        }
-      }
-    }
-  }
-
-  void handle_circle_equality(EQ & ev_queue,
-      const Circle_3 & c1, const Circle_3 & c2) const
-  {
-    // TODO
-  }
 
   public:
     Event_queue_builder(const SI * si = 0):
@@ -132,10 +60,91 @@ class Event_queue_builder
     EQ build(const Sphere_handle & sh)
     {
       EQ ev_queue;
+
+      // Check basic assertions
       CGAL_assertion(_si != 0);
       CGAL_assertion(_si->find_sphere(*sh).is_null() == false);
-      make_start_end_events(sh, ev_queue);
-      make_crossing_tangency_events(sh, ev_queue);
+
+      // Normal event sites, ordered by corresponding point
+      typedef Normal_event_site<Kernel> NES;
+      std::map<Point_3, NES, Comp_by_point<NES,
+        CompareThetaZ_3> > normal_event_sites;
+#define ADD_IE_TO_SITE(POINT, TYPE)                             \
+      { Point_3 p(POINT.x(), POINT.y(), POINT.z());             \
+        normal_event_sites.insert(std::make_pair(p, NES(p))     \
+            ).first->second.add_event(IE(c1, c2, IE::TYPE)); }
+
+      // Make start/end events
+      // TODO
+
+      // Make intersection events
+      typedef std::vector<Circle_handle> Circle_list;
+
+      // Get the sphere's circles
+      Circle_list circle_list;
+      _si->circles_on_sphere(sh, circle_list.begin());
+
+      // Do all intersections
+      for (typename Circle_list::const_iterator it = circle_list.begin();
+          it != circle_list.end(); it++)
+      {
+        const Circle_handle & ch1 = *it;
+        for (typename Circle_list::const_iterator it2 = it + 1;
+            it2 != circle_list.end(); it2++)
+        {
+          // *More* syntaxic sugar
+          typedef Intersection_event<Kernel> IE;
+          const Circle_handle & ch2 = *it2;
+          const Circle_3 & c1 = *ch1;
+          const Circle_3 & c2 = *ch2;
+
+          // Intersection circles must be different
+          CGAL_assertion(ch1 != ch2 && c1 != c2);
+
+          // Do intersections
+          std::vector<Object_3> intersected;
+          Intersect_3()(c1, c2, std::back_inserter(intersected));
+
+          // Handle intersections
+          if (intersected.empty())
+          { continue; }
+          else if (intersected.size() == 1) // Equality or Tangency
+          {
+            // Test if intersection is a point -> tangency
+            std::pair<Circular_arc_point_3, unsigned int> cap;
+            if (Assign_3()(cap, intersected[0]))
+            {
+              // Handle circle tangency
+              ADD_IE_TO_SITE(cap.first, Tangency);
+              continue;
+            }
+
+            // Intersection is necessarily a circle
+            Circle_3 c;
+            CGAL_assertion(Assign_3()(c, intersected[0]));
+            //handle_circle_equality(ev_queue, c1, c2); FIXME
+          }
+          else // Crossing
+          {
+            // There is necessarily two intersections
+            CGAL_assertion(intersected.size() == 2);
+
+            std::pair<Circular_arc_point_3, unsigned int> cap1, cap2;
+            CGAL_assertion(Assign_3()(cap1, intersected[0])
+                && Assign_3()(cap2, intersected[1]));
+            CGAL_assertion(cap1.second == 1 && cap2.second == 1);
+
+            // Handle circle crossing
+            // ...first point
+            ADD_IE_TO_SITE(cap1.first, Largest_crossing);
+            ADD_IE_TO_SITE(cap1.first, Smallest_crossing);
+            // ...second point
+            ADD_IE_TO_SITE(cap2.first, Largest_crossing);
+            ADD_IE_TO_SITE(cap2.first, Smallest_crossing);
+          }
+        }
+      }
+#undef ADD_IE_TO_SITE
       return ev_queue;
     }
 
