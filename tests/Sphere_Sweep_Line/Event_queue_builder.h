@@ -59,12 +59,13 @@ class Event_queue_builder
       typedef std::map<Circular_arc_point_3, NES> NES_map;
       NES_map nes;
 
-//#define ADD_IE_TO_SITE(POINT, TYPE)                              \
-      //{ typedef std::pair<const Circular_arc_point_3, NES> pair; \
-        //typename NES_map::iterator it = nes.find(POINT);         \
-        //if (it == nes.end())                                     \
-        //{ it->second = nes[POINT] = NES(POINT); }                \
-        //it->second.add_event(IE(c1, c2, IE::TYPE)); }
+#define ADD_IE_TO_SITE(POINT, TYPE)                              \
+      { typedef std::pair<const Circular_arc_point_3, NES> pair; \
+        typename NES_map::iterator it = nes.find(POINT);         \
+        if (it == nes.end())                                     \
+        { it = nes.insert(std::make_pair(POINT,                  \
+              NES(sh, POINT))).first; }                          \
+        it->second.add_event(IE(c1, c2, IE::TYPE)); }
 
       // Make start/end events
       // TODO
@@ -107,7 +108,7 @@ class Event_queue_builder
             if (Assign_3()(cap, intersected[0]))
             {
               // Handle circle tangency
-              //ADD_IE_TO_SITE(cap.first, Tangency);
+              ADD_IE_TO_SITE(cap.first, Tangency);
               continue;
             }
 
@@ -128,15 +129,15 @@ class Event_queue_builder
 
             // Handle circle crossing
             // ...first point
-            //ADD_IE_TO_SITE(cap1.first, Largest_crossing);
-            //ADD_IE_TO_SITE(cap1.first, Smallest_crossing);
+            ADD_IE_TO_SITE(cap1.first, Largest_crossing);
+            ADD_IE_TO_SITE(cap1.first, Smallest_crossing);
             // ...second point
-            //ADD_IE_TO_SITE(cap2.first, Largest_crossing);
-            //ADD_IE_TO_SITE(cap2.first, Smallest_crossing);
+            ADD_IE_TO_SITE(cap2.first, Largest_crossing);
+            ADD_IE_TO_SITE(cap2.first, Smallest_crossing);
           }
         }
       }
-//#undef ADD_IE_TO_SITE
+#undef ADD_IE_TO_SITE
       return ev_queue;
     }
 
