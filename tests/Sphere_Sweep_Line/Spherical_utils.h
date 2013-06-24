@@ -3,6 +3,7 @@
 
 #include <functional>
 
+#include <CGAL/Kernel/global_functions_3.h>
 #include <CGAL/Spherical_kernel_3.h>
 
 template <typename Squared_radius_holder>
