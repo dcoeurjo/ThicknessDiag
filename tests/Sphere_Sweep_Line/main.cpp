@@ -121,7 +121,7 @@ static void do_main(int argc, const char * argv[])
 
   // Convert nb_spheres
   { std::istringstream iss(argv[1]);
-    if ( (iss >> nb_spheres) == false )
+    if ( (iss >> nb_spheres).fail() == false )
     { throw usage_error("Bad number format (positive integer)"); } }
 
 #ifdef DISPLAY_ON_GEOMVIEW
@@ -144,7 +144,7 @@ static void do_main(int argc, const char * argv[])
 
     // Convert rand_amp
     std::istringstream iss(argv[2]);
-    if ( (iss >> rand_amp) == false )
+    if ( (iss >> rand_amp).fail() == false )
     { throw usage_error("Bad number format (real number)"); }
   }
 
