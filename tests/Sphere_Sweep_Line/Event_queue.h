@@ -64,21 +64,16 @@ class Normal_event: public Tagged_event
     { return Tagged_event::operator==(ev) && arcs == ev.arcs; }
 };
 
-// Polar events are defined by:
-//  - the arc looping around its entire circle
+// (Bi)Polar events are defined by:
+//  - the circle itself (~arc bounded by poles)
 //  - a tag { Start, End }
 //
-// Bipolar events are defined by:
-//  - the arc on the circle, bounded by the poles
-//  - a tag { Start, End }
-//
-// Both are regrouped under one single struct because
-// of the very similar structure of these two. Difference
-// between these is done by accessing the polarity flag.
+// Difference between polar and bipolar events
+// is done by accessing the "polarity" flag.
 template <typename Kernel>
 class Polar_event: public Tagged_event
 {
-  typedef typename Kernel::Circular_arc_3 Circular_arc_3;
+  typedef typename Kernel::Circle_3 Circle_3;
 
   public:
     enum Polarity_type {
@@ -86,7 +81,7 @@ class Polar_event: public Tagged_event
     };
 
     Polarity_type polarity;
-    Circular_arc_3 arc;
+    Circle_3 circle;
 
     bool is_single_polar() const
     { return polarity == Single; }
@@ -107,7 +102,7 @@ class Polar_event: public Tagged_event
     { return pole == North; }
 
     bool operator==(const Polar_event<Kernel> & ev) const
-    { return Tagged_event::operator==(ev) && arc == ev.arc
+    { return Tagged_event::operator==(ev) && circle == ev.circle
       && polarity == ev.polarity && pole == ev.pole; }
 };
 
@@ -141,7 +136,8 @@ class Intersection_event
     { return circles == ev.circles && tag == ev.tag; }
 };
 
-// Compare two events' first arc by increasing radius
+// Compare two events' first arc by increasing radius,
+// works with Normal/Intersection events.
 template <typename Kernel, typename Event>
 struct Comp_event_arc_radii:
   std::unary_function<Event, bool>
@@ -233,7 +229,7 @@ class Normal_event_site
     { return Comp_theta_z_3<Kernel>()(_point, es._point, *_sphere_handle); }
 
     // Symmetric version of Polar_event_site::occurs_before
-    bool occurs_before(const Polar_event<Kernel> & es) const
+    bool occurs_before(const Polar_event_site<Kernel> & es) const
     { return es.occurs_before(*this) == false; }
 
     // Getter for event point
@@ -261,6 +257,8 @@ class Normal_event_site
 template <typename Kernel>
 class Polar_event_site
 {
+  typedef typename Kernel::Circle_3 Circle_3;
+
   public:
     Polar_event_site(const Polar_event<Kernel> & ev):
       _event(ev) {}
@@ -271,10 +269,8 @@ class Polar_event_site
     bool is_bipolar() const
     { return _event.is_bipolar(); }
 
-    bool occurs_before(const Normal_event<Kernel> & es) const
-    {
-      return is_bipolar() || _event.is_end();
-    }
+    bool occurs_before(const Normal_event_site<Kernel> & es) const
+    { return is_bipolar() || _event.is_end(); }
 
     bool occurs_before(const Polar_event_site<Kernel> & es) const
     {
@@ -296,7 +292,8 @@ class Polar_event_site
           // Store the polar event site having the biggest
           // associated circle radius
           const Polar_event_site<Kernel> * es_biggest_circle = this;
-          if (es._event.arc.squared_radius() > _event.arc.squared_radius())
+          if (Comp_by_squared_radii<Circle_3>()
+              (es._event.circle, _event.circle))
           { es_biggest_circle = &es; }
 
           // Start -> biggest occurs first, end -> smallest occurs first

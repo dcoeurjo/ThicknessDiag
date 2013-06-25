@@ -172,8 +172,8 @@ static void do_main(int argc, const char * argv[])
   Sphere_3 s(Point_3(0, 0, 0), 42);
   SI::Sphere_handle sh = si.add_sphere(s);
   EQ ev_queue = EQB().with_si(si).build(sh);
-  typename EQ::Event_site_type et;
-  //while ( (typename EQ::Event_site_type ev_type = ev_queue.next_event()) != EQ::None )
+  CGAL_assertion(ev_queue.next_event() != EQ::None);
+  //while ( (EQ::Event_site_type ev_type = ev_queue.next_event()) != EQ::None )
   //{
     //if (ev_type == EQ::Normal)
     //{ ev_queue.pop_normal(); }
