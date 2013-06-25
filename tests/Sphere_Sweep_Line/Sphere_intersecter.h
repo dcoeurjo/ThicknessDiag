@@ -229,8 +229,8 @@ class Sphere_intersecter
         OutputIterator out_it) const
     {
       INFER_AUTO(it, _stcl.find(sh));
-      CGAL_assertion(it != _stcl.end());
-      std::copy(it->second.begin(), it->second.end(), out_it);
+      if (it != _stcl.end())
+      { std::copy(it->second.begin(), it->second.end(), out_it); }
       return out_it;
     }
 

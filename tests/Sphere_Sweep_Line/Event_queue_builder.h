@@ -8,6 +8,12 @@
 #include <CGAL/assertions.h>
 #include <CGAL/Kernel/global_functions_3.h>
 
+#ifndef NDEBUG
+# define POSSIBLY_ASSERT(S) S
+#else
+#  define POSSIBLY_ASSERT(S) CGAL_assertion(S);
+#endif // NDEBUG
+
 #include <Event_queue.h>
 #include <Sphere_intersecter.h>
 
@@ -87,14 +93,15 @@ class Event_queue_builder
       Intersection_list poles_found;
       Intersect_3()(pole_axis, sphere, std::back_inserter(poles_found));
       CGAL_assertion(poles_found.size() == 2);
-      CGAL_assertion(Assign_3()(poles[0], poles_found[0]));
-      CGAL_assertion(Assign_3()(poles[1], poles_found[1]));
+      POSSIBLY_ASSERT(Assign_3()(poles[0], poles_found[0]));
+      POSSIBLY_ASSERT(Assign_3()(poles[1], poles_found[1]));
       Circular_arc_point_3 north(poles[0].first), south(poles[1].first);
 
       // Redundant code
-#define ASSIGN_POLE_TO_CAP(OBJ, CAP)                             \
-      { CGAL_assertion(Assign_3()(CAP, OBJ));                    \
-      CGAL_assertion(CAP.first == north || CAP.first == south); }
+#define ASSIGN_POLE_TO_CAP(OBJ, CAP)    \
+      { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ));           \
+      /*CGAL_assertion(CAP.first == north \
+          || CAP.first == south);*/ }
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -113,6 +120,7 @@ class Event_queue_builder
           {
             CAP cap;
             ASSIGN_POLE_TO_CAP(intersections_at_poles[0], cap);
+            POSSIBLY_ASSERT(false);
             // TODO add polar event
           }
           else
@@ -161,7 +169,7 @@ class Event_queue_builder
 
             // Intersection is necessarily a circle
             Circle_3 c;
-            CGAL_assertion(Assign_3()(c, circle_intersections[0]));
+            POSSIBLY_ASSERT(Assign_3()(c, circle_intersections[0]));
             //handle_circle_equality(ev_queue, c1, c2); FIXME
           }
           else // Crossing
@@ -170,8 +178,8 @@ class Event_queue_builder
             CGAL_assertion(circle_intersections.size() == 2);
 
             CAP cap1, cap2;
-            CGAL_assertion(Assign_3()(cap1, circle_intersections[0])
-                && Assign_3()(cap2, circle_intersections[1]));
+            POSSIBLY_ASSERT(Assign_3()(cap1, circle_intersections[0]));
+            POSSIBLY_ASSERT(Assign_3()(cap2, circle_intersections[1]));
             CGAL_assertion(cap1.second == 1 && cap2.second == 1);
 
             // Handle circle crossing
