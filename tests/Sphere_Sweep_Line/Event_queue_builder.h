@@ -84,7 +84,7 @@ class Event_queue_builder
       // Get the sphere's circles
       typedef std::vector<Circle_handle> Circle_list;
       Circle_list circle_list;
-      _si->circles_on_sphere(sh, circle_list.begin());
+      _si->circles_on_sphere(sh, std::back_inserter(circle_list));
 
       // Store the line passing through the poles
       // FIXME ordering north/south is not handled, but set arbitrarily
