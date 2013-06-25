@@ -98,10 +98,10 @@ class Event_queue_builder
       Circular_arc_point_3 north(poles[0].first), south(poles[1].first);
 
       // Redundant code
-#define ASSIGN_POLE_TO_CAP(OBJ, CAP)    \
-      { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ));           \
-      /*CGAL_assertion(CAP.first == north \
-          || CAP.first == south);*/ }
+#define ASSIGN_POLE_TO_CAP(OBJ, CAP)           \
+      { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ)); \
+      /*CGAL_assertion(CAP.first == north      \
+          || CAP.first == south);*/ } // FIXME
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -120,7 +120,6 @@ class Event_queue_builder
           {
             CAP cap;
             ASSIGN_POLE_TO_CAP(intersections_at_poles[0], cap);
-            POSSIBLY_ASSERT(false);
             // TODO add polar event
           }
           else
