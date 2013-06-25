@@ -171,7 +171,7 @@ static void do_main(int argc, const char * argv[])
   // Event queue filling
   Sphere_3 s(Point_3(0, 0, 0), 42);
   SI::Sphere_handle sh = si.add_sphere(s);
-  EQ ev_queue = EQB().with_si(si).build(sh);
+  EQ ev_queue = EQB()(si, sh);
   CGAL_assertion(ev_queue.next_event() != EQ::None);
   //while ( (EQ::Event_site_type ev_type = ev_queue.next_event()) != EQ::None )
   //{

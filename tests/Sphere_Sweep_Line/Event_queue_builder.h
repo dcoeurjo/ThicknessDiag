@@ -35,60 +35,39 @@ class Event_queue_builder
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Sphere_handle Sphere_handle;
   typedef typename SI::Circle_handle Circle_handle;
+
   typedef Event_queue_builder<Kernel> Self;
   typedef Event_queue<Kernel> EQ;
 
   public:
-    Event_queue_builder(const SI * si = 0):
-      _si(si), _axis_dir(0, 0, 1) {}
+    EQ operator()(const SI & si, const Sphere_3 & s)
+    { Sphere_handle sh = si.find_sphere(s);
+      return (*this)(si, sh); }
 
-    Event_queue_builder(const Self &);
-    Self & operator=(const Self &);
-
-    Self & with_si(const SI & si)
-    { _si = &si;
-      return *this; }
-
-    Self & with_pole_axis(const Direction_3 & d)
-    { _axis_dir = d; 
-      return *this; }
-
-    EQ build(const Sphere_handle & sh)
+    EQ operator()(const SI & si, const Sphere_handle & sh)
     {
-      EQ ev_queue;
-
       // Check basic assertions
-      CGAL_assertion(_si != 0);
       CGAL_assertion(sh.is_null() == false);
-      CGAL_assertion(_si->find_sphere(*sh).is_null() == false);
+      CGAL_assertion(si.find_sphere(*sh).is_null() == false);
 
       // Cleaner code helpers
+      typedef Polar_event<Kernel> PE;
+      typedef Polar_event_site<Kernel> PE_site;
+      typedef Normal_event<Kernel> NE;
+      typedef Normal_event_site<Kernel> NE_site;
       typedef std::vector<Object_3> Intersection_list;
       typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
       const Sphere_3 & sphere = *sh;
       const Point_3 & sphere_center = sh->center();
 
-      // Normal event sites, ordered by corresponding point
-      typedef Normal_event_site<Kernel> NES;
-      typedef std::map<Circular_arc_point_3, NES> NES_map;
-      NES_map nes_map;
-
-#define ADD_IE_TO_SITE(POINT, TYPE)                              \
-      { typedef std::pair<const Circular_arc_point_3, NES> pair; \
-        typename NES_map::iterator it = nes_map.find(POINT);     \
-        if (it == nes_map.end())                                 \
-        { it = nes_map.insert(std::make_pair(POINT,              \
-              NES(sh, POINT))).first; }                          \
-        it->second.add_event(IE(c1, c2, IE::TYPE)); }
-
       // Get the sphere's circles
       typedef std::vector<Circle_handle> Circle_list;
       Circle_list circle_list;
-      _si->circles_on_sphere(sh, std::back_inserter(circle_list));
+      si.circles_on_sphere(sh, std::back_inserter(circle_list));
 
       // Store the line passing through the poles
       // FIXME ordering north/south is not handled, but set arbitrarily
-      Line_3 pole_axis(sh->center(), _axis_dir);
+      Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
       CAP poles[2];
       Intersection_list poles_found;
       Intersect_3()(pole_axis, sphere, std::back_inserter(poles_found));
@@ -96,12 +75,26 @@ class Event_queue_builder
       POSSIBLY_ASSERT(Assign_3()(poles[0], poles_found[0]));
       POSSIBLY_ASSERT(Assign_3()(poles[1], poles_found[1]));
       Circular_arc_point_3 north(poles[0].first), south(poles[1].first);
-
-      // Redundant code
+      // ...helper macro for redundant code
 #define ASSIGN_POLE_TO_CAP(OBJ, CAP)           \
       { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ)); \
       /*CGAL_assertion(CAP.first == north      \
           || CAP.first == south);*/ } // FIXME
+
+      // Normal event sites, ordered by corresponding point
+      typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
+      NE_site_map ne_site_map;
+      // ...helper macro for redundant code
+#define ADD_IE_TO_SITE(POINT, TYPE)                                  \
+      { typedef std::pair<const Circular_arc_point_3, NE_site> pair; \
+        typename NE_site_map::iterator it = ne_site_map.find(POINT); \
+        if (it == ne_site_map.end())                                 \
+        { it = ne_site_map.insert(std::make_pair(POINT,              \
+              NE_site(sh, POINT))).first; }                          \
+        it->second.add_event(IE(c1, c2, IE::TYPE)); }
+
+      // Polar event sites, ordered by the corresponding point
+      //typedef std::map<Circular_arc_point, PE_site>
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -169,7 +162,7 @@ class Event_queue_builder
             // Intersection is necessarily a circle
             Circle_3 c;
             POSSIBLY_ASSERT(Assign_3()(c, circle_intersections[0]));
-            //handle_circle_equality(ev_queue, c1, c2); FIXME
+            //handle_circle_equality(c1, c2); FIXME
           }
           else // Crossing
           {
@@ -193,18 +186,16 @@ class Event_queue_builder
       }
 #undef ADD_IE_TO_SITE
 
+      EQ ev_queue;
+
       // Now that the normal events are all regrouped in event sites,
       // add all the event sites to the event queue
-      for (typename NES_map::const_iterator it = nes_map.begin();
-          it != nes_map.end(); it++)
+      for (typename NE_site_map::const_iterator it = ne_site_map.begin();
+          it != ne_site_map.end(); it++)
       { ev_queue.push(it->second); }
 
       return ev_queue;
     }
-
-  private:
-    const SI * _si;
-    Direction_3 _axis_dir;
 };
 
 #endif // EVENT_QUEUE_BUILDER_H // vim: sw=2 et ts=2 sts=2

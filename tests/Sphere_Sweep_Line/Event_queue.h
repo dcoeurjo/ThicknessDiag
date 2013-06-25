@@ -37,6 +37,9 @@ struct Tagged_event
     Start, End
   };
 
+  Tagged_event(Tag_type t):
+    tag(t) {}
+
   Tag_type tag;
 
   bool is_start() const
@@ -50,7 +53,7 @@ struct Tagged_event
 };
 
 // Basic normal events are defined by:
-//  - the pair of arcs defining its circle 
+//  - the pair of arcs defining its circle (pair of intersecting arcs ?)
 //  - a tag { Start, End }
 template <typename Kernel>
 class Normal_event: public Tagged_event
@@ -58,6 +61,10 @@ class Normal_event: public Tagged_event
   typedef typename Kernel::Circular_arc_3 Circular_arc_3;
 
   public:
+    Normal_event(const Circular_arc_3 & ca1, const Circular_arc_3 & ca2,
+        Tagged_event::Tag_type tag):
+      Tagged_event(tag), arcs(ca1, ca2) {}
+
     std::pair<Circular_arc_3, Circular_arc_3> arcs;
 
     bool operator==(const Normal_event<Kernel> & ev) const
@@ -74,14 +81,27 @@ template <typename Kernel>
 class Polar_event: public Tagged_event
 {
   typedef typename Kernel::Circle_3 Circle_3;
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Circle_handle Circle_handle;
 
   public:
     enum Polarity_type {
       Single, Dual
     };
 
+    enum Pole_type {
+      North, South
+    };
+
+    Polar_event(const Circle_handle & ch,
+        Polarity_type t, Pole_type p,
+        Tagged_event::Tag_type tag):
+      Tagged_event(tag), circle_handle(ch),
+      polarity(t), pole(p) {}
+
+    Circle_handle circle_handle;
     Polarity_type polarity;
-    Circle_3 circle;
+    Pole_type pole;
 
     bool is_single_polar() const
     { return polarity == Single; }
@@ -89,20 +109,18 @@ class Polar_event: public Tagged_event
     bool is_bipolar() const
     { return polarity == Dual; }
 
-    enum Pole_type {
-      North, South
-    };
-
-    Pole_type pole;
-
     bool is_north() const
     { return pole == North; }
 
     bool is_south() const
     { return pole == North; }
 
+    const Circle_3 & circle() const
+    { return *circle_handle; }
+
     bool operator==(const Polar_event<Kernel> & ev) const
-    { return Tagged_event::operator==(ev) && circle == ev.circle
+    { return Tagged_event::operator==(ev)
+      && circle_handle == ev.circle_handle
       && polarity == ev.polarity && pole == ev.pole; }
 };
 
@@ -129,7 +147,7 @@ class Intersection_event
     Intersection_type tag;
 
     Intersection_event(const Circle_3 & c1, const Circle_3 & c2,
-        const Intersection_type & t):
+        Intersection_type t):
       circles(c1, c2), tag(t) {}
 
     bool operator==(const Intersection_event<Kernel> & ev) const
@@ -293,7 +311,7 @@ class Polar_event_site
           // associated circle radius
           const Polar_event_site<Kernel> * es_biggest_circle = this;
           if (Comp_by_squared_radii<Circle_3>()
-              (es._event.circle, _event.circle))
+              (es._event.circle(), _event.circle()))
           { es_biggest_circle = &es; }
 
           // Start -> biggest occurs first, end -> smallest occurs first
