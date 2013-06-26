@@ -191,6 +191,8 @@ class Normal_event_site
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Sphere_handle Sphere_handle;
 
+  friend class Intersection_events_range;
+
   public:
     Normal_event_site(const Sphere_handle & sh,
         const Circular_arc_point_3 & p):
@@ -253,6 +255,29 @@ class Normal_event_site
     // Getter for event point
     Circular_arc_point_3 const & point() const
     { return _point; }
+
+    // Start events iterator range
+    // TODO
+
+    // End events iterator range
+    // TODO
+
+    // Intersection events iterator range
+    typedef int Intersection_events_iterator; // FIXME
+    class Intersection_events_range
+    {
+      public:
+        Intersection_events_range(const Normal_event_site<Kernel> & nes):
+          _nes(nes) {}
+
+        Intersection_events_iterator begin() const
+        { return 0; } // FIXME
+        Intersection_events_iterator end() const
+        { return 0; } // FIXME
+
+      private:
+        const Normal_event_site<Kernel> & _nes;
+    };
 
   private:
     // Location of event site

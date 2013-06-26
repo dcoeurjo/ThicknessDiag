@@ -20,6 +20,9 @@ typedef typename Kernel::Circle_3 Circle_3;
 typedef typename Kernel::Sphere_3 Sphere_3;
 typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
+// CGAL helpers
+using CGAL::to_double;
+
 // Sphere intersecter
 typedef Sphere_intersecter<Kernel> SI;
 typedef Event_queue<Kernel> EQ;
@@ -39,6 +42,10 @@ inline Color random_color(Random & rand)
 { return Color(rand.get_int(0, 255),
       rand.get_int(0, 255),
       rand.get_int(0, 255)); }
+
+inline Point_3 to_point_3(const Circular_arc_point_3 & cap)
+{ return Point_3(to_double(cap.x()),
+      to_double(cap.y()), to_double(cap.z())); }
 
 class Display_something_on_geomview
 {
@@ -82,19 +89,7 @@ struct Display_cap_on_geomview:
     Display_something_on_geomview(gv) {}
 
   void operator()(const Circular_arc_point_3 & cap)
-  {
-#define SQRT_EXT_TO_DOUBLE(EXT)                    \
-    EXT.a0().to_double() + EXT.a1().to_double()    \
-    * std::sqrt(EXT.root().numerator().to_double() \
-        / EXT.root().denominator().to_double())
-
-    double x(SQRT_EXT_TO_DOUBLE(cap.x())),
-           y(SQRT_EXT_TO_DOUBLE(cap.y())),
-           z(SQRT_EXT_TO_DOUBLE(cap.z()));
-    gv() << Point_3(x, y, z);
-
-#undef SQRT_EXT_TO_DOUBLE
-  }
+  { gv() << to_point_3(cap); }
 };
 
 #endif // DISPLAY_ON_GEOMVIEW //
@@ -127,6 +122,15 @@ class Random_sphere_3
     FT _amp;
     Random _rand;
     Sphere_list _spheres;
+};
+
+struct Repr_normal_event_site
+{
+  std::string operator()(const Normal_event_site<Kernel> & nes) const
+  {
+    std::ostringstream oss;
+    return oss.str();
+  }
 };
 
 class usage_error: public std::runtime_error
@@ -201,7 +205,7 @@ static void do_main(int argc, const char * argv[])
   while (std::cin.get() != '\n');
 #endif // DISPLAY_ON_GEOMVIEW //
 
-  // Event queue filling
+  // Sphere to apply BO on
   Sphere_3 s(Point_3(0, 0, 0), 42);
   SI::Sphere_handle sh = si.add_sphere(s);
 #ifdef DISPLAY_ON_GEOMVIEW
@@ -214,26 +218,24 @@ static void do_main(int argc, const char * argv[])
   si.circles_on_sphere(sh, std::back_inserter(s_circles));
   std::for_each(s_circles.begin(), s_circles.end(),
       Display_circle_on_geomview(gv));
-#endif // DISPLAY_ON_GEOMVIEW //
-  EQ ev_queue = EQB()(si, sh);
-
-  // Display event queue
-#ifdef DISPLAY_ON_GEOMVIEW
   Display_cap_on_geomview display_cap(gv);
 #endif // DISPLAY_ON_GEOMVIEW //
+
+  // Event queue filling
+  EQ ev_queue = EQB()(si, sh);
 
   // Empty queue ?
   if (ev_queue.empty())
   { std::cout << "No events pushed to queue" << std::endl; }
   // Pop-and-display events
-  for (;;)
+  for (EQ::Event_site_type ev_type = ev_queue.next_event();
+      ev_type != EQ::None; ev_type = ev_queue.next_event())
   {
-    EQ::Event_site_type ev_type = ev_queue.next_event();
     if (ev_type == EQ::Normal)
     {
       Normal_event_site<Kernel> nes = ev_queue.pop_normal_event();
-      Circular_arc_point_3 cap = nes.point();
-      std::cout << "- normal event site at " << cap << std::endl;
+      std::cout << "- normal event site "
+        << Repr_normal_event_site()(nes) << std::endl;
 #ifdef DISPLAY_ON_GEOMVIEW
       display_cap(cap);
 #endif // DISPLAY_ON_GEOMVIEW //
@@ -243,10 +245,7 @@ static void do_main(int argc, const char * argv[])
       // TODO
     }
     else
-    {
-      CGAL_assertion(ev_type == EQ::None);
-      break;
-    }
+    { CGAL_assertion(ev_type == EQ::None); }
   }
 #ifdef DISPLAY_ON_GEOMVIEW
   while (std::cin.get() != '\n');
