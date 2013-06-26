@@ -225,6 +225,16 @@ class Sphere_intersecter
     }
 
     template <typename OutputIterator>
+    OutputIterator circles_on_sphere(const Sphere_3 & s,
+        OutputIterator out_it) const
+    {
+      Sphere_handle sh = find_sphere(s);
+      if (sh.is_null() == false)
+      { return circles_on_sphere(sh, out_it); }
+      return out_it;
+    }
+
+    template <typename OutputIterator>
     OutputIterator circles_on_sphere(const Sphere_handle & sh,
         OutputIterator out_it) const
     {

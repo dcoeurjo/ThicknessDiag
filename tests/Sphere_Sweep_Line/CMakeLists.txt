@@ -61,13 +61,6 @@ if(WITH_CPP0X_MODE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-set(WITH_EXACT_KERNEL_DESCRIPTION "Set this option to compute intersections with the exact kernel")
-set(WITH_EXACT_KERNEL_FLAG "USE_EXACT_KERNEL")
-option(WITH_EXACT_KERNEL ${WITH_EXACT_KERNEL_DESCRIPTION} FALSE)
-if(WITH_EXACT_KERNEL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${WITH_EXACT_KERNEL_FLAG}")
-endif()
-
 # link the executable to CGAL and third-party libraries
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${PROJECT_NAME})

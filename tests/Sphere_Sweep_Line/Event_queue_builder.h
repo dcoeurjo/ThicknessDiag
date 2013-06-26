@@ -66,7 +66,6 @@ class Event_queue_builder
       si.circles_on_sphere(sh, std::back_inserter(circle_list));
 
       // Store the line passing through the poles
-      // FIXME ordering north/south is not handled, but set arbitrarily
       Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
       CAP poles[2];
       Intersection_list poles_found;
@@ -74,7 +73,26 @@ class Event_queue_builder
       CGAL_assertion(poles_found.size() == 2);
       POSSIBLY_ASSERT(Assign_3()(poles[0], poles_found[0]));
       POSSIBLY_ASSERT(Assign_3()(poles[1], poles_found[1]));
-      Circular_arc_point_3 north(poles[0].first), south(poles[1].first);
+      Circular_arc_point_3 north, south;
+      // Minmax along Z to find the north/south
+      {
+        using namespace CGAL;
+        const Circular_arc_point_3 & a = poles[0].first;
+        const Circular_arc_point_3 & b = poles[1].first;
+        const Comparison_result comp_res = compare_z(a, b);
+        if (comp_res == SMALLER)
+        {
+          north = b;
+          south = a;
+        }
+        else
+        {
+          CGAL_assertion(comp_res == LARGER);
+          north = a;
+          south = b;
+        }
+        CGAL_assertion(compare_z(south, north) == SMALLER);
+      }
       // ...helper macro for redundant code
 #define ASSIGN_POLE_TO_CAP(OBJ, CAP)           \
       { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ)); \
@@ -85,16 +103,13 @@ class Event_queue_builder
       typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
       NE_site_map ne_site_map;
       // ...helper macro for redundant code
-#define ADD_IE_TO_SITE(POINT, TYPE)                                  \
+#define ADD_NE_TO_NE_SITE(POINT, TYPE)                                  \
       { typedef std::pair<const Circular_arc_point_3, NE_site> pair; \
         typename NE_site_map::iterator it = ne_site_map.find(POINT); \
         if (it == ne_site_map.end())                                 \
         { it = ne_site_map.insert(std::make_pair(POINT,              \
               NE_site(sh, POINT))).first; }                          \
         it->second.add_event(IE(c1, c2, IE::TYPE)); }
-
-      // Polar event sites, ordered by the corresponding point
-      //typedef std::map<Circular_arc_point, PE_site>
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -125,9 +140,11 @@ class Event_queue_builder
           }
         }
 #undef ASSIGN_POLE_TO_CAP
-
-        // Make normal start/end events
-        // TODO find start/end points on each circle
+        else
+        {
+          // Make normal start/end events
+          // TODO find start/end points on each circle
+        }
 
         // Make crossing/tangency events
         for (typename Circle_list::const_iterator it2 = it + 1;
@@ -155,7 +172,7 @@ class Event_queue_builder
             if (Assign_3()(cap, circle_intersections[0]))
             {
               // Handle circle tangency
-              ADD_IE_TO_SITE(cap.first, Tangency);
+              ADD_NE_TO_NE_SITE(cap.first, Tangency);
               continue;
             }
 
@@ -176,15 +193,15 @@ class Event_queue_builder
 
             // Handle circle crossing
             // ...first point
-            ADD_IE_TO_SITE(cap1.first, Largest_crossing);
-            ADD_IE_TO_SITE(cap1.first, Smallest_crossing);
+            ADD_NE_TO_NE_SITE(cap1.first, Largest_crossing);
+            ADD_NE_TO_NE_SITE(cap1.first, Smallest_crossing);
             // ...second point
-            ADD_IE_TO_SITE(cap2.first, Largest_crossing);
-            ADD_IE_TO_SITE(cap2.first, Smallest_crossing);
+            ADD_NE_TO_NE_SITE(cap2.first, Largest_crossing);
+            ADD_NE_TO_NE_SITE(cap2.first, Smallest_crossing);
           }
         }
       }
-#undef ADD_IE_TO_SITE
+#undef ADD_NE_TO_NE_SITE
 
       EQ ev_queue;
 

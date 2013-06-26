@@ -355,20 +355,59 @@ template <typename Kernel>
 class Event_queue
 {
   public:
-    // Push events to our queue
-    void push(const Normal_event_site<Kernel> & es)
-    { _normal_events.push(es); }
-    void push(const Polar_event_site<Kernel> & es)
-    { _polar_events.push(es); }
-    
     // Helper enum for returning either one of the type
     // of events that can be handled by the queue, or none
     enum Event_site_type {
       None, Normal, Polar
     };
 
+    Event_queue():
+      _normal_events(), _polar_events(),
+      _computed_state(None) {}
+
+    // Push events to our queue
+    void push(const Normal_event_site<Kernel> & es)
+    { _normal_events.push(es);
+      update_state(); }
+    void push(const Polar_event_site<Kernel> & es)
+    { _polar_events.push(es);
+      update_state(); }
+
+    // Helper for checking if event queue is empty
+    bool empty() const
+    { return next_event() == None; }
+
     // Get the type of the next event to handle
+    // Performance enhancement using state saving
     Event_site_type next_event() const
+    { return _computed_state; }
+
+    // Pop a polar event from the queue
+    // Concept: there is at least one polar event
+    Polar_event_site<Kernel> pop_polar_event()
+    {
+      Polar_event_site<Kernel> pes = _polar_events.top();
+      _polar_events.pop();
+      update_state();
+      return pes;
+    }
+
+    // Pop a normal event from the queue
+    // Concept: there is at least one normal event
+    Normal_event_site<Kernel> pop_normal_event()
+    {
+      Normal_event_site<Kernel> nes = _normal_events.top();
+      _normal_events.pop();
+      update_state();
+      return nes;
+    }
+
+  private:
+    // Fire an update of the event queue
+    void update_state()
+    { _computed_state = compute_next_state(); }
+    // ...compute the next state
+    Event_site_type compute_next_state() const
     {
       // Basic case: no events are left
       if (_normal_events.empty() && _polar_events.empty())
@@ -381,23 +420,14 @@ class Event_queue
       { return Polar; }
 
       // General case for when both queues aren't empty
-      if (_normal_events.top().occurs_before(_polar_events.top()))
+      const Normal_event_site<Kernel> & nes = _normal_events.top();
+      const Polar_event_site<Kernel> & pes = _polar_events.top();
+      if (nes.occurs_before(pes))
       { return Normal; }
       else
       { return Polar; }
     }
 
-    // Pop a polar event from the queue
-    // Concept: there is at least one polar event
-    Polar_event_site<Kernel> pop_polar_event()
-    { return _polar_events.pop(); }
-
-    // Pop a normal event from the queue
-    // Concept: there is at least one normal event
-    Normal_event_site<Kernel> pop_normal_event()
-    { return _normal_events.pop(); }
-
-  private:
     template <typename Event_site>
     struct Event_site_queue
     { typedef std::priority_queue<Event_site, std::vector<Event_site>,
@@ -408,6 +438,9 @@ class Event_queue
 
     // Polar event sites
     typename Event_site_queue<Polar_event_site<Kernel> >::Type _polar_events;
+
+    // Event queue state, reset after each pop/push, computed
+    Event_site_type _computed_state;
 };
 
 #endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2
