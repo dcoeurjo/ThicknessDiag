@@ -15,10 +15,19 @@ typedef CGAL::Exact_spherical_kernel_3 Kernel;
 
 // Geometric objects
 typedef typename Kernel::FT FT;
+typedef typename Kernel::Line_3 Line_3;
 typedef typename Kernel::Point_3 Point_3;
+typedef typename Kernel::Plane_3 Plane_3;
+typedef typename Kernel::Vector_3 Vector_3;
 typedef typename Kernel::Circle_3 Circle_3;
 typedef typename Kernel::Sphere_3 Sphere_3;
+typedef typename Kernel::Segment_3 Segment_3;
 typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
+
+// Intersection objects
+typedef typename Kernel::Object_3 Object_3;
+typedef typename Kernel::Assign_3 Assign_3;
+typedef typename Kernel::Intersect_3 Intersect_3;
 
 // CGAL helpers
 using CGAL::to_double;
@@ -47,14 +56,13 @@ inline Point_3 to_point_3(const Circular_arc_point_3 & cap)
 { return Point_3(to_double(cap.x()),
       to_double(cap.y()), to_double(cap.z())); }
 
-class Display_something_on_geomview
+class Display_on_gv
 {
   public:
-    Display_something_on_geomview(Geomview_stream & gv):
+    Display_on_gv(Geomview_stream & gv):
       _gv(gv), _rand() {}
 
-  protected:
-    Geomview_stream & gv()
+    Geomview_stream & operator()()
     { return _gv << random_color(_rand); }
 
   private:
@@ -62,34 +70,55 @@ class Display_something_on_geomview
     Random _rand;
 };
 
-struct Display_sphere_on_geomview:
-  Display_something_on_geomview
+struct Display_sphere_on_gv: Display_on_gv
 {
-  Display_sphere_on_geomview(Geomview_stream & gv):
-    Display_something_on_geomview(gv) {}
+  Display_sphere_on_gv(Geomview_stream & gv):
+    Display_on_gv(gv) {}
 
-  void operator()(const SI::Sphere_handle & sh)
-  { gv() << *sh; }
+  Geomview_stream & operator()(const SI::Sphere_handle & sh)
+  { return Display_on_gv::operator()() << *sh; }
 };
 
-struct Display_circle_on_geomview:
-  Display_something_on_geomview
+struct Display_circle_on_gv: Display_on_gv
 {
-  Display_circle_on_geomview(Geomview_stream & gv):
-    Display_something_on_geomview(gv) {}
+  Display_circle_on_gv(Geomview_stream & gv):
+    Display_on_gv(gv) {}
 
-  void operator() (const SI::Circle_handle & ch)
-  { gv() << ch->bbox(); }
+  Geomview_stream & operator() (const SI::Circle_handle & ch)
+  {
+    // Get axes
+    Plane_3 plane = ch->supporting_plane();
+    Line_3 line_theta(ch->center(), plane.base1()),
+           line_phi(ch->center(), plane.base2());
+     
+    // Get intersection points
+    Object_3 c_theta_points[2], c_phi_points[2];
+    Intersect_3()(*ch, line_theta, c_theta_points);
+    Intersect_3()(*ch, line_phi, c_phi_points);
+
+    // Convert all points
+    typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
+    CAP cap_theta[2], cap_phi[2];
+    POSSIBLY_ASSERT(Assign_3()(cap_phi[0], c_phi_points[0]));
+    POSSIBLY_ASSERT(Assign_3()(cap_phi[1], c_phi_points[1]));
+    POSSIBLY_ASSERT(Assign_3()(cap_theta[0], c_theta_points[0]));
+    POSSIBLY_ASSERT(Assign_3()(cap_theta[1], c_theta_points[1]));
+
+    return Display_on_gv::operator()()
+      << Segment_3(to_point_3(cap_phi[0].first), to_point_3(cap_theta[0].first))
+      << Segment_3(to_point_3(cap_phi[0].first), to_point_3(cap_theta[1].first))
+      << Segment_3(to_point_3(cap_phi[1].first), to_point_3(cap_theta[0].first))
+      << Segment_3(to_point_3(cap_phi[1].first), to_point_3(cap_theta[1].first));
+  }
 };
 
-struct Display_cap_on_geomview:
-  Display_something_on_geomview
+struct Display_cap_on_gv: Display_on_gv
 {
-  Display_cap_on_geomview(Geomview_stream & gv):
-    Display_something_on_geomview(gv) {}
+  Display_cap_on_gv(Geomview_stream & gv):
+    Display_on_gv(gv) {}
 
-  void operator()(const Circular_arc_point_3 & cap)
-  { gv() << to_point_3(cap); }
+  Geomview_stream & operator()(const Circular_arc_point_3 & cap)
+  { return Display_on_gv::operator()() << to_point_3(cap); }
 };
 
 #endif // DISPLAY_ON_GEOMVIEW //
@@ -124,15 +153,6 @@ class Random_sphere_3
     Sphere_list _spheres;
 };
 
-struct Repr_normal_event_site
-{
-  std::string operator()(const Normal_event_site<Kernel> & nes) const
-  {
-    std::ostringstream oss;
-    return oss.str();
-  }
-};
-
 class usage_error: public std::runtime_error
 {
   public:
@@ -162,7 +182,7 @@ static void do_main(int argc, const char * argv[])
   // Globally accessible random number generator
   Random rand;
 
-#ifdef DISPLAY_ON_GEOMVIEW // Setup geomview
+#ifdef DISPLAY_ON_GEOMVIEW // Setup gv
   Geomview_stream gv;
   gv.set_wired(false);
   gv.set_bg_color(Color(0, 0, 0));
@@ -199,7 +219,7 @@ static void do_main(int argc, const char * argv[])
   //std::cout << "Displaying spheres on Geomview..." << std::flush;
   SI::Sphere_iterator_range spheres = si.spheres();
   std::for_each(spheres.begin(), spheres.end(),
-      Display_sphere_on_geomview(gv));
+      Display_sphere_on_gv(gv));
   gv.look_recenter();
   //std::cout << "done." << std::endl;
   while (std::cin.get() != '\n');
@@ -209,16 +229,20 @@ static void do_main(int argc, const char * argv[])
   Sphere_3 s(Point_3(0, 0, 0), 42);
   SI::Sphere_handle sh = si.add_sphere(s);
 #ifdef DISPLAY_ON_GEOMVIEW
-  // Display sphere
-  gv.clear();
-  gv << random_color(rand) << s;
+  // Function objects
+  Display_cap_on_gv display_cap(gv);
+  Display_sphere_on_gv display_sphere(gv);
+  Display_circle_on_gv display_circle(gv);
 
-  // Display circles on sphere
-  std::vector<SI::Circle_handle> s_circles;
-  si.circles_on_sphere(sh, std::back_inserter(s_circles));
-  std::for_each(s_circles.begin(), s_circles.end(),
-      Display_circle_on_geomview(gv));
-  Display_cap_on_geomview display_cap(gv);
+//  // Display sphere
+//  gv.clear();
+//  display_sphere(sh);
+//
+//  // Display circles on sphere
+//  std::vector<SI::Circle_handle> s_circles;
+//  si.circles_on_sphere(sh, std::back_inserter(s_circles));
+//  std::for_each(s_circles.begin(), s_circles.end(),
+//      Display_circle_on_gv(gv));
 #endif // DISPLAY_ON_GEOMVIEW //
 
   // Event queue filling
@@ -233,11 +257,39 @@ static void do_main(int argc, const char * argv[])
   {
     if (ev_type == EQ::Normal)
     {
-      Normal_event_site<Kernel> nes = ev_queue.pop_normal_event();
-      std::cout << "- normal event site "
-        << Repr_normal_event_site()(nes) << std::endl;
+      typedef Normal_event_site<Kernel> NES;
+      NES nes = ev_queue.pop_normal_event();
 #ifdef DISPLAY_ON_GEOMVIEW
-      display_cap(cap);
+      NES::Intersection_events_range ie_range(nes);
+      for (NES::Intersection_events_iterator it = ie_range.begin();
+          it != ie_range.end(); it++)
+      {
+        typedef Intersection_event<Kernel> IE;
+        const IE & ie = *it;
+
+        // Intersection event circles
+        SI::Circle_handle ch1 = si.find_circle_in_sphere(sh, ie.circles.first),
+          ch2 = si.find_circle_in_sphere(sh, ie.circles.second);
+        CGAL_assertion(ch1.is_null() == false);
+        CGAL_assertion(ch2.is_null() == false);
+
+        // Circle source spheres
+        SI::Sphere_handle_pair shp1 = si.originating_spheres(ch1),
+                           shp2 = si.originating_spheres(ch2);
+        CGAL_assertion(shp1.first == sh || shp1.second == sh);
+        CGAL_assertion(shp2.first == sh || shp2.second == sh);
+
+        // Display each circle
+        gv.clear();              
+        display_cap(nes.point());
+        display_circle(ch1);
+        //display_sphere(shp1.first);
+        //display_sphere(shp1.second);
+        display_circle(ch2);
+        //display_sphere(shp2.first);
+        //display_sphere(shp2.second);
+        while (std::cin.get() != '\n');
+      }
 #endif // DISPLAY_ON_GEOMVIEW //
     }
     else if (ev_type == EQ::Polar)
@@ -247,9 +299,6 @@ static void do_main(int argc, const char * argv[])
     else
     { CGAL_assertion(ev_type == EQ::None); }
   }
-#ifdef DISPLAY_ON_GEOMVIEW
-  while (std::cin.get() != '\n');
-#endif // DISPLAY_ON_GEOMVIEW //
 }
 
 int main(int argc, const char * argv[])

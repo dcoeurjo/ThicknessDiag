@@ -46,8 +46,9 @@ class Sphere_intersecter
   friend class Sphere_iterator_range;
 
   public:
+  typedef Handle<const Circle_3> Circle_handle;
     typedef Handle<const Sphere_3> Sphere_handle;
-    typedef Handle<const Circle_3> Circle_handle;
+    typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
 
     Sphere_intersecter():
       _sphere_tree(), _sphere_storage(),
@@ -119,7 +120,6 @@ class Sphere_intersecter
     typedef typename Spheres_to_circle_link::mapped_type Circle_link;
 
     // Link between a circle and the spheres intersecting
-    typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
     typedef typename Handle_map<Circle_handle,
             Sphere_handle_pair>::Type Circle_to_spheres_link;
 
@@ -219,9 +219,31 @@ class Sphere_intersecter
       std::vector<Sphere_handle> it_spheres;
       _sphere_tree.all_intersected_primitives(s,
           std::inserter(it_spheres, it_spheres.begin()));
-      INFER_AUTO(it, std::find(it_spheres.begin(),
-            it_spheres.end(), s));
+      INFER_AUTO(it, std::find(it_spheres.begin(), it_spheres.end(), s));
       return (it != it_spheres.end()) ? *it : Sphere_handle();
+    }
+
+    Circle_handle find_circle_in_sphere(const Sphere_handle & sh,
+        const Circle_3 & c) const
+    {
+      INFER_AUTO(it, _stcl.find(sh));
+      if (it != _stcl.end())
+      {
+        for (INFER_AUTO(c_it, it->second.begin());
+            c_it != it->second.end(); c_it++)
+        { if (c_it->ref() == c)
+          { return *c_it; } }
+      }
+      return Circle_handle();
+    }
+
+    Circle_handle find_circle_in_sphere(const Sphere_3 & s,
+        const Circle_3 & c) const
+    {
+      Sphere_handle sh = find_sphere(s);
+      if (sh.is_null() == false)
+      { return find_circle_in_sphere(sh, c); }
+      return Circle_handle();
     }
 
     template <typename OutputIterator>
@@ -242,6 +264,15 @@ class Sphere_intersecter
       if (it != _stcl.end())
       { std::copy(it->second.begin(), it->second.end(), out_it); }
       return out_it;
+    }
+
+    Sphere_handle_pair originating_spheres(const Circle_handle & ch) const
+    {
+      Sphere_handle_pair shp;
+      INFER_AUTO(it, _ctsl.find(ch));
+      if (it != _ctsl.end())
+      { shp = it->second; }
+      return shp;
     }
 
   private:

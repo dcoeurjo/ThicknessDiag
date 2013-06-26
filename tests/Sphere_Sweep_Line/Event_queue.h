@@ -191,13 +191,23 @@ class Normal_event_site
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Sphere_handle Sphere_handle;
 
+  // Iterator ranges should have access to hidden members
   friend class Intersection_events_range;
+
+  // Compare normal events' circles (increasing/decreasing)
+  typedef Comp_event_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_arc_radii;
+  typedef Comp_event_inv_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_arc_radii;
+  // Start/End events
+  typedef std::multiset<Normal_event<Kernel>, Comp_ne_inv_arc_radii> End_normal_events;
+  typedef std::multiset<Normal_event<Kernel>, Comp_ne_arc_radii> Start_normal_events;
+  // Crossing/Tangency events
+  typedef std::vector<Intersection_event<Kernel> > Intersection_events;
 
   public:
     Normal_event_site(const Sphere_handle & sh,
         const Circular_arc_point_3 & p):
-      _sphere_handle(sh), _point(p), _starts(),
-      _ends(), _cts() {}
+      _sphere_handle(sh), _point(p), _start_normal_events(),
+      _end_normal_events(), _intersection_events() {}
 
     // Add a base normal event
     void add_event(const Normal_event<Kernel> & ev)
@@ -226,13 +236,13 @@ class Normal_event_site
 #endif // NDEBUG //
 
       // Add event to accurate container
-      if (ev.is_start()) { _starts.insert(ev); }
-      else { _ends.insert(ev); }
+      if (ev.is_start()) { _start_normal_events.insert(ev); }
+      else { _end_normal_events.insert(ev); }
     }
 
     // Overload for adding an intersection event
     void add_event(const Intersection_event<Kernel> & ev)
-    { _cts.push_back(ev); }
+    { _intersection_events.push_back(ev); }
 
     // Range version of add_event taking any iterator
     // verifying the STL InputIterator concept
@@ -263,7 +273,8 @@ class Normal_event_site
     // TODO
 
     // Intersection events iterator range
-    typedef int Intersection_events_iterator; // FIXME
+    typedef typename Intersection_events::const_iterator
+      Intersection_events_iterator;
     class Intersection_events_range
     {
       public:
@@ -271,9 +282,10 @@ class Normal_event_site
           _nes(nes) {}
 
         Intersection_events_iterator begin() const
-        { return 0; } // FIXME
+        { return _nes._intersection_events.begin(); }
+
         Intersection_events_iterator end() const
-        { return 0; } // FIXME
+        { return _nes._intersection_events.end(); }
 
       private:
         const Normal_event_site<Kernel> & _nes;
@@ -285,16 +297,12 @@ class Normal_event_site
     // ...source sphere
     Sphere_handle _sphere_handle;
 
-    // Compare normal events' circles (increasing/decreasing)
-    typedef Comp_event_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_arc_radii;
-    typedef Comp_event_inv_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_arc_radii;
-
     // Start/End events
-    std::multiset<Normal_event<Kernel>, Comp_ne_arc_radii> _starts;
-    std::multiset<Normal_event<Kernel>, Comp_ne_inv_arc_radii> _ends;
+    Start_normal_events _start_normal_events;
+    End_normal_events _end_normal_events;
 
     // Crossing/Tangency events
-    std::vector<Intersection_event<Kernel> > _cts;
+    Intersection_events _intersection_events;
 };
 
 template <typename Kernel>

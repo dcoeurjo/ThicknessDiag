@@ -9,9 +9,9 @@
 #include <CGAL/Kernel/global_functions_3.h>
 
 #ifndef NDEBUG
-# define POSSIBLY_ASSERT(S) S
-#else
 #  define POSSIBLY_ASSERT(S) CGAL_assertion(S);
+#else
+#  define POSSIBLY_ASSERT(S) S;
 #endif // NDEBUG
 
 #include <Event_queue.h>
