@@ -35,7 +35,7 @@ class Handle
     bool is_null() const
     { return _t == 0; }
 
-    Type * const ptr() const
+    Type * ptr() const
     { return _t; }
 
     Type & ref() const
@@ -44,10 +44,10 @@ class Handle
     Type & operator*() const
     { return ref(); }
 
-    Type * const operator->() const
+    Type * operator->() const
     { return ptr(); }
 
-    Type * const operator&() const
+    Type * operator&() const
     { return ptr(); }
 
     DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)

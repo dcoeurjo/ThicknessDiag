@@ -7,12 +7,8 @@
 #include <iterator>
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
-#  include <forward_list>
-#  define LINKED_LIST std::forward_list
 #  define INFER_AUTO(x, y) auto x(y)
 #else
-#  include <list>
-#  define LINKED_LIST std::list
 #  define INFER_AUTO BOOST_AUTO
 #endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
@@ -52,7 +48,7 @@ class Sphere_intersecter
 
     Sphere_intersecter():
       _sphere_tree(), _sphere_storage(),
-      _circle_storage(), _stcl(), _ctsl() {} 
+      _circle_storage(), _stcl(), _ctsl() {}
 
     // Make non copyable/assignable
     Sphere_intersecter(const Sphere_intersecter<Kernel> &);
@@ -97,15 +93,10 @@ class Sphere_intersecter
 
     // Actual list of spheres (used only for storage). Note that
     // we cannot use a vector since the address should remain
-    // the same after the first insertion. The linked list defined
-    // by the LINKED_LIST macro is sure to support constant-time
-    // insertion and lookup at the *front* of the list.
-    // This list is optimized for memory efficiency when compiling,
-    // with the C++0x version by using a singly linked list,
-    // which is the main usage of this storage system.
-    typedef LINKED_LIST<Sphere_3> Sphere_storage;
+    // the same after the first insertion.
+    typedef std::list<Sphere_3> Sphere_storage;
     // ...same for circles
-    typedef LINKED_LIST<Circle_3> Circle_storage;
+    typedef std::list<Circle_3> Circle_storage;
 
     // Templated typedef for mapping from handle to something (major
     // refactoring for links). Default comparaison is done by handle's
@@ -132,6 +123,7 @@ class Sphere_intersecter
       _sphere_storage.push_front(sphere_to_insert);
       const Sphere_3 & s1 = _sphere_storage.front();
       Sphere_handle sh1(s1);
+      bool already_added = false;
 
       // No need to test for intersections when there is only one element
       if (_sphere_tree.size() > 1)
@@ -151,7 +143,9 @@ class Sphere_intersecter
           const Sphere_3 & s2 = *sh2;
 
           // Insertion of two equal spheres is forbidden here
-          CGAL_assertion(sh1 != sh2 && s1 != s2);
+          if (s1 == s2)
+          { already_added = true;
+            break; }
 
           // Try intersection
           Object_3 obj = Intersect_3()(s1, s2);
@@ -178,10 +172,23 @@ class Sphere_intersecter
             Circle_link & sc2 = _stcl[sh2]; sc2.insert(sc2.begin(), ch);
         }
       }
-      
-      // Insert a handle of the sphere in the tree
-      _sphere_tree.insert(Sphere_primitive(s1));
-      return sh1;
+      else if (_sphere_storage.size() == 2)
+      {
+        // Insertion of two equal spheres is forbidden here
+        const Sphere_3 & s2 = *(++_sphere_storage.begin());
+        if (s1 == s2)
+        { already_added = true; }
+      }
+
+      // Insert a handle of the sphere in the tree,
+      // if all is good
+      if (already_added)
+      { remove_sphere_links(sh1);
+        _sphere_storage.pop_front();
+        return Sphere_handle(); }
+      else
+      { _sphere_tree.insert(Sphere_primitive(s1));
+        return sh1; }
     }
 
     typedef Sphere_intersecter_insert_iterator<Kernel>
@@ -275,7 +282,62 @@ class Sphere_intersecter
       return shp;
     }
 
+    // Removes a sphere
+    bool remove_sphere(const Sphere_handle & sh)
+    {
+      // Remove from links
+      remove_sphere_links(sh);
+
+      // Remove from storage
+      std::size_t saved_size = _sphere_storage.size();
+      for (INFER_AUTO(it, _sphere_storage.begin());
+          it != _sphere_storage.end(); it++)
+      {
+        const Sphere_3 & s2 = *it;
+        if (sh.ptr() == &s2)
+        {
+          _sphere_storage.erase(it);
+          break;
+        }
+      }
+
+      // Rebuild tree
+      if (saved_size != _sphere_storage.size())
+      {
+        _sphere_tree.clear();
+        for (INFER_AUTO(it, _sphere_storage.begin());
+            it != _sphere_storage.end(); it++)
+        { _sphere_tree.insert(Sphere_primitive(*it)); }
+        return true;
+      }
+      return false;
+    }
+
   private:
+    void remove_sphere_links(const Sphere_handle & sh)
+    {
+      INFER_AUTO(sphere_it, _stcl.find(sh));
+      if (sphere_it != _stcl.end())
+      {
+        for (INFER_AUTO(it, sphere_it->second.begin());
+            it != sphere_it->second.end(); it++)
+        {
+          const Circle_handle & ch(*it);
+          INFER_AUTO(circle_it, _ctsl.find(ch));
+          const Sphere_handle_pair & shp = circle_it->second;
+          const Sphere_handle & sh2 = (shp.first != sh)
+            ? shp.first : shp.second;
+          CGAL_assertion(sh2 != sh);
+          INFER_AUTO(sphere_it2, _stcl.find(sh2));
+          CGAL_assertion(sphere_it2 != _stcl.end());
+          std::remove(sphere_it2->second.begin(),
+              sphere_it2->second.end(), ch);
+          _ctsl.erase(*it);
+        }
+        _stcl.erase(sphere_it);
+      }
+    }
+
     // Sphere bundle
     Sphere_handle_tree _sphere_tree;
     Sphere_storage _sphere_storage;
@@ -302,7 +364,7 @@ class Sphere_intersecter_insert_iterator:
       _si(si) {}
 
     Self & operator=(const Sphere_3 & s)
-    { _si.add_sphere(s); 
+    { _si.add_sphere(s);
     return *this; }
 
     Self & operator++()
