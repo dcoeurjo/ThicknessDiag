@@ -31,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent) :
     random(new CGAL::Random())
 {
     ui->setupUi(this);
-    ui->viewer->setForegroundColor(Qt::white);
 }
 
 MainWindow::~MainWindow()
@@ -153,7 +152,7 @@ void MainWindow::deleteSelectedSpheres()
         SphereList::iterator sphereIt;
         sphereIt = sphereViewList.begin() + ui->sphereListWidget->row(item);
         SI::Sphere_handle sh = sphereIt->handle;
-        Q_ASSERT(si.remove_sphere(sh));
+        Q_ASSERT(si.remove_sphere(sh)); // TODO remove as a range (better speed)
         sphereViewList.erase(sphereIt);
         ui->sphereListWidget->removeItemWidget(item);
         delete item;
