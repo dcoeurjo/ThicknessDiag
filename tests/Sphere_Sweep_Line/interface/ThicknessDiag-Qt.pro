@@ -14,12 +14,15 @@ LIBS *= -lQGLViewer -lGLU -lCGAL -lgmp -lmpfr -lboost_thread
 
 SOURCES *= main.cpp\
         mainwindow.cpp \
-    sphereformdialog.cpp
+    sphereformdialog.cpp \
+    generatespheresdialog.cpp
 
 HEADERS  *= mainwindow.h \
-    sphereformdialog.h
+    sphereformdialog.h \
+    generatespheresdialog.h
 
 INCLUDEPATH *= ..
 
 FORMS    *= mainwindow.ui \
-    sphereformdialog.ui
+    sphereformdialog.ui \
+    generatespheresdialog.ui
