@@ -53,7 +53,7 @@ private:
     };
 
     // Helpers
-    void addNewSphere(const SI::Sphere_handle &sh);
+    void addNewSphere(const SI::Sphere_handle &sh, bool updateUI = true);
     void drawSphere(const Sphere_view &sv);
 
     // Sphere intersecter object (main purpose)

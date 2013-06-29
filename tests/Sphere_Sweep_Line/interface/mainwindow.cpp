@@ -10,6 +10,7 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QProgressDialog>
 
 #include <CGAL/Random.h>
 
@@ -110,6 +111,20 @@ void MainWindow::generateSpheres()
     GenerateSpheresDialog gsd(this);
     if (gsd.exec())
     {
+        // Progress bar display
+        QProgressDialog pd(this);
+        pd.setMinimum(0);
+        pd.setMaximum(gsd.nb);
+        pd.setCancelButton(0);
+        pd.setWindowModality(Qt::WindowModal);
+        pd.setContextMenuPolicy(Qt::NoContextMenu);
+        pd.setFixedSize(pd.size());
+        pd.show();
+
+        // Disable menu and window update
+        setUpdatesEnabled(false);
+
+        // Generate spheres
         for (std::size_t nb = 0; nb < gsd.nb; nb++)
         {
             // Generate random numbers
@@ -129,8 +144,17 @@ void MainWindow::generateSpheres()
             Sphere_3 s(Point_3(x, y, z), radius*radius);
             SI::Sphere_handle sh = si.add_sphere(s);
             if (sh.is_null() == false)
-            { addNewSphere(sh); }
+            { addNewSphere(sh, false); }
+
+            // Update the GUI display
+            pd.setValue(nb);
+            pd.update();
         }
+
+        // Update the UI
+        setUpdatesEnabled(true);
+        ui->sphereListWidget->update();
+        ui->viewer->update();
     }
 }
 
@@ -198,6 +222,7 @@ void MainWindow::toggleAllSpheresCheckState()
         QListWidgetItem *item = ui->sphereListWidget->item(i);
         item->setCheckState(savedCheckState);
     }
+    ui->sphereListWidget->update();
     ui->viewer->update();
 }
 
@@ -231,7 +256,7 @@ void MainWindow::showSpheresMenuAt(const QPoint &point)
     contextMenu.exec(ui->sphereListWidget->mapToGlobal(point));
 }
 
-void MainWindow::addNewSphere(const SI::Sphere_handle &sh)
+void MainWindow::addNewSphere(const SI::Sphere_handle &sh, bool updateUI)
 {
     // Compute approximate data
     using CGAL::to_double;
@@ -275,9 +300,11 @@ void MainWindow::addNewSphere(const SI::Sphere_handle &sh)
             max(sceneBbox.xmax(), sceneBbox.ymax(),
                 sceneBbox.zmax());
     ui->viewer->setSceneRadius((max - min).norm() / 2.0);
-    //ui->viewer->showEntireScene();
 
-    // Update views
-    ui->sphereListWidget->update();
-    ui->viewer->update();
+    // Update views if requested
+    if (updateUI)
+    {
+        ui->sphereListWidget->update();
+        ui->viewer->update();
+    }
 }
