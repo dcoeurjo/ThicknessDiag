@@ -24,5 +24,5 @@ HEADERS  *= mainwindow.h \
 INCLUDEPATH *= ..
 
 FORMS    *= mainwindow.ui \
-    sphereformdialog.ui \
-    generatespheresdialog.ui
+
+QMAKE_CXXFLAGS *= -frounding-math
