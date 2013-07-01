@@ -6,15 +6,16 @@
 
 #include <QGLViewer/frame.h>
 
+#include <CGAL/Random.h>
+
 #include "sphereintersecter.h"
+#include "sphereview.h"
 
 namespace Ui {
     class MainWindow;
 }
 
-namespace CGAL {
-    class Random;
-}
+class WindowStateWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -27,80 +28,53 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    enum Mode {
-        SPHERES, EVENT_QUEUE
-    };
+    void addWindowStateWidget(WindowStateWidget *stateWidget);
+    void setWindowStateWidget(WindowStateWidget *stateWidget);
 
-private slots:
-    // Sphere list slots
-    void addNewSphere();
-    void enterSpheresMode();
-    void deleteSelectedSpheres();
-    void toggleAllSpheresCheckState();
-    void showSpheresMenuAt(const QPoint &point);
+    QList<SphereView>& spheres()
+    { return sphereList; }
+    const QList<SphereView>& spheres() const
+    { return sphereList; }
 
-    // Event queue slots
-    void buildEventQueue();
-    void enterEventQueueMode();
+    SphereView& sphere(int index)
+    { return sphereList[index]; }
+    const SphereView& sphere(int index) const
+    { return sphereList.at(index); }
 
-    // File menu slots
-    void openSpheres();
-    void saveSpheres();
-    void saveSpheresAs();
-    void generateSpheres();
+    const SphereView& addSphere(const SI::Sphere_handle &sh);
+    void removeSphere(int index);
 
-    // Other slots
-    void drawViewer();
+    QMenu *menubar() const;
+    QWidget *sidebar() const;
+
+    void showStatus(const QString &status);
+
+    int statusTimeout() const
+    { return statusTime; }
+    void setStatusTimeout(int t)
+    { statusTime = t; }
 
 signals:
-    void modeEntered(const Mode &m);
+    void windowStateChanged();
+
+private slots:
+    void drawViewer();
 
 private:
-    // View of a sphere
-    struct SphereView
-    {
-        SphereView();
-        SphereView(const SI::Sphere_handle &sh, const QColor &color,
-                   const qglviewer::Vec &pos, double radius);
+    // Displayed spheres list
+    QList<SphereView> sphereList;
 
-        SI::Sphere_handle handle;
-        QColor color;
-        qglviewer::Frame frame;
-        double radius;
-    };
+    // Window state widgets
+    QList<WindowStateWidget> windowStateWidgets;
 
-    // Helpers
-    void drawSpheres();
-    void drawSphere(const SphereView &sv);
-    void addNewSphere(const SI::Sphere_handle &sh, bool updateUI = true);
-    void showStatusMessage(const QString &msg);
-    void changeMode(const Mode &m);
-
-    // Static helpers
-    static QString sphereString(const Kernel::Sphere_3 &s);
-    static QString sphereString(const SI::Sphere_handle &sh);
-
-    // Window mode
-    Mode mode;
-
-    // Sphere intersecter object (main purpose)
-    SI si;
-
-    // Displayed sphere list
-    typedef QVector<SphereView> SphereList;
-    SphereList sphereList;
-
-    // File opened (default "save" file)
-    QString openFilename;
-
-    // Saved check state for list widget
-    Qt::CheckState savedCheckState;
+    // Status timeout (ms)
+    int statusTime;
 
     // UI
     Ui::MainWindow *ui;
 
-    // Random number generator
-    CGAL::Random *random;
+    // Random
+    CGAL::Random randgen;
 };
 
 #endif // MAINWINDOW_H

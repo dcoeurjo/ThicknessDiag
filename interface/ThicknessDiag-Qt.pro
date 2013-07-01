@@ -10,13 +10,21 @@ SOURCES *= main.cpp\
         mainwindow.cpp \
     sphereformdialog.cpp \
     generatespheresdialog.cpp \
-    selectspheredialog.cpp
+    selectspheredialog.cpp \
+    windowstatewidget.cpp \
+    spheresstatewidget.cpp \
+    sphereview.cpp \
+    sphereintersecterproxy.cpp
 
 HEADERS *= mainwindow.h \
     sphereformdialog.h \
     generatespheresdialog.h \
     selectspheredialog.h \
-    sphereintersecter.h
+    sphereintersecter.h \
+    windowstatewidget.h \
+    spheresstatewidget.h \
+    sphereview.h \
+    sphereintersecterproxy.h
 
 INCLUDEPATH *= ..
 
