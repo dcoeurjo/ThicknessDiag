@@ -5,17 +5,19 @@
 
 #include "sphereformdialog.h"
 #include "generatespheresdialog.h"
+#include "selectspheredialog.h"
 
 #include <fstream>
 
-#include <QFileDialog>
 #include <QMessageBox>
+#include <QFileDialog>
 #include <QProgressDialog>
 
 #include <CGAL/Random.h>
 
-typedef MainWindow::SI SI;
-typedef MainWindow::Kernel K;
+typedef SphereIntersecter SI;
+typedef SphereIntersecterKernel K;
+
 typedef typename K::FT FT;
 typedef typename K::Line_3 Line_3;
 typedef typename K::Point_3 Point_3;
@@ -32,12 +34,27 @@ MainWindow::MainWindow(QWidget *parent) :
     random(new CGAL::Random())
 {
     ui->setupUi(this);
+    enterSpheresMode();
 }
 
 MainWindow::~MainWindow()
 {
     delete random;
     delete ui;
+}
+
+MainWindow::SphereView::SphereView():
+    handle(), color(),
+    frame(), radius()
+{
+}
+
+MainWindow::SphereView::SphereView(const SI::Sphere_handle &sh,
+        const QColor &color, const qglviewer::Vec &pos, double radius):
+    handle(sh), color(color),
+    frame(), radius(radius)
+{
+    frame.setPosition(pos);
 }
 
 void MainWindow::addNewSphere()
@@ -49,10 +66,15 @@ void MainWindow::addNewSphere()
         Sphere_3 s(Point_3(sd.x, sd.y, sd.z), sd.radius*sd.radius);
         SI::Sphere_handle sh = si.add_sphere(s);
         if (sh.is_null() == false)
-        { addNewSphere(sh); }
+        { addNewSphere(sh);
+          showStatusMessage("Sphere " + sphereString(s) + "added"); }
         else
         { QMessageBox::warning(this, tr("Sphere not added"),
               tr("The sphere wasn't added, since it already exists")); }
+    }
+    else
+    {
+        showStatusMessage("Sphere addition cancelled");
     }
 }
 
@@ -72,13 +94,20 @@ void MainWindow::openSpheres()
         std::back_inserter(spheres));
 
     // Copy parsed spheres
+    std::size_t nb = 0;
     for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
          it != spheres.end(); it++)
     {
         SI::Sphere_handle sh = si.add_sphere(*it);
         if (sh.is_null() == false)
-        { addNewSphere(sh); }
+        { addNewSphere(sh);
+          nb++; }
     }
+
+    // Show status message
+    std::ostringstream oss;
+    oss << "Loaded " << nb << " spheres";
+    showStatusMessage(QString(oss.str().c_str()));
 }
 
 void MainWindow::saveSpheres()
@@ -95,6 +124,9 @@ void MainWindow::saveSpheres()
         for (SI::Sphere_iterator it = sphere_range.begin();
              it != sphere_range.end(); it++)
         { ofs << **it << std::endl; }
+
+        // Show status message
+        showStatusMessage("Saved spheres to " + openFilename);
     }
 }
 
@@ -125,6 +157,7 @@ void MainWindow::generateSpheres()
         setUpdatesEnabled(false);
 
         // Generate spheres
+        std::size_t real_nb = 0;
         for (std::size_t nb = 0; nb < gsd.nb; nb++)
         {
             // Generate random numbers
@@ -144,7 +177,8 @@ void MainWindow::generateSpheres()
             Sphere_3 s(Point_3(x, y, z), radius*radius);
             SI::Sphere_handle sh = si.add_sphere(s);
             if (sh.is_null() == false)
-            { addNewSphere(sh, false); }
+            { addNewSphere(sh, false);
+              real_nb++; }
 
             // Update the GUI display
             pd.setValue(nb);
@@ -155,6 +189,11 @@ void MainWindow::generateSpheres()
         setUpdatesEnabled(true);
         ui->sphereListWidget->update();
         ui->viewer->update();
+
+        // Show status message
+        std::ostringstream oss;
+        oss << "Generated " << real_nb << " spheres";
+        showStatusMessage(QString(oss.str().c_str()));
     }
 }
 
@@ -167,6 +206,7 @@ void MainWindow::deleteSelectedSpheres()
     { return; }
 
     // Delete selected
+    std::size_t nb = 0;
     typedef typename QList<QListWidgetItem *>::const_iterator
             SelectedSpheresIterator;
     for (SelectedSpheresIterator it = selectedItems.begin();
@@ -174,15 +214,23 @@ void MainWindow::deleteSelectedSpheres()
     {
         QListWidgetItem *item = *it;
         SphereList::iterator sphereIt;
-        sphereIt = sphereViewList.begin() + ui->sphereListWidget->row(item);
+        sphereIt = sphereList.begin() + ui->sphereListWidget->row(item);
         SI::Sphere_handle sh = sphereIt->handle;
         Q_ASSERT(si.remove_sphere(sh)); // TODO remove as a range (better speed)
-        sphereViewList.erase(sphereIt);
+        sphereList.erase(sphereIt);
         ui->sphereListWidget->removeItemWidget(item);
         delete item;
+        nb++;
     }
+
+    // Update UI
     ui->sphereListWidget->update();
     ui->viewer->update();
+
+    // Show status message
+    std::ostringstream oss;
+    oss << "Deleted " << nb << " spheres";
+    showStatusMessage(QString(oss.str().c_str()));
 }
 
 void MainWindow::drawSpheres()
@@ -196,8 +244,8 @@ void MainWindow::drawSpheres()
 
         // Get corresponding sphere view
         SphereList::iterator sphereIt;
-        sphereIt = sphereViewList.begin() + ui->sphereListWidget->row(item);
-        const Sphere_view &sv = *sphereIt;
+        sphereIt = sphereList.begin() + ui->sphereListWidget->row(item);
+        const SphereView &sv = *sphereIt;
 
         // Actually draw the sphere
         glPushMatrix();
@@ -215,6 +263,7 @@ void MainWindow::drawSpheres()
 
 void MainWindow::toggleAllSpheresCheckState()
 {
+    // Toggle state
     savedCheckState = (savedCheckState == Qt::Unchecked)
             ? Qt::Checked : Qt::Unchecked;
     for (int i = 0; i < ui->sphereListWidget->count(); i++)
@@ -222,6 +271,8 @@ void MainWindow::toggleAllSpheresCheckState()
         QListWidgetItem *item = ui->sphereListWidget->item(i);
         item->setCheckState(savedCheckState);
     }
+
+    // Update UI
     ui->sphereListWidget->update();
     ui->viewer->update();
 }
@@ -256,6 +307,28 @@ void MainWindow::showSpheresMenuAt(const QPoint &point)
     contextMenu.exec(ui->sphereListWidget->mapToGlobal(point));
 }
 
+QString MainWindow::sphereString(const Sphere_3 &s)
+{
+    // Compute approximate data
+    using CGAL::to_double;
+    const Point_3 &c = s.center();
+    double radius = std::sqrt(to_double(s.squared_radius())),
+            x = to_double(c.x()),
+            y = to_double(c.y()),
+            z = to_double(c.z());
+
+    // Make view text
+    std::ostringstream oss;
+    oss << "[" << x << ", " << y
+        << ", " << z << "], " << radius;
+    return QString(oss.str().c_str());
+}
+
+QString MainWindow::sphereString(const SI::Sphere_handle &sh)
+{
+    return sphereString(*sh);
+}
+
 void MainWindow::addNewSphere(const SI::Sphere_handle &sh, bool updateUI)
 {
     // Compute approximate data
@@ -266,25 +339,20 @@ void MainWindow::addNewSphere(const SI::Sphere_handle &sh, bool updateUI)
             y = to_double(c.y()),
             z = to_double(c.z());
 
-    // Make view text
-    std::ostringstream oss;
-    oss << "[" << x << ", " << y
-        << ", " << z << "], " << radius;
-    QString text(oss.str().c_str());
-
     // Make sphere color
     QColor color;
     color.setRed(random->get_int(0, 255));
     color.setGreen(random->get_int(0, 255));
     color.setBlue(random->get_int(0, 255));
 
+    // Make sphere text
+    QString text(sphereString(sh));
+
     // Finally, make sphere
-    Sphere_view sv = { sh, color };
-    sv.radius = radius;
-    sv.frame.setPosition(x, y, z);
+    SphereView sv(sh, color, qglviewer::Vec(x, y, z), radius);
 
     // Add list to sphere handle vector
-    sphereViewList.push_back(sv);
+    sphereList.push_back(sv);
 
     // Add sphere view to list widget (as text)
     QListWidgetItem *item;
@@ -306,5 +374,83 @@ void MainWindow::addNewSphere(const SI::Sphere_handle &sh, bool updateUI)
     {
         ui->sphereListWidget->update();
         ui->viewer->update();
+    }
+}
+
+void MainWindow::buildEventQueue()
+{
+    // Build dialog
+    SelectSphereDialog ssd(this);
+    for (int i = 0; i < ui->sphereListWidget->count(); i++)
+    {
+        QListWidgetItem *item = ui->sphereListWidget->item(i);
+        ssd.addSphereItem(item->text());
+    }
+
+    // Execute and handle
+    if (ssd.exec())
+    {
+        //SphereList::iterator sphereIt;
+        //sphereIt = sphereList.begin() + ssd.selectedIndex;
+        QMessageBox::information(this, "Selected sphere",
+            ui->sphereListWidget->item(ssd.selectedIndex)->text());
+    }
+}
+
+void MainWindow::showStatusMessage(const QString &msg)
+{
+    ui->statusBar->showMessage(msg, 3000);
+    ui->statusBar->update();
+}
+
+void MainWindow::enterSpheresMode()
+{
+    changeMode(SPHERES);
+
+    // Deactivate event queue mode
+    { QList<QAction *>  ls = ui->menuEvent_queue->actions();
+    for (int i = 0; i < ls.count(); i++)
+    { ls.at(i)->setEnabled(ls.at(i) == ui->eqActionStartMode); } }
+
+    // Activate spheres mode
+    { QList<QAction *>  ls = ui->menuSpheres->actions();
+    for (int i = 0; i < ls.count(); i++)
+    { ls.at(i)->setEnabled(ls.at(i) != ui->spheresActionStartMode); } }
+}
+
+void MainWindow::enterEventQueueMode()
+{
+    changeMode(EVENT_QUEUE);
+
+    // Deactivate event queue mode
+    { QList<QAction *>  ls = ui->menuSpheres->actions();
+    for (int i = 0; i < ls.count(); i++)
+    { ls.at(i)->setEnabled(ls.at(i) == ui->spheresActionStartMode); } }
+
+    // Activate spheres mode
+    { QList<QAction *>  ls = ui->menuEvent_queue->actions();
+    for (int i = 0; i < ls.count(); i++)
+    { ls.at(i)->setEnabled(ls.at(i) != ui->eqActionStartMode); } }
+}
+
+void MainWindow::changeMode(const Mode &m)
+{
+    emit modeEntered(m);
+    mode = m;
+}
+
+void MainWindow::drawViewer()
+{
+    switch (mode)
+    {
+    case SPHERES:
+        drawSpheres();
+        break;
+
+    case EVENT_QUEUE:
+        break;
+
+    default:
+        break;
     }
 }

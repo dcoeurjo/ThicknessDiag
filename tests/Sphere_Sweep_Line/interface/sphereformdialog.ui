@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Sphere Dialog</string>
+   <string>Create a sphere</string>
   </property>
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">

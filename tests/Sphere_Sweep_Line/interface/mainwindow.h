@@ -3,9 +3,10 @@
 
 #include <QMainWindow>
 #include <QListWidgetItem>
-#include <CGAL/Exact_spherical_kernel_3.h>
-#include <Sphere_intersecter.h>
+
 #include <QGLViewer/frame.h>
+
+#include "sphereintersecter.h"
 
 namespace Ui {
     class MainWindow;
@@ -19,19 +20,28 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-public:
-    typedef CGAL::Exact_spherical_kernel_3 Kernel;
-    typedef Sphere_intersecter<Kernel> SI;
+    typedef SphereIntersecter SI;
+    typedef SphereIntersecterKernel Kernel;
 
+public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+    enum Mode {
+        SPHERES, EVENT_QUEUE
+    };
 
 private slots:
     // Sphere list slots
     void addNewSphere();
+    void enterSpheresMode();
     void deleteSelectedSpheres();
     void toggleAllSpheresCheckState();
     void showSpheresMenuAt(const QPoint &point);
+
+    // Event queue slots
+    void buildEventQueue();
+    void enterEventQueueMode();
 
     // File menu slots
     void openSpheres();
@@ -40,12 +50,19 @@ private slots:
     void generateSpheres();
 
     // Other slots
-    void drawSpheres();
+    void drawViewer();
+
+signals:
+    void modeEntered(const Mode &m);
 
 private:
     // View of a sphere
-    struct Sphere_view
+    struct SphereView
     {
+        SphereView();
+        SphereView(const SI::Sphere_handle &sh, const QColor &color,
+                   const qglviewer::Vec &pos, double radius);
+
         SI::Sphere_handle handle;
         QColor color;
         qglviewer::Frame frame;
@@ -53,15 +70,25 @@ private:
     };
 
     // Helpers
+    void drawSpheres();
+    void drawSphere(const SphereView &sv);
     void addNewSphere(const SI::Sphere_handle &sh, bool updateUI = true);
-    void drawSphere(const Sphere_view &sv);
+    void showStatusMessage(const QString &msg);
+    void changeMode(const Mode &m);
+
+    // Static helpers
+    static QString sphereString(const Kernel::Sphere_3 &s);
+    static QString sphereString(const SI::Sphere_handle &sh);
+
+    // Window mode
+    Mode mode;
 
     // Sphere intersecter object (main purpose)
     SI si;
 
     // Displayed sphere list
-    typedef std::vector<Sphere_view> SphereList;
-    SphereList sphereViewList;
+    typedef QVector<SphereView> SphereList;
+    SphereList sphereList;
 
     // File opened (default "save" file)
     QString openFilename;

@@ -9,16 +9,20 @@ LIBS *= -lQGLViewer -lGLU -lCGAL -lgmp -lmpfr -lboost_thread -lboost_system
 SOURCES *= main.cpp\
         mainwindow.cpp \
     sphereformdialog.cpp \
-    generatespheresdialog.cpp
+    generatespheresdialog.cpp \
+    selectspheredialog.cpp
 
 HEADERS *= mainwindow.h \
     sphereformdialog.h \
-    generatespheresdialog.h
+    generatespheresdialog.h \
+    selectspheredialog.h \
+    sphereintersecter.h
 
 INCLUDEPATH *= ..
 
 FORMS *= mainwindow.ui \
     sphereformdialog.ui \
-    generatespheresdialog.ui
+    generatespheresdialog.ui \
+    selectspheredialog.ui
 
 QMAKE_CXXFLAGS *= -frounding-math

@@ -42,7 +42,7 @@ class Sphere_intersecter
   friend class Sphere_iterator_range;
 
   public:
-  typedef Handle<const Circle_3> Circle_handle;
+    typedef Handle<const Circle_3> Circle_handle;
     typedef Handle<const Sphere_3> Sphere_handle;
     typedef std::pair<Sphere_handle, Sphere_handle> Sphere_handle_pair;
 
