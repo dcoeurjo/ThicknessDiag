@@ -31,6 +31,7 @@ include(${CGAL_USE_FILE})
 
 # include for local directory
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/..)
 
 # sources
 set(PROJECT_SOURCES main.cpp)
