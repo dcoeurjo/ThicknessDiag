@@ -16,17 +16,16 @@
 #include <CGAL/Random.h>
 
 typedef SphereIntersecter SI;
-typedef SphereIntersecterKernel K;
 
-typedef typename K::FT FT;
-typedef typename K::Line_3 Line_3;
-typedef typename K::Point_3 Point_3;
-typedef typename K::Plane_3 Plane_3;
-typedef typename K::Vector_3 Vector_3;
-typedef typename K::Circle_3 Circle_3;
-typedef typename K::Sphere_3 Sphere_3;
-typedef typename K::Segment_3 Segment_3;
-typedef typename K::Circular_arc_point_3 Circular_arc_point_3;
+typedef typename Kernel::FT FT;
+typedef typename Kernel::Line_3 Line_3;
+typedef typename Kernel::Point_3 Point_3;
+typedef typename Kernel::Plane_3 Plane_3;
+typedef typename Kernel::Vector_3 Vector_3;
+typedef typename Kernel::Circle_3 Circle_3;
+typedef typename Kernel::Sphere_3 Sphere_3;
+typedef typename Kernel::Segment_3 Segment_3;
+typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -390,10 +389,10 @@ void MainWindow::buildEventQueue()
     // Execute and handle
     if (ssd.exec())
     {
-        //SphereList::iterator sphereIt;
-        //sphereIt = sphereList.begin() + ssd.selectedIndex;
-        QMessageBox::information(this, "Selected sphere",
-            ui->sphereListWidget->item(ssd.selectedIndex)->text());
+        SphereList::iterator sphereIt;
+        sphereIt = sphereList.begin() + ssd.selectedIndex;
+        const SI::Sphere_handle &sh = sphereIt->handle;
+        eq = EQB()(si, sh);
     }
 }
 

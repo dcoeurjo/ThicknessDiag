@@ -16,7 +16,9 @@ HEADERS *= mainwindow.h \
     sphereformdialog.h \
     generatespheresdialog.h \
     selectspheredialog.h \
-    sphereintersecter.h
+    sphereintersecter.h \
+    eventqueue.h \
+    kernel.h
 
 INCLUDEPATH *= ..
 

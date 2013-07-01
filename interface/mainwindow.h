@@ -7,6 +7,7 @@
 #include <QGLViewer/frame.h>
 
 #include "sphereintersecter.h"
+#include "eventqueue.h"
 
 namespace Ui {
     class MainWindow;
@@ -20,8 +21,9 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    typedef EventQueue EQ;
+    typedef EventQueueBuilder EQB;
     typedef SphereIntersecter SI;
-    typedef SphereIntersecterKernel Kernel;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -83,8 +85,11 @@ private:
     // Window mode
     Mode mode;
 
-    // Sphere intersecter object (main purpose)
+    // Sphere intersecter
     SI si;
+
+    // Event queue
+    EQ eq;
 
     // Displayed sphere list
     typedef QVector<SphereView> SphereList;
