@@ -6,46 +6,96 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>680</width>
-    <height>605</height>
+    <width>787</width>
+    <height>684</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>561</width>
+    <height>221</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QWidget" name="horizontalLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>681</width>
-      <height>581</height>
-     </rect>
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="margin">
+     <number>0</number>
     </property>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QGLViewer" name="qglViewer"/>
-     </item>
-     <item>
-      <widget class="QListWidget" name="sphereListWidget">
-       <property name="contextMenuPolicy">
-        <enum>Qt::ActionsContextMenu</enum>
-       </property>
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMaximumSize</enum>
+      </property>
+      <property name="leftMargin">
+       <number>2</number>
+      </property>
+      <property name="rightMargin">
+       <number>2</number>
+      </property>
+      <item>
+       <widget class="QGLViewer" name="viewer">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="verticalLayout_widget" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>150</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="spacing">
+          <number>3</number>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QListWidget" name="sphereListWidget">
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::ExtendedSelection</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="toggleCheckBtn">
+           <property name="text">
+            <string>Display/Hide All</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>680</width>
+     <width>787</width>
      <height>25</height>
     </rect>
    </property>
@@ -58,8 +108,18 @@
     <addaction name="fileActionSaveAs"/>
     <addaction name="fileActionQuit"/>
    </widget>
+   <widget class="QMenu" name="menuSpheres">
+    <property name="title">
+     <string>Spheres</string>
+    </property>
+    <addaction name="spheresActionNew"/>
+    <addaction name="spheresActionGenerate"/>
+    <addaction name="spheresActionDelete"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuSpheres"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="fileActionOpen">
    <property name="text">
     <string>Open</string>
@@ -94,27 +154,35 @@
   </action>
   <action name="spheresActionNew">
    <property name="text">
-    <string>spheresActionNew</string>
+    <string>New</string>
    </property>
    <property name="toolTip">
-    <string>Add a new sphere</string>
+    <string>New sphere</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
    </property>
   </action>
   <action name="spheresActionDelete">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
    <property name="text">
-    <string>spheresActionDelete</string>
+    <string>Delete selected</string>
    </property>
    <property name="toolTip">
-    <string>Delete the selected sphere</string>
+    <string>Delete selected sphere(s)</string>
    </property>
    <property name="shortcut">
     <string>Del</string>
+   </property>
+  </action>
+  <action name="spheresActionGenerate">
+   <property name="text">
+    <string>Generate</string>
+   </property>
+   <property name="toolTip">
+    <string>Generate spheres</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
    </property>
   </action>
  </widget>
@@ -128,22 +196,6 @@
  </customwidgets>
  <resources/>
  <connections>
-  <connection>
-   <sender>spheresActionNew</sender>
-   <signal>triggered()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>addNewSphere()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>339</x>
-     <y>319</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>fileActionOpen</sender>
    <signal>triggered()</signal>
@@ -209,6 +261,22 @@
    </hints>
   </connection>
   <connection>
+   <sender>spheresActionNew</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>addNewSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>339</x>
+     <y>302</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>spheresActionDelete</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
@@ -224,6 +292,86 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>spheresActionGenerate</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>generateSpheres()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>339</x>
+     <y>302</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewer</sender>
+   <signal>drawNeeded()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>drawSpheres()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>254</x>
+     <y>315</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>339</x>
+     <y>302</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>toggleCheckBtn</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>toggleAllSpheresCheckState()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>709</x>
+     <y>647</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>341</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sphereListWidget</sender>
+   <signal>itemChanged(QListWidgetItem*)</signal>
+   <receiver>viewer</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>709</x>
+     <y>328</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>318</x>
+     <y>343</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sphereListWidget</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showSpheresMenuAt(QPoint)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>709</x>
+     <y>328</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>341</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>addNewSphere()</slot>
@@ -231,5 +379,9 @@
   <slot>saveSpheres()</slot>
   <slot>saveSpheresAs()</slot>
   <slot>deleteSelectedSpheres()</slot>
+  <slot>drawSpheres()</slot>
+  <slot>generateSpheres()</slot>
+  <slot>toggleAllSpheresCheckState()</slot>
+  <slot>showSpheresMenuAt(QPoint)</slot>
  </slots>
 </ui>

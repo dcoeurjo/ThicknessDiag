@@ -313,6 +313,14 @@ class Sphere_intersecter
       return false;
     }
 
+    // Bounding box
+    typedef typename Sphere_handle_tree::Bounding_box Bounding_box;
+
+    // Entire spheres' bounding box
+    Bounding_box bbox() const
+    { return (_sphere_tree.size() > 1)
+      ? _sphere_tree.bbox() : Bounding_box(); }
+
   private:
     void remove_sphere_links(const Sphere_handle & sh)
     {
@@ -325,13 +333,14 @@ class Sphere_intersecter
           const Circle_handle & ch(*it);
           INFER_AUTO(circle_it, _ctsl.find(ch));
           const Sphere_handle_pair & shp = circle_it->second;
+          CGAL_assertion(shp.first == sh || shp.second == sh);
           const Sphere_handle & sh2 = (shp.first != sh)
             ? shp.first : shp.second;
           CGAL_assertion(sh2 != sh);
           INFER_AUTO(sphere_it2, _stcl.find(sh2));
           CGAL_assertion(sphere_it2 != _stcl.end());
-          std::remove(sphere_it2->second.begin(),
-              sphere_it2->second.end(), ch);
+          sphere_it2->second.erase(std::find(sphere_it2->second.begin(),
+                sphere_it2->second.end(), ch));
           _ctsl.erase(*it);
         }
         _stcl.erase(sphere_it);
