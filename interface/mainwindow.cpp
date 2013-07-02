@@ -435,6 +435,7 @@ void MainWindow::buildEventQueue()
         const SI::Sphere_handle &sh = sphereIt->handle;
         eq = EQB()(si, sh);
         eqStatus.sv = &(*sphereIt);
+        advanceEventQueue();
     }
 }
 
