@@ -12,12 +12,14 @@
 #include "sphereintersecterproxy.h"
 
 typedef SphereIntersecter SI;
-typedef SphereIntersecterKernel K;
 
 SpheresStateWidget::SpheresStateWidget(MainWindow * w) :
-    WindowStateWidget(w)
+    WindowStateWidget(w) {}
+
+SpheresStateWidget::~SpheresStateWidget() {}
+
+void SpheresStateWidget::setupMenu(QMenu *menu)
 {
-    QMenu *menu = WindowStateWidget::menu();
     menu->setTitle("Spheres");
 
     actionNew = new QAction(tr("Create"), this);
@@ -40,18 +42,17 @@ SpheresStateWidget::SpheresStateWidget(MainWindow * w) :
     connect(actionLoad, SIGNAL(triggered()), this, SLOT(loadPrompt()));
     connect(actionSave, SIGNAL(triggered()), this, SLOT(savePrompt()));
     connect(actionSaveAs, SIGNAL(triggered()), this, SLOT(saveAsPrompt()));
-    connect(actionGenerate, SIGNAL(triggered()), this, SLOT(generateNewPrompt()));
+    connect(actionGenerate, SIGNAL(triggered()), this, SLOT(generatePrompt()));
     connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
     connect(actionStart, SIGNAL(triggered()), this, SIGNAL(enterRequested()));
+}
 
-    listWidget = new QListWidget(sidebar());
+void SpheresStateWidget::setupSidebar(QWidget *sidebar)
+{
+    listWidget = new QListWidget(sidebar);
     listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showCustomContextMenuAt(QPoint)));
-}
-
-SpheresStateWidget::~SpheresStateWidget()
-{
 }
 
 void SpheresStateWidget::onEnterState()
@@ -70,7 +71,7 @@ void SpheresStateWidget::onLeaveState()
     actionStart->setEnabled(true);
 }
 
-const SphereView& SpheresStateWidget::addNew(const SI::Sphere_handle &sh)
+const SphereView& SpheresStateWidget::addNew(const SphereHandle &sh)
 {
     // Make view by adding to main window
     const SphereView& sv = mainWindow()->addSphere(sh);
@@ -92,7 +93,7 @@ void SpheresStateWidget::addNewPrompt()
     {
         // Construct sphere and add to intersecter
         Sphere_3 s(Point_3(sd.x, sd.y, sd.z), sd.radius*sd.radius);
-        SI::Sphere_handle sh = si().add_sphere(s);
+        SphereHandle sh = si_proxy->addSphere(s);
         if (sh.is_null() == false)
         { const SphereView& sv = addNew(sh);
             setStatus("Sphere " + sv.asString() + "added"); }
@@ -139,7 +140,7 @@ void SpheresStateWidget::loadPrompt()
     for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
          it != spheres.end(); it++)
     {
-        SI::Sphere_handle sh = si().add_sphere(*it);
+        SphereHandle sh = si_proxy->addSphere(*it);
         if (sh.is_null() == false)
         { addNew(sh);
           nb++; }
@@ -161,7 +162,7 @@ void SpheresStateWidget::savePrompt()
         std::ofstream ofs(openFilename.toStdString().c_str());
 
         // Write all
-        SI::Sphere_iterator_range sphere_range(si());
+        SI::Sphere_iterator_range sphere_range(si_proxy->access());
         for (SI::Sphere_iterator it = sphere_range.begin();
              it != sphere_range.end(); it++)
         { ofs << **it << std::endl; }
@@ -216,7 +217,7 @@ void SpheresStateWidget::generatePrompt()
 
             // Construct sphere and add to intersecter
             Sphere_3 s(Point_3(x, y, z), radius*radius);
-            SI::Sphere_handle sh = si().add_sphere(s);
+            SphereHandle sh = si_proxy->addSphere(s);
             if (sh.is_null() == false)
             { addNew(sh); real_nb++; }
 

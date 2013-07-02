@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QMenuBar>
 #include <QMainWindow>
 #include <QListWidgetItem>
 
@@ -28,7 +29,6 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    void addWindowStateWidget(WindowStateWidget *stateWidget);
     void setWindowStateWidget(WindowStateWidget *stateWidget);
 
     QList<SphereView>& spheres()
@@ -44,8 +44,7 @@ public:
     const SphereView& addSphere(const SI::Sphere_handle &sh);
     void removeSphere(int index);
 
-    QMenu *menubar() const;
-    QWidget *sidebar() const;
+    QWidget* centralWidget() const;
 
     void showStatus(const QString &status);
 
@@ -56,6 +55,7 @@ public:
 
 signals:
     void windowStateChanged();
+    void spheresChanged();
 
 private slots:
     void drawViewer();
@@ -67,11 +67,11 @@ private:
     // Window state widgets
     QList<WindowStateWidget> windowStateWidgets;
 
-    // Status timeout (ms)
-    int statusTime;
-
     // UI
     Ui::MainWindow *ui;
+
+    // Status timeout (ms)
+    int statusTime;
 
     // Random
     CGAL::Random randgen;

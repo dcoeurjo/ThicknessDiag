@@ -4,13 +4,22 @@
 WindowStateWidget::WindowStateWidget(MainWindow *w) :
     QWidget(w)
 {
-    menuWidget = new QMenu(w->menubar());
-    sidebarWidget = new QWidget(w->sidebar());
+    // Create proxy (useful for accessing si object)
+    si_proxy = new SphereIntersecterProxy();
 }
 
 WindowStateWidget::~WindowStateWidget()
-{
-}
+{ delete si_proxy; }
 
-SphereIntersecter& WindowStateWidget::si() const
-{ return *SphereIntersecterProxy::access(); }
+void WindowStateWidget::setup()
+{
+    // Setup menu
+    QMenu *menu = mw->menuBar()->addMenu(menuTitle());
+    setupMenu(menu);
+    menu->show();
+
+    // Setup sidebar
+    QWidget *sidebar = new QWidget(mw->centralWidget());
+    setupSidebar(sidebar);
+    sidebar->show();
+}

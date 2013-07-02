@@ -22,7 +22,7 @@ public:
     void paintToQGLViewer(QGLViewer *viewer);
 
 protected:
-    void setupMenu(QWidget *menubar);
+    void setupMenu(QMenu *menu);
     void setupSidebar(QWidget *sidebar);
 
 private slots:
