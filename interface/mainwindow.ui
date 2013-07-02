@@ -21,7 +21,16 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <property name="margin">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
      <number>0</number>
     </property>
     <property name="spacing">
@@ -42,7 +51,7 @@
        <number>2</number>
       </property>
       <item>
-       <widget class="QGLViewer" name="viewer">
+       <widget class="QGLViewer" name="viewer" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -63,7 +72,16 @@
          <property name="spacing">
           <number>3</number>
          </property>
-         <property name="margin">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
           <number>0</number>
          </property>
          <item>
@@ -123,6 +141,7 @@
     </property>
     <addaction name="eqActionStartMode"/>
     <addaction name="eqActionBuild"/>
+    <addaction name="eqActionAdvance"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSpheres"/>
@@ -184,6 +203,9 @@
    <property name="toolTip">
     <string>Generate spheres</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
+   </property>
   </action>
   <action name="eqActionBuild">
    <property name="text">
@@ -207,6 +229,14 @@
    </property>
    <property name="toolTip">
     <string>Start spheres mode</string>
+   </property>
+  </action>
+  <action name="eqActionAdvance">
+   <property name="text">
+    <string>Advance</string>
+   </property>
+   <property name="shortcut">
+    <string>Return</string>
    </property>
   </action>
  </widget>
@@ -460,6 +490,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>eqActionAdvance</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>advanceEventQueue()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>341</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <signal>modeEntered(Mode)</signal>
@@ -475,5 +521,6 @@
   <slot>enterEventQueueMode()</slot>
   <slot>drawViewer()</slot>
   <slot>enterSpheresMode()</slot>
+  <slot>advanceEventQueue()</slot>
  </slots>
 </ui>

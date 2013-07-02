@@ -65,8 +65,12 @@ void MainWindow::addNewSphere()
         Sphere_3 s(Point_3(sd.x, sd.y, sd.z), sd.radius*sd.radius);
         SI::Sphere_handle sh = si.add_sphere(s);
         if (sh.is_null() == false)
-        { addNewSphere(sh);
-          showStatusMessage("Sphere " + sphereString(s) + "added"); }
+        {
+            addNewSphere(sh);
+            ui->viewer->update();
+            ui->sphereListWidget->update();
+            showStatusMessage("Sphere " + sphereString(s) + "added");
+        }
         else
         { QMessageBox::warning(this, tr("Sphere not added"),
               tr("The sphere wasn't added, since it already exists")); }
@@ -102,6 +106,10 @@ void MainWindow::openSpheres()
         { addNewSphere(sh);
           nb++; }
     }
+
+    // Update UI
+    ui->viewer->update();
+    ui->sphereListWidget->update();
 
     // Show status message
     std::ostringstream oss;
@@ -176,7 +184,7 @@ void MainWindow::generateSpheres()
             Sphere_3 s(Point_3(x, y, z), radius*radius);
             SI::Sphere_handle sh = si.add_sphere(s);
             if (sh.is_null() == false)
-            { addNewSphere(sh, false);
+            { addNewSphere(sh);
               real_nb++; }
 
             // Update the GUI display
@@ -247,17 +255,23 @@ void MainWindow::drawSpheres()
         const SphereView &sv = *sphereIt;
 
         // Actually draw the sphere
-        glPushMatrix();
-            ui->viewer->qglColor(sv.color);
-            glMultMatrixd(sv.frame.matrix());
-            GLUquadricObj * sphere = gluNewQuadric();
-            gluQuadricDrawStyle(sphere, GLU_SILHOUETTE);
-            gluQuadricNormals(sphere, GLU_SMOOTH);
-            gluQuadricOrientation(sphere, GLU_OUTSIDE);
-            gluSphere(sphere, sv.radius, 20, 20);
-            gluDeleteQuadric(sphere);
-        glPopMatrix();
+        drawSphere(sv);
     }
+}
+
+void MainWindow::drawEventQueue()
+{
+    // Only draw the event queue's status if the sphere view is given
+    if (eqStatus.sv == 0)
+    { return; }
+
+    // Draw the sphere
+    drawSphere(*eqStatus.sv);
+
+    // Draw the current event point
+    drawSphere(eqStatus.point.x, eqStatus.point.y, eqStatus.point.z,
+               eqStatus.sv->radius / (float) 20, Qt::red);
+
 }
 
 void MainWindow::toggleAllSpheresCheckState()
@@ -328,7 +342,7 @@ QString MainWindow::sphereString(const SI::Sphere_handle &sh)
     return sphereString(*sh);
 }
 
-void MainWindow::addNewSphere(const SI::Sphere_handle &sh, bool updateUI)
+void MainWindow::addNewSphere(const SI::Sphere_handle &sh)
 {
     // Compute approximate data
     using CGAL::to_double;
@@ -369,11 +383,38 @@ void MainWindow::addNewSphere(const SI::Sphere_handle &sh, bool updateUI)
     ui->viewer->setSceneRadius((max - min).norm() / 2.0);
 
     // Update views if requested
-    if (updateUI)
-    {
-        ui->sphereListWidget->update();
-        ui->viewer->update();
-    }
+    ui->sphereListWidget->update();
+    ui->viewer->update();
+}
+
+void MainWindow::drawSphere(float x, float y, float z, float radius, const QColor &color)
+{
+    glPushMatrix();
+        qglviewer::Frame frame;
+        frame.setPosition(x, y, z);
+        ui->viewer->qglColor(color);
+        glMultMatrixd(frame.matrix());
+        GLUquadricObj * sphere = gluNewQuadric();
+        gluQuadricDrawStyle(sphere, GLU_SILHOUETTE);
+        gluQuadricNormals(sphere, GLU_SMOOTH);
+        gluQuadricOrientation(sphere, GLU_OUTSIDE);
+        gluSphere(sphere, radius, 20, 20);
+        gluDeleteQuadric(sphere);
+    glPopMatrix();
+}
+
+void MainWindow::drawSphere(const SphereView &sv)
+{
+    glPushMatrix();
+        ui->viewer->qglColor(sv.color);
+        glMultMatrixd(sv.frame.matrix());
+        GLUquadricObj * sphere = gluNewQuadric();
+        gluQuadricDrawStyle(sphere, GLU_SILHOUETTE);
+        gluQuadricNormals(sphere, GLU_SMOOTH);
+        gluQuadricOrientation(sphere, GLU_OUTSIDE);
+        gluSphere(sphere, sv.radius, 20, 20);
+        gluDeleteQuadric(sphere);
+    glPopMatrix();
 }
 
 void MainWindow::buildEventQueue()
@@ -393,7 +434,26 @@ void MainWindow::buildEventQueue()
         sphereIt = sphereList.begin() + ssd.selectedIndex;
         const SI::Sphere_handle &sh = sphereIt->handle;
         eq = EQB()(si, sh);
+        eqStatus.sv = &(*sphereIt);
     }
+}
+
+void MainWindow::advanceEventQueue()
+{
+    using CGAL::to_double;
+    EQ::Event_site_type ev_type = eq.next_event();
+    if (ev_type ==  EQ::None)
+    {
+        eqStatus.sv = 0;
+    }
+    else if (ev_type == EQ::Normal)
+    {
+        NormalEventSite nev_site = eq.pop_normal_event();
+        eqStatus.point.x = to_double(nev_site.point().x());
+        eqStatus.point.y = to_double(nev_site.point().y());
+        eqStatus.point.z = to_double(nev_site.point().z());
+    }
+    ui->viewer->update();
 }
 
 void MainWindow::showStatusMessage(const QString &msg)
@@ -410,6 +470,7 @@ void MainWindow::enterSpheresMode()
     { QList<QAction *>  ls = ui->menuEvent_queue->actions();
     for (int i = 0; i < ls.count(); i++)
     { ls.at(i)->setEnabled(ls.at(i) == ui->eqActionStartMode); } }
+    eqStatus.sv = 0;
 
     // Activate spheres mode
     { QList<QAction *>  ls = ui->menuSpheres->actions();
@@ -447,6 +508,7 @@ void MainWindow::drawViewer()
         break;
 
     case EVENT_QUEUE:
+        drawEventQueue();
         break;
 
     default:

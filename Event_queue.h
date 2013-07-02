@@ -425,6 +425,11 @@ class Event_queue
       return pes;
     }
 
+    // Get a polar event from the queue (without removing it)
+    // Concept: there is at least one polar event
+    const Polar_event_site<Kernel> & top_polar_event() const
+    { return _polar_events.top(); }
+
     // Pop a normal event from the queue
     // Concept: there is at least one normal event
     Normal_event_site<Kernel> pop_normal_event()
@@ -434,6 +439,11 @@ class Event_queue
       update_state();
       return nes;
     }
+
+    // Get a normal event from the queue (without removing it)
+    // Concept: there is at least one normal event
+    const Normal_event_site<Kernel> & top_normal_event() const
+    { return _normal_events.top(); }
 
   private:
     // Fire an update of the event queue

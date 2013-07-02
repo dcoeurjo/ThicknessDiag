@@ -43,6 +43,7 @@ private slots:
 
     // Event queue slots
     void buildEventQueue();
+    void advanceEventQueue();
     void enterEventQueueMode();
 
     // File menu slots
@@ -71,10 +72,14 @@ private:
         double radius;
     };
 
-    // Helpers
+    // Display functions
     void drawSpheres();
+    void drawEventQueue();
+
+    // Helpers
     void drawSphere(const SphereView &sv);
-    void addNewSphere(const SI::Sphere_handle &sh, bool updateUI = true);
+    void drawSphere(float x, float y, float z, float radius, const QColor &color = Qt::black);
+    void addNewSphere(const SI::Sphere_handle &sh);
     void showStatusMessage(const QString &msg);
     void changeMode(const Mode &m);
 
@@ -94,6 +99,13 @@ private:
     // Displayed sphere list
     typedef QVector<SphereView> SphereList;
     SphereList sphereList;
+
+    // Displayed event queue status
+    struct EventQueueStatus
+    {
+        const SphereView *sv;
+        struct { double x, y, z; } point;
+    } eqStatus;
 
     // File opened (default "save" file)
     QString openFilename;
