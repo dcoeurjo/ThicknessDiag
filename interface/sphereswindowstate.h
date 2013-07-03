@@ -14,14 +14,9 @@ public:
     explicit SpheresWindowState(WindowStateWidget &wsw);
     ~SpheresWindowState();
 
+protected:
     void onEnterState();
     void onLeaveState();
-
-    void paintToQGLViewer(QGLViewer *viewer);
-
-protected:
-    void setupMenu(QMenu *menu);
-    void setupSidebar(QWidget *sidebar);
 
 private slots:
     void addNewPrompt();

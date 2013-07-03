@@ -12,6 +12,7 @@
 #include "windowstatefactory.h"
 
 class Window;
+class WindowState;
 
 class WindowStateWidget : public QWidget
 {
@@ -33,8 +34,8 @@ public:
 
 private slots:
     // Slots for adding/removing spheres
-    void onAddSphere(const SphereHandle &sh);
-    void onRemoveSphere(const SphereHandle &sh);
+    void onSphereAdded(const SphereHandle &sh);
+    void onSphereRemoved(const SphereHandle &sh);
 
 private:
     // Get the bound window (direct parent)
@@ -49,6 +50,9 @@ private:
 
     // Sphere intersecter proxy
     SphereIntersecterProxy &siProxyInstance;
+
+    // Current state (used for update)
+    WindowState *state;
 };
 
 #endif // WINDOWSTATEWIDGET_H

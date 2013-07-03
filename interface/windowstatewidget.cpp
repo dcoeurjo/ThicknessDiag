@@ -18,16 +18,16 @@ WindowStateWidget::WindowStateWidget(Window *window) :
 
     // Connect to sphere addition/deletion
     QObject::connect(&siProxyInstance, SIGNAL(sphereAdded(SphereHandle)),
-                     this, SLOT(onAddSphere(SphereHandle)));
+                     this, SLOT(onSphereAdded(SphereHandle)));
     QObject::connect(&siProxyInstance, SIGNAL(sphereRemoved(SphereHandle)),
-                     this, SLOT(onRemoveSphere(SphereHandle)));
+                     this, SLOT(onSphereRemoved(SphereHandle)));
 
     // Connect to viewer update
     QObject::connect(viewer, SIGNAL(drawNeeded()),
                      this, SIGNAL(drawNeeded(viewer)));
 }
 
-void WindowStateWidget::onAddSphere(const SphereHandle &sh)
+void WindowStateWidget::onSphereAdded(const SphereHandle &sh)
 {
     // Compute approximate data
     using CGAL::to_double;
@@ -63,7 +63,7 @@ void WindowStateWidget::onAddSphere(const SphereHandle &sh)
     viewer->setSceneRadius((max - min).norm() / 2.0);
 }
 
-void WindowStateWidget::onRemoveSphere(const SphereHandle &sh)
+void WindowStateWidget::onSphereRemoved(const SphereHandle &sh)
 { sphereViews.erase(sh); }
 
 void WindowStateWidget::setStatus(const QString &status)
@@ -71,3 +71,7 @@ void WindowStateWidget::setStatus(const QString &status)
 
 WindowStateFactory WindowStateWidget::factory()
 { return WindowStateFactory(*this); }
+
+void WindowStateWidget::onStateChanged(WindowState &state)
+{
+}

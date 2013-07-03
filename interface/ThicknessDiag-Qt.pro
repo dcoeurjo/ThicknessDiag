@@ -15,7 +15,8 @@ SOURCES *= main.cpp\
     windowstate.cpp \
     sphereswindowstate.cpp \
     windowstatewidget.cpp \
-    windowstatefactory.cpp
+    windowstatefactory.cpp \
+    eventqueuewindowstate.cpp
 
 HEADERS *= \
     sphereformdialog.h \
@@ -27,7 +28,9 @@ HEADERS *= \
     sphereswindowstate.h \
     windowstate.h \
     windowstatewidget.h \
-    windowstatefactory.h
+    windowstatefactory.h \
+    allwindowstates.h \
+    eventqueuewindowstate.h
 
 INCLUDEPATH *= ..
 

@@ -13,9 +13,12 @@ public:
     explicit WindowState(WindowStateWidget &wsw);
     virtual ~WindowState();
 
-public slots:
+    // Used by widget for notification
     void enterState();
     void leaveState();
+
+public slots:
+    //void
 
 signals:
     void stateEntered();

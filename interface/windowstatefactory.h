@@ -1,6 +1,8 @@
 #ifndef WINDOWSTATEBUILDER_H
 #define WINDOWSTATEBUILDER_H
 
+#include <stdexcept>
+
 class WindowState;
 class WindowStateWidget;
 
@@ -9,9 +11,13 @@ class WindowStateFactory
 public:
     explicit WindowStateFactory(WindowStateWidget &wsw);
 
-private:
-    WindowState& buildConnections(WindowState &st);
+    // Construct state given by id
+    enum StateId { SPHERES, EVENT_QUEUE };
+    WindowState& makeState(StateId id);
 
+    struct InvalidStateId: std::exception {};
+
+private:
     WindowStateWidget &wsw;
 };
 
