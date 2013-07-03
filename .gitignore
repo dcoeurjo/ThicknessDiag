@@ -15,5 +15,5 @@
 # Tags files
 tags
 
-# Qt build-* directories
-build-*
+# Qt build directories
+*-build-*
