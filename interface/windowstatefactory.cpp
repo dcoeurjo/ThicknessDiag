@@ -1,5 +1,6 @@
 #include "windowstatefactory.h"
-#include "windowstate.h"
+
+#include <QAction>
 
 #include "allwindowstates.h"
 
@@ -25,8 +26,8 @@ WindowState& WindowStateFactory::makeState(WindowStateFactory::StateId id)
         throw InvalidStateId();
     }
 
-    // Connect state's signals and slots to widget's
-    QObject::connect(state, SIGNAL(stateEntered()), &wsw, SLOT(onStateChanged(*state)));
+    // Add state's menu item, connected to enter request
+    wsw.addState(*state);
 
     return *state;
 }

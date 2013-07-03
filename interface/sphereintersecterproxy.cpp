@@ -8,7 +8,8 @@ SphereIntersecterProxy::~SphereIntersecterProxy() {}
 SphereHandle SphereIntersecterProxy::addSphere(const Sphere_3 &s)
 {
     SphereHandle sh = si.add_sphere(s);
-    emit sphereAdded(sh);
+    if (sh.is_null() == false)
+    { emit sphereAdded(sh); }
     return sh;
 }
 

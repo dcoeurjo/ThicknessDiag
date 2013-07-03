@@ -2,14 +2,23 @@
 
 #include <fstream>
 
+#include <QMenu>
+#include <QMenuBar>
+#include <QMainWindow>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QProgressDialog>
+
+#include <QGLViewer/qglviewer.h>
+
+#include <CGAL/Random.h>
 
 #include "sphereformdialog.h"
 #include "generatespheresdialog.h"
 #include "selectspheredialog.h"
 #include "sphereintersecterproxy.h"
+
+#include "spherelistwidgetitem.h"
 
 typedef SphereIntersecter SI;
 
@@ -18,306 +27,308 @@ SpheresWindowState::SpheresWindowState(WindowStateWidget &wsw) :
 
 SpheresWindowState::~SpheresWindowState() {}
 
-//void SpheresWindowState::setupMenu(QMenu *menu)
-//{
-//    menu->setTitle("Spheres");
+void SpheresWindowState::setupWidget(QWidget *widget)
+{
+    QMenu *menu = new QMenu(&mw());
+    menu->setTitle("Spheres");
 
-//    actionNew = new QAction(tr("Create"), this);
-//    actionLoad = new QAction(tr("Load"), this);
-//    actionSave = new QAction(tr("Save"), this);
-//    actionSaveAs = new QAction(tr("Save As"), this);
-//    actionDelete = new QAction(tr("Delete"), this);
-//    actionGenerate = new QAction(tr("Generate"), this);
-//    actionStart = new QAction(tr("Start mode"), this);
+    // Create actions for menu
+    actionNew = new QAction(tr("Create"), this);
+    actionLoad = new QAction(tr("Load"), this);
+    actionSave = new QAction(tr("Save"), this);
+    actionSaveAs = new QAction(tr("Save As"), this);
+    actionDelete = new QAction(tr("Delete"), this);
+    actionGenerate = new QAction(tr("Generate"), this);
 
-//    menu->addAction(actionNew);
-//    menu->addAction(actionLoad);
-//    menu->addAction(actionSave);
-//    menu->addAction(actionSaveAs);
-//    menu->addAction(actionGenerate);
-//    menu->addAction(actionDelete);
-//    menu->addAction(actionStart);
+    // Add actions to menu
+    menu->addAction(actionNew);
+    menu->addAction(actionLoad);
+    menu->addAction(actionSave);
+    menu->addAction(actionSaveAs);
+    menu->addAction(actionGenerate);
+    menu->addAction(actionDelete);
 
-//    connect(actionNew, SIGNAL(triggered()), this, SLOT(addNewPrompt()));
-//    connect(actionLoad, SIGNAL(triggered()), this, SLOT(loadPrompt()));
-//    connect(actionSave, SIGNAL(triggered()), this, SLOT(savePrompt()));
-//    connect(actionSaveAs, SIGNAL(triggered()), this, SLOT(saveAsPrompt()));
-//    connect(actionGenerate, SIGNAL(triggered()), this, SLOT(generatePrompt()));
-//    connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
-//    connect(actionStart, SIGNAL(triggered()), this, SIGNAL(enterRequested()));
-//}
+    // Connect menu actions
+    QObject::connect(actionNew, SIGNAL(triggered()), this, SLOT(addNewPrompt()));
+    QObject::connect(actionLoad, SIGNAL(triggered()), this, SLOT(loadPrompt()));
+    QObject::connect(actionSave, SIGNAL(triggered()), this, SLOT(savePrompt()));
+    QObject::connect(actionSaveAs, SIGNAL(triggered()), this, SLOT(saveAsPrompt()));
+    QObject::connect(actionGenerate, SIGNAL(triggered()), this, SLOT(generatePrompt()));
+    QObject::connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
-//void SpheresWindowState::setupSidebar(QWidget *sidebar)
-//{
-//    listWidget = new QListWidget(sidebar);
-//    listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-//    connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
-//            this, SLOT(showCustomContextMenuAt(QPoint)));
-//}
+    // Setup sidebar
+    listWidget = new QListWidget(widget);
+    listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(showCustomContextMenuAt(QPoint)));
+}
 
-//void SpheresWindowState::onEnterState()
-//{
-//    actionNew->setEnabled(true);
-//    actionDelete->setEnabled(true);
-//    actionGenerate->setEnabled(true);
-//    actionStart->setEnabled(false);
-//}
+void SpheresWindowState::onEnterState()
+{
+    actionNew->setEnabled(true);
+    actionDelete->setEnabled(true);
+    actionGenerate->setEnabled(true);
+}
 
-//void SpheresWindowState::onLeaveState()
-//{
-//    actionNew->setEnabled(false);
-//    actionDelete->setEnabled(false);
-//    actionGenerate->setEnabled(false);
-//    actionStart->setEnabled(true);
-//}
+void SpheresWindowState::onLeaveState()
+{
+    actionNew->setEnabled(false);
+    actionDelete->setEnabled(false);
+    actionGenerate->setEnabled(false);
+}
 
-//void SpheresWindowState::addNew(const SphereHandle &sh)
-//{
-//    // Make view by adding to main window
-//    const SphereView& sv = wsw().sphereView(sh);
+const SphereView& SpheresWindowState::addNew(const SphereHandle &sh)
+{
+    // Make view by adding to main window
+    const SphereView& sv = wsw().sphereView(sh);
 
-//    // Add to list
-//    QListWidgetItem *item;
-//    item = new QListWidgetItem(sv.asString(), listWidget);
-//    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-//    item->setCheckState(Qt::Checked);
-//    listWidget->addItem(item);
-//}
+    // Add to list
+    QListWidgetItem *item;
+    item = new SphereListWidgetItem(sv, listWidget);
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+    item->setCheckState(Qt::Checked);
+    listWidget->addItem(item);
 
-//void SpheresWindowState::addNewPrompt()
-//{
-//    SphereFormDialog sd(this);
-//    if (sd.exec())
-//    {
-//        // Construct sphere and add to intersecter
-//        Sphere_3 s(Point_3(sd.x, sd.y, sd.z), sd.radius*sd.radius);
-//        SphereHandle sh = si_proxy->addSphere(s);
-//        if (sh.is_null() == false)
-//        { const SphereView& sv = addNew(sh);
-//            setStatus("Sphere " + sv.asString() + "added"); }
-//        else
-//        { QMessageBox::warning(this, tr("Sphere not added"),
-//              tr("The sphere wasn't added, since it already exists")); }
-//    }
-//    else
-//    { setStatus("Sphere addition cancelled"); }
-//}
+    return sv;
+}
 
-//void SpheresWindowState::toggleAllCheckState()
-//{
-//    // Toggle state
-//    savedCheckState = (savedCheckState == Qt::Unchecked)
-//            ? Qt::Checked : Qt::Unchecked;
-//    for (int i = 0; i < listWidget->count(); i++)
-//    {
-//        QListWidgetItem *item = listWidget->item(i);
-//        item->setCheckState(savedCheckState);
-//    }
+void SpheresWindowState::addNewPrompt()
+{
+    SphereFormDialog sd(&wsw());
+    if (sd.exec())
+    {
+        // Construct sphere and add to intersecter
+        Sphere_3 s(Point_3(sd.x, sd.y, sd.z), sd.radius*sd.radius);
+        SphereHandle sh = siProxy.addSphere(s);
+        if (sh.is_null() == false)
+        { const SphereView& sv = addNew(sh);
+            setStatus("Sphere " + sv.asString() + "added"); }
+        else
+        { QMessageBox::warning(&wsw(), tr("Sphere not added"),
+              tr("The sphere wasn't added, since it already exists")); }
+    }
+    else
+    { setStatus("Sphere addition cancelled"); }
+}
 
-//    // Update UI
-//    listWidget->update();
-//}
+void SpheresWindowState::toggleAllCheckState()
+{
+    // Toggle state
+    savedCheckState = (savedCheckState == Qt::Unchecked)
+            ? Qt::Checked : Qt::Unchecked;
+    for (int i = 0; i < listWidget->count(); i++)
+    {
+        QListWidgetItem *item = listWidget->item(i);
+        item->setCheckState(savedCheckState);
+    }
 
-//void SpheresWindowState::loadPrompt()
-//{
-//    // Get file to load spheres from
-//    QString fileName = QFileDialog::getOpenFileName(this,
-//            tr("Open spheres"), "", "Text files (*.txt)");
-//    if (QFile::exists(fileName) == false)
-//    { return; }
+    // Update UI
+    listWidget->update();
+}
 
-//    // Parse file
-//    std::ifstream ifs(fileName.toStdString().c_str());
-//    std::vector<Sphere_3> spheres;
-//    std::copy(std::istream_iterator<Sphere_3>(ifs),
-//        std::istream_iterator<Sphere_3>(),
-//        std::back_inserter(spheres));
+void SpheresWindowState::loadPrompt()
+{
+    // Get file to load spheres from
+    QString fileName = QFileDialog::getOpenFileName(&wsw(),
+            tr("Open spheres"), "", "Text files (*.txt)");
+    if (QFile::exists(fileName) == false)
+    { return; }
 
-//    // Copy parsed spheres
-//    std::size_t nb = 0;
-//    for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
-//         it != spheres.end(); it++)
-//    {
-//        SphereHandle sh = si_proxy->addSphere(*it);
-//        if (sh.is_null() == false)
-//        { addNew(sh);
-//          nb++; }
-//    }
+    // Parse file
+    std::ifstream ifs(fileName.toStdString().c_str());
+    std::vector<Sphere_3> spheres;
+    std::copy(std::istream_iterator<Sphere_3>(ifs),
+        std::istream_iterator<Sphere_3>(),
+        std::back_inserter(spheres));
 
-//    // Show status message
-//    std::ostringstream oss;
-//    oss << "Loaded " << nb << " spheres";
-//    setStatus(QString(oss.str().c_str()));
-//}
+    // Copy parsed spheres
+    std::size_t nb = 0;
+    for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
+         it != spheres.end(); it++)
+    {
+        SphereHandle sh = siProxy.addSphere(*it);
+        if (sh.is_null() == false)
+        { addNew(sh);
+          nb++; }
+    }
 
-//void SpheresWindowState::savePrompt()
-//{
-//    if (openFilename.size() == 0)
-//    { saveAsPrompt(); }
-//    else
-//    {
-//        // Open file
-//        std::ofstream ofs(openFilename.toStdString().c_str());
+    // Show status message
+    std::ostringstream oss;
+    oss << "Loaded " << nb << " spheres";
+    setStatus(QString(oss.str().c_str()));
+}
 
-//        // Write all
-//        SI::Sphere_iterator_range sphere_range(si_proxy->access());
-//        for (SI::Sphere_iterator it = sphere_range.begin();
-//             it != sphere_range.end(); it++)
-//        { ofs << **it << std::endl; }
+void SpheresWindowState::savePrompt()
+{
+    if (openFilename.size() == 0)
+    { saveAsPrompt(); }
+    else
+    {
+        // Open file
+        std::ofstream ofs(openFilename.toStdString().c_str());
 
-//        // Show status message
-//        setStatus("Saved spheres to " + openFilename);
-//    }
-//}
+        // Write all
+        SI::Sphere_iterator_range sphere_range(siProxy.directAccess());
+        for (SI::Sphere_iterator it = sphere_range.begin();
+             it != sphere_range.end(); it++)
+        { ofs << **it << std::endl; }
 
-//void SpheresWindowState::saveAsPrompt()
-//{
-//    QString fileName = QFileDialog::getSaveFileName(this,
-//            tr("Save spheres"), "", "Text files (*.txt)");
-//    openFilename = fileName;
-//    savePrompt();
-//}
+        // Show status message
+        setStatus("Saved spheres to " + openFilename);
+    }
+}
 
-//void SpheresWindowState::generatePrompt()
-//{
-//    GenerateSpheresDialog gsd(this);
-//    if (gsd.exec())
-//    {
-//        // Progress bar display
-//        QProgressDialog pd(this);
-//        pd.setMinimum(0);
-//        pd.setMaximum(gsd.nb);
-//        pd.setCancelButton(0);
-//        pd.setWindowModality(Qt::WindowModal);
-//        pd.setContextMenuPolicy(Qt::NoContextMenu);
-//        pd.setFixedSize(pd.size());
-//        pd.show();
+void SpheresWindowState::saveAsPrompt()
+{
+    QString fileName = QFileDialog::getSaveFileName(&wsw(),
+            tr("Save spheres"), "", "Text files (*.txt)");
+    openFilename = fileName;
+    savePrompt();
+}
 
-//        // Disable menu and window update
-//        setUpdatesEnabled(false);
+void SpheresWindowState::generatePrompt()
+{
+    GenerateSpheresDialog gsd(&wsw());
+    if (gsd.exec())
+    {
+        // Progress bar display
+        QProgressDialog pd(&wsw());
+        pd.setMinimum(0);
+        pd.setMaximum(gsd.nb);
+        pd.setCancelButton(0);
+        pd.setWindowModality(Qt::WindowModal);
+        pd.setContextMenuPolicy(Qt::NoContextMenu);
+        pd.setFixedSize(pd.size());
+        pd.show();
 
-//        // Generate spheres
-//        std::size_t real_nb = 0;
-//        for (std::size_t nb = 0; nb < gsd.nb; nb++)
-//        {
-//            // Generate random numbers
-//            double x = randgen.get_double(gsd.center[0] - gsd.amplitude[0],
-//                            gsd.center[0] + gsd.amplitude[0]),
-//                    y = randgen.get_double(gsd.center[1] - gsd.amplitude[1],
-//                            gsd.center[1] + gsd.amplitude[1]),
-//                    z = randgen.get_double(gsd.center[2] - gsd.amplitude[2],
-//                            gsd.center[2] + gsd.amplitude[2]);
+        // Disable menu and window update
+        wsw().setUpdatesEnabled(false);
 
-//            // Generate radius (not nil);
-//            double radius = 0;
-//            while (radius == 0)
-//            { radius = randgen.get_double(0, gsd.radius); }
+        // Generate spheres
+        CGAL::Random randgen;
+        std::size_t real_nb = 0;
+        for (std::size_t nb = 0; nb < gsd.nb; nb++)
+        {
+            // Generate random numbers
+            double x = randgen.get_double(gsd.center[0] - gsd.amplitude[0],
+                            gsd.center[0] + gsd.amplitude[0]),
+                    y = randgen.get_double(gsd.center[1] - gsd.amplitude[1],
+                            gsd.center[1] + gsd.amplitude[1]),
+                    z = randgen.get_double(gsd.center[2] - gsd.amplitude[2],
+                            gsd.center[2] + gsd.amplitude[2]);
 
-//            // Construct sphere and add to intersecter
-//            Sphere_3 s(Point_3(x, y, z), radius*radius);
-//            SphereHandle sh = si_proxy->addSphere(s);
-//            if (sh.is_null() == false)
-//            { addNew(sh); real_nb++; }
+            // Generate radius (not nil);
+            double radius = 0;
+            while (radius == 0)
+            { radius = randgen.get_double(0, gsd.radius); }
 
-//            // Update the GUI display
-//            pd.setValue(nb);
-//            pd.update();
-//        }
+            // Construct sphere and add to intersecter
+            Sphere_3 s(Point_3(x, y, z), radius*radius);
+            SphereHandle sh = siProxy.addSphere(s);
+            if (sh.is_null() == false)
+            { addNew(sh); real_nb++; }
 
-//        // Update the UI
-//        setUpdatesEnabled(true);
-//        listWidget->update();
+            // Update the GUI display
+            pd.setValue(nb);
+            pd.update();
+        }
 
-//        // Show status message
-//        std::ostringstream oss;
-//        oss << "Generated " << real_nb << " spheres";
-//        setStatus(QString(oss.str().c_str()));
-//    }
-//}
+        // Update the UI
+        wsw().setUpdatesEnabled(true);
+        listWidget->update();
 
-//void SpheresWindowState::deleteSelected()
-//{
-//    // Get selected (stop if none)
-//    QList<QListWidgetItem *> selectedItems;
-//    selectedItems = listWidget->selectedItems();
-//    if (selectedItems.empty())
-//    { return; }
+        // Show status message
+        std::ostringstream oss;
+        oss << "Generated " << real_nb << " spheres";
+        setStatus(QString(oss.str().c_str()));
+    }
+}
 
-//    // Delete selected
-//    std::size_t nb = 0;
-//    typedef typename QList<QListWidgetItem *>::const_iterator
-//            SelectedSpheresIterator;
-//    for (SelectedSpheresIterator it = selectedItems.begin();
-//         it != selectedItems.end(); it++)
-//    {
-//        QListWidgetItem *item = *it;
-//        int index = listWidget->row(item);
-//        mainWindow()->removeSphere(index);
-//        listWidget->removeItemWidget(item);
-//        delete item;
-//        nb++;
-//    }
+void SpheresWindowState::deleteSelected()
+{
+    // Get selected (stop if none)
+    QList<QListWidgetItem *> selectedItems;
+    selectedItems = listWidget->selectedItems();
+    if (selectedItems.empty())
+    { return; }
 
-//    // Update UI
-//    listWidget->update();
+    // Delete selected
+    std::size_t nb = 0;
+    typedef typename QList<QListWidgetItem *>::const_iterator
+            SelectedSpheresIterator;
+    for (SelectedSpheresIterator it = selectedItems.begin();
+         it != selectedItems.end(); it++)
+    {
+        SphereListWidgetItem *item;
+        item = dynamic_cast<SphereListWidgetItem*>(*it);
+        siProxy.removeSphere(item->sv().handle);
+        listWidget->removeItemWidget(item);
+        delete item;
+        nb++;
+    }
 
-//    // Show status message
-//    std::ostringstream oss;
-//    oss << "Deleted " << nb << " spheres";
-//    setStatus(QString(oss.str().c_str()));
-//}
+    // Update UI
+    listWidget->update();
 
-//void SpheresWindowState::paintToQGLViewer(QGLViewer *viewer)
-//{
-//    for (int i = 0; i < listWidget->count(); i++)
-//    {
-//        // Get item and display if checked
-//        QListWidgetItem *item = listWidget->item(i);
-//        if (item->checkState() == Qt::Unchecked)
-//        { continue; }
+    // Show status message
+    std::ostringstream oss;
+    oss << "Deleted " << nb << " spheres";
+    setStatus(QString(oss.str().c_str()));
+}
 
-//        const SphereView &sv = mainWindow()->sphere(listWidget->row(item));
+void SpheresWindowState::drawToViewer(QGLViewer *viewer)
+{
+    for (int i = 0; i < listWidget->count(); i++)
+    {
+        // Get item and display if checked
+        QListWidgetItem *item = listWidget->item(i);
+        if (item->checkState() == Qt::Unchecked)
+        { continue; }
 
-//        // Actually draw the sphere
-//        glPushMatrix();
-//            viewer->qglColor(sv.color);
-//            glMultMatrixd(sv.frame.matrix());
-//            GLUquadricObj * sphere = gluNewQuadric();
-//            gluQuadricDrawStyle(sphere, GLU_SILHOUETTE);
-//            gluQuadricNormals(sphere, GLU_SMOOTH);
-//            gluQuadricOrientation(sphere, GLU_OUTSIDE);
-//            gluSphere(sphere, sv.radius, 20, 20);
-//            gluDeleteQuadric(sphere);
-//        glPopMatrix();
-//    }
-//}
+        SphereListWidgetItem *sphereItem;
+        sphereItem = reinterpret_cast<SphereListWidgetItem*>(item);
+        const SphereView &sv = sphereItem->sv();
 
-//void SpheresWindowState::showCustomContextMenuAt(const QPoint &point)
-//{
-//    QMenu contextMenu(tr("Context menu"), this);
-//    QListWidgetItem *item = listWidget->currentItem();
-//    if (item && item->isSelected())
-//    {
-//        // "delete" action"
-//        QAction *deleteAction = new QAction(tr("Delete"), this);
-//        QObject::connect(deleteAction, SIGNAL(triggered()),
-//                         this, SLOT(deleteSelectedSpheres()));
-//        contextMenu.addAction(deleteAction);
-//    }
-//    else
-//    {
-//        // "new sphere" action
-//        QAction *newSphereAction = new QAction(tr("Add new sphere"), this);
-//        QObject::connect(newSphereAction, SIGNAL(triggered()),
-//                         this, SLOT(addNewSphere()));
-//        contextMenu.addAction(newSphereAction);
+        // Actually draw the sphere
+        glPushMatrix();
+            viewer->qglColor(sv.color);
+            glMultMatrixd(sv.frame.matrix());
+            GLUquadricObj * sphere = gluNewQuadric();
+            gluQuadricDrawStyle(sphere, GLU_SILHOUETTE);
+            gluQuadricNormals(sphere, GLU_SMOOTH);
+            gluQuadricOrientation(sphere, GLU_OUTSIDE);
+            gluSphere(sphere, sv.radius, 20, 20);
+            gluDeleteQuadric(sphere);
+        glPopMatrix();
+    }
+}
 
-//        // "generate spheres" action
-//        QAction *genAction = new QAction(tr("Generate spheres"), this);
-//        QObject::connect(genAction, SIGNAL(triggered()),
-//                         this, SLOT(generateSpheres()));
-//        contextMenu.addAction(genAction);
+void SpheresWindowState::showCustomContextMenuAt(const QPoint &point)
+{
+    QMenu contextMenu(tr("Context menu"), &wsw());
+    QListWidgetItem *item = listWidget->currentItem();
+    if (item && item->isSelected())
+    {
+        // "delete" action"
+        QAction *deleteAction = new QAction(tr("Delete"), &contextMenu);
+        QObject::connect(deleteAction, SIGNAL(triggered()),
+                         this, SLOT(deleteSelectedSpheres()));
+        contextMenu.addAction(deleteAction);
+    }
+    else
+    {
+        // "new sphere" action
+        QAction *newSphereAction = new QAction(tr("Add new sphere"), &contextMenu);
+        QObject::connect(newSphereAction, SIGNAL(triggered()),
+                         this, SLOT(addNewSphere()));
+        contextMenu.addAction(newSphereAction);
 
-//    }
-//    contextMenu.exec(listWidget->mapToGlobal(point));
-//}
+        // "generate spheres" action
+        QAction *genAction = new QAction(tr("Generate spheres"), &contextMenu);
+        QObject::connect(genAction, SIGNAL(triggered()),
+                         this, SLOT(generateSpheres()));
+        contextMenu.addAction(genAction);
+
+    }
+    contextMenu.exec(listWidget->mapToGlobal(point));
+}

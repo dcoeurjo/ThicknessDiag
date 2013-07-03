@@ -3,6 +3,10 @@
 #include "windowstatewidget.h"
 
 #include <QColor>
+#include <QMenuBar>
+#include <QStatusBar>
+#include <QMainWindow>
+
 #include <QGLViewer/frame.h>
 
 #include <CGAL/Random.h>
@@ -10,8 +14,9 @@
 #include "window.h"
 #include "windowstate.h"
 
-WindowStateWidget::WindowStateWidget(Window *window) :
-    QWidget(window), siProxyInstance(window->siProxy())
+WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindow *window) :
+    QWidget(window), siProxyInstance(siProxy),
+    currentState(0)
 {
     // Setup UI elements
     // TODO
@@ -66,12 +71,29 @@ void WindowStateWidget::onSphereAdded(const SphereHandle &sh)
 void WindowStateWidget::onSphereRemoved(const SphereHandle &sh)
 { sphereViews.erase(sh); }
 
-void WindowStateWidget::setStatus(const QString &status)
-{ w().showStatus(status); }
+void WindowStateWidget::setStatus(const QString &status, int timeout)
+{ mw().statusBar()->showMessage(status, timeout);  }
 
 WindowStateFactory WindowStateWidget::factory()
 { return WindowStateFactory(*this); }
 
-void WindowStateWidget::onStateChanged(WindowState &state)
+void WindowStateWidget::addState(WindowState &state)
 {
+    QAction *enterAction = state.makeEnterAction();
+    mw().menuBar()->addAction(enterAction);
+}
+
+void WindowStateWidget::changeState(WindowState &state)
+{
+    if (currentState != 0)
+    { currentState->leaveState(); }
+    currentState = &state;
+    currentState->enterState();
+}
+
+const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)
+{
+    SphereViews::const_iterator it = sphereViews.find(sh);
+    Q_ASSERT(it != sphereViews.end());
+    return it->second;
 }

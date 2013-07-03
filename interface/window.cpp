@@ -7,9 +7,6 @@
 Window::Window(QWidget *parent) :
     QMainWindow(parent)
 {
-    WindowStateWidget *wsw = new WindowStateWidget(this);
+    WindowStateWidget *wsw = new WindowStateWidget(siProxyMember);
     setCentralWidget(wsw);
 }
-
-void Window::showStatus(const QString &status)
-{ statusBar()->showMessage(status, 3000); }

@@ -19,8 +19,6 @@ public:
     SphereIntersecterProxy& siProxy()
     { return siProxyMember; }
 
-    void showStatus(const QString &status);
-
 private:
     // Window state widget
     WindowStateWidget *wsw;

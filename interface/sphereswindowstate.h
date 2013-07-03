@@ -14,6 +14,10 @@ public:
     explicit SpheresWindowState(WindowStateWidget &wsw);
     ~SpheresWindowState();
 
+    void setupWidget(QWidget *widget);
+
+    void drawToViewer(QGLViewer *viewer);
+
 protected:
     void onEnterState();
     void onLeaveState();
@@ -30,7 +34,7 @@ private slots:
 
 private:
     // Helpers
-    void addNew(const SphereHandle &sh);
+    const SphereView& addNew(const SphereHandle &sh);
 
     // Actions
     QAction *actionNew;
@@ -39,7 +43,6 @@ private:
     QAction *actionSaveAs;
     QAction *actionDelete;
     QAction *actionGenerate;
-    QAction *actionStart;
 
     // Sidebar
     QListWidget *listWidget;

@@ -11,14 +11,15 @@
 #include "sphereintersecterproxy.h"
 #include "windowstatefactory.h"
 
-class Window;
+class QMainWindow;
 class WindowState;
 
 class WindowStateWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit WindowStateWidget(Window *window);
+    explicit WindowStateWidget(SphereIntersecterProxy &siProxy,
+                               QMainWindow *window = 0);
 
     // Access to sphere intersecter proxy
     const SphereIntersecterProxy& siProxy() const
@@ -27,10 +28,19 @@ public:
     { return siProxyInstance; }
 
     // Set the status (~statusbar)
-    void setStatus(const QString &status);
+    void setStatus(const QString &status, int timeout = 5000);
 
     // Get a builder bound to this widget
     WindowStateFactory factory();
+
+    // Used for switching state from an external state
+    void changeState(WindowState &state);
+
+    // Used to add menu actions for states
+    void addState(WindowState &state);
+
+    // Get the view bound to a sphere
+    const SphereView& sphereView(const SphereHandle& sh);
 
 private slots:
     // Slots for adding/removing spheres
@@ -39,11 +49,12 @@ private slots:
 
 private:
     // Get the bound window (direct parent)
-    Window& w()
-    { return reinterpret_cast<Window&>(*parent()); }
+    QMainWindow& mw()
+    { return reinterpret_cast<QMainWindow&>(*window()); }
 
     // Sphere display
-    std::map<SphereHandle, SphereView> sphereViews;
+    typedef std::map<SphereHandle, SphereView> SphereViews;
+    SphereViews sphereViews;
 
     // Scene display viewport
     QGLViewer *viewer;
@@ -52,7 +63,7 @@ private:
     SphereIntersecterProxy &siProxyInstance;
 
     // Current state (used for update)
-    WindowState *state;
+    WindowState *currentState;
 };
 
 #endif // WINDOWSTATEWIDGET_H
