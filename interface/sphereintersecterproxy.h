@@ -2,7 +2,6 @@
 #define SPHEREINTERSECTERPROXY_H
 
 #include <QObject>
-#include <QSharedPointer>
 
 #include "sphereintersecter.h"
 
@@ -13,18 +12,17 @@ public:
     explicit SphereIntersecterProxy(QObject *parent = 0);
     virtual ~SphereIntersecterProxy();
 
-    static const SphereIntersecter& access();
-
     SphereHandle addSphere(const Sphere_3 &s);
-    bool removeSphere(const SphereHandle &sh);
+    void removeSphere(const SphereHandle &sh);
+
+    const SphereIntersecter& directAccess() const;
 
 signals:
     void sphereAdded(const SphereHandle &sh);
-    void sphereRemoved();
+    void sphereRemoved(const SphereHandle &sh);
 
 private:
-    static SphereIntersecter& internalAccess();
-    static QSharedPointer<SphereIntersecter> instance;
+    SphereIntersecter si;
 };
 
 #endif // SPHEREINTERSECTERPROXY_H

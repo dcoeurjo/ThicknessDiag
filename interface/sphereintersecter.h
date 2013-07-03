@@ -10,6 +10,7 @@ typedef Sphere_intersecter<SphereIntersecterKernel> SphereIntersecter;
 typedef SphereIntersecter::Sphere_handle SphereHandle;
 typedef SphereIntersecter::Sphere_iterator SphereIterator;
 typedef SphereIntersecter::Circle_handle CircleHandle;
+typedef SphereIntersecter::Bounding_box BoundingBox;
 
 // Geometric objects
 typedef typename SphereIntersecterKernel::Point_3 Point_3;

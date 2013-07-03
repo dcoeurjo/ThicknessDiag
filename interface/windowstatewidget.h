@@ -1,55 +1,54 @@
 #ifndef WINDOWSTATEWIDGET_H
 #define WINDOWSTATEWIDGET_H
 
-#include <QMenu>
-#include <QMenuBar>
+#include <map>
 #include <QWidget>
+#include <QString>
 
 #include <QGLViewer/qglviewer.h>
 
-#include "mainwindow.h"
-#include "sphereintersecter.h"
+#include "sphereview.h"
+#include "sphereintersecterproxy.h"
+#include "windowstatefactory.h"
 
-class SphereIntersecterProxy;
+class Window;
 
 class WindowStateWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit WindowStateWidget(MainWindow * w);
-    virtual ~WindowStateWidget();
+    explicit WindowStateWidget(Window *window);
 
-    void setup();
+    // Access to sphere intersecter proxy
+    const SphereIntersecterProxy& siProxy() const
+    { return siProxyInstance; }
+    SphereIntersecterProxy& siProxy()
+    { return siProxyInstance; }
 
-    virtual void onEnterState() = 0;
-    virtual void onLeaveState() = 0;
+    // Set the status (~statusbar)
+    void setStatus(const QString &status);
 
-    virtual void paintToQGLViewer(QGLViewer *viewer) = 0;
+    // Get a builder bound to this widget
+    WindowStateFactory factory();
 
-signals:
-    void enterRequested();
-    void stateEntered();
-    void stateLeft();
-
-protected:
-    MainWindow* mainWindow() const
-    { return mw; }
-
-    // Setup callbacks
-    virtual void setupMenu(QMenu *menu) = 0;
-    virtual void setupSidebar(QWidget *sidebar) = 0;
-
-    // Configuration callbacks
-    virtual QString menuTitle() const
-    { return ""; }
-
-    void setStatus(const QString &msg)
-    { mw->showStatus(msg); }
-
-    SphereIntersecterProxy *si_proxy;
+private slots:
+    // Slots for adding/removing spheres
+    void onAddSphere(const SphereHandle &sh);
+    void onRemoveSphere(const SphereHandle &sh);
 
 private:
-    MainWindow *mw;
+    // Get the bound window (direct parent)
+    Window& w()
+    { return reinterpret_cast<Window&>(*parent()); }
+
+    // Sphere display
+    std::map<SphereHandle, SphereView> sphereViews;
+
+    // Scene display viewport
+    QGLViewer *viewer;
+
+    // Sphere intersecter proxy
+    SphereIntersecterProxy &siProxyInstance;
 };
 
 #endif // WINDOWSTATEWIDGET_H

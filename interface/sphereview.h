@@ -9,16 +9,9 @@
 
 struct SphereView
 {
-    typedef SphereIntersecter SI;
-
-    SphereView();
-    SphereView(const SI::Sphere_handle &sh, const QColor &color,
-               const qglviewer::Vec &pos, double radius);
-    ~SphereView();
-
     QString asString() const;
 
-    SI::Sphere_handle handle;
+    SphereHandle handle;
     QColor color;
     qglviewer::Frame frame;
     double radius;

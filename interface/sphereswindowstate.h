@@ -3,18 +3,16 @@
 
 #include <QListWidget>
 
-#include <CGAL/Random.h>
+#include "windowstate.h"
+#include <QGLWidget>
 
-#include "windowstatewidget.h"
-#include "sphereview.h"
-
-class SpheresStateWidget : public WindowStateWidget
+class SpheresWindowState : public WindowState
 {
     Q_OBJECT
 
 public:
-    explicit SpheresStateWidget(MainWindow *w);
-    ~SpheresStateWidget();
+    explicit SpheresWindowState(WindowStateWidget &wsw);
+    ~SpheresWindowState();
 
     void onEnterState();
     void onLeaveState();
@@ -37,7 +35,7 @@ private slots:
 
 private:
     // Helpers
-    const SphereView& addNew(const SphereIntersecter::Sphere_handle &sh);
+    void addNew(const SphereHandle &sh);
 
     // Actions
     QAction *actionNew;
@@ -56,9 +54,6 @@ private:
 
     // File opened (default "save" file)
     QString openFilename;
-
-    // Random
-    CGAL::Random randgen;
 };
 
 #endif // SPHERESSTATEWIDGET_H

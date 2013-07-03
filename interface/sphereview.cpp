@@ -1,35 +1,14 @@
 #include "sphereview.h"
-
-SphereView::SphereView()
-{
-}
-
-SphereView::SphereView(const SI::Sphere_handle &sh,
-        const QColor &color, const qglviewer::Vec &pos, double radius):
-    handle(sh), color(color),
-    frame(), radius(radius)
-{
-    frame.setPosition(pos);
-}
-
-SphereView::~SphereView()
-{
-}
-
+#include <sstream>
 
 QString SphereView::asString() const
 {
     // Compute approximate data
-    using CGAL::to_double;
-    const Point_3 &c = handle->center();
-    double radius = std::sqrt(to_double(handle->squared_radius())),
-            x = to_double(c.x()),
-            y = to_double(c.y()),
-            z = to_double(c.z());
+    qglviewer::Vec pos = frame.position();
 
     // Make view text
     std::ostringstream oss;
-    oss << "[" << x << ", " << y
-        << ", " << z << "], " << radius;
+    oss << "[" << pos.x << ", " << pos.y
+        << ", " << pos.z << "], " << radius;
     return QString(oss.str().c_str());
 }
