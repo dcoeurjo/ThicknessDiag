@@ -9,13 +9,13 @@ SphereHandle SphereIntersecterProxy::addSphere(const Sphere_3 &s)
 {
     SphereHandle sh = si.add_sphere(s);
     if (sh.is_null() == false)
-    { emit sphereAdded(sh); }
+    { emit sphereAdded(*sh); }
     return sh;
 }
 
 void SphereIntersecterProxy::removeSphere(const SphereHandle &sh)
 {
-    emit sphereRemoved(sh);
+    emit sphereRemoved(*sh);
     si.remove_sphere(sh);
 }
 

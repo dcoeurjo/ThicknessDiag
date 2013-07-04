@@ -18,8 +18,8 @@ public:
     const SphereIntersecter& directAccess() const;
 
 signals:
-    void sphereAdded(const SphereHandle &sh);
-    void sphereRemoved(const SphereHandle &sh);
+    void sphereAdded(const Sphere_3 &s);
+    void sphereRemoved(const Sphere_3 &s);
 
 private:
     SphereIntersecter si;

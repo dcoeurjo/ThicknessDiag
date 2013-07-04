@@ -1,7 +1,7 @@
 #ifndef WINDOWSTATEWIDGET_H
 #define WINDOWSTATEWIDGET_H
 
-#include <map>
+#include <set>
 #include <QWidget>
 #include <QString>
 
@@ -47,8 +47,8 @@ public:
 
 protected slots:
     // Slots for adding/removing spheres
-    void onSphereAdded(const SphereHandle &sh);
-    void onSphereRemoved(const SphereHandle &sh);
+    void onSphereAdded(const Sphere_3 &s);
+    void onSphereRemoved(const Sphere_3 &s);
 
 private slots:
     // Slot for drawing the viewer
@@ -60,7 +60,7 @@ private:
     { return reinterpret_cast<QMainWindow&>(*window()); }
 
     // Sphere display
-    typedef std::map<SphereHandle, SphereView> SphereViews;
+    typedef std::set<SphereView> SphereViews;
     SphereViews sphereViews;
 
     // UI

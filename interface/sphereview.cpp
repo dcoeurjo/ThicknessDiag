@@ -12,3 +12,6 @@ QString SphereView::asString() const
         << ", " << pos.z << "], " << radius;
     return QString(oss.str().c_str());
 }
+
+bool SphereView::operator<(const SphereView &sv) const
+{ return handle < sv.handle; }

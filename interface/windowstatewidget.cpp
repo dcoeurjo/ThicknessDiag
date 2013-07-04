@@ -26,10 +26,10 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
     stateMenu = mw().menuBar()->addMenu(tr("Window Mode"));
 
     // Connect to sphere addition/deletion
-    QObject::connect(&siProxyInstance, SIGNAL(sphereAdded(SphereHandle)),
-                     this, SLOT(onSphereAdded(SphereHandle)));
-    QObject::connect(&siProxyInstance, SIGNAL(sphereRemoved(SphereHandle)),
-                     this, SLOT(onSphereRemoved(SphereHandle)));
+    QObject::connect(&siProxyInstance, SIGNAL(sphereAdded(Sphere_3)),
+                     this, SLOT(onSphereAdded(Sphere_3)));
+    QObject::connect(&siProxyInstance, SIGNAL(sphereRemoved(Sphere_3)),
+                     this, SLOT(onSphereRemoved(Sphere_3)));
 
     // Connect to viewer update
     QObject::connect(viewer, SIGNAL(drawNeeded()),
@@ -43,10 +43,10 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
 
 WindowStateWidget::~WindowStateWidget() {}
 
-void WindowStateWidget::onSphereAdded(const SphereHandle &sh)
+void WindowStateWidget::onSphereAdded(const Sphere_3 &s)
 {
-    // Sphere handle mustn't be nil
-    Q_ASSERT(sh.is_null() == false);
+    // Construct SphereHandle directly (SphereIntersecterProxy concept)
+    SphereHandle sh(s);
 
     // Compute approximate data
     using CGAL::to_double;
@@ -72,7 +72,7 @@ void WindowStateWidget::onSphereAdded(const SphereHandle &sh)
     sv.radius = radius;
 
     // Add list to sphere handle vector
-    sphereViews[sh] = sv;
+    sphereViews.insert(sv);
 
     // Update the scene so that it includes the sphere
     BoundingBox sceneBbox = siProxy().directAccess().bbox();
@@ -83,8 +83,17 @@ void WindowStateWidget::onSphereAdded(const SphereHandle &sh)
     viewer->setSceneRadius((max - min).norm() / 2.0);
 }
 
-void WindowStateWidget::onSphereRemoved(const SphereHandle &sh)
-{ sphereViews.erase(sh); }
+void WindowStateWidget::onSphereRemoved(const Sphere_3 &s)
+{
+    // Construct temp sphere view for lookup
+    SphereView sv;
+    sv.handle = SphereHandle(s);
+
+    // Find and erase sphere view
+    SphereViews::iterator it = sphereViews.find(sv);
+    Q_ASSERT(it != sphereViews.end());
+    sphereViews.erase(it);
+}
 
 void WindowStateWidget::setStatus(const QString &status, int timeout)
 { mw().statusBar()->showMessage(status, timeout);  }
@@ -108,9 +117,14 @@ void WindowStateWidget::changeState(WindowState &state)
 
 const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)
 {
-    SphereViews::const_iterator it = sphereViews.find(sh);
+    // Construct temp sphere view
+    SphereView tmp_sv;
+    tmp_sv.handle = sh;
+
+    // Find temp sphere view and return it, asserting for failure
+    SphereViews::const_iterator it = sphereViews.find(tmp_sv);
     Q_ASSERT(it != sphereViews.end());
-    return it->second;
+    return *it;
 }
 
 
