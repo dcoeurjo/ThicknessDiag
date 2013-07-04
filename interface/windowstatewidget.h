@@ -11,7 +11,9 @@
 #include "sphereintersecterproxy.h"
 #include "windowstatefactory.h"
 
+class QMenu;
 class QMainWindow;
+
 class WindowState;
 
 class WindowStateWidget : public QWidget
@@ -20,6 +22,7 @@ class WindowStateWidget : public QWidget
 public:
     explicit WindowStateWidget(SphereIntersecterProxy &siProxy,
                                QMainWindow *window = 0);
+    virtual ~WindowStateWidget();
 
     // Access to sphere intersecter proxy
     const SphereIntersecterProxy& siProxy() const
@@ -42,10 +45,14 @@ public:
     // Get the view bound to a sphere
     const SphereView& sphereView(const SphereHandle& sh);
 
-private slots:
+protected slots:
     // Slots for adding/removing spheres
     void onSphereAdded(const SphereHandle &sh);
     void onSphereRemoved(const SphereHandle &sh);
+
+private slots:
+    // Slot for drawing the viewer
+    void drawViewer();
 
 private:
     // Get the bound window (direct parent)
@@ -56,8 +63,9 @@ private:
     typedef std::map<SphereHandle, SphereView> SphereViews;
     SphereViews sphereViews;
 
-    // Scene display viewport
+    // UI
     QGLViewer *viewer;
+    QMenu *stateMenu;
 
     // Sphere intersecter proxy
     SphereIntersecterProxy &siProxyInstance;

@@ -25,7 +25,7 @@ public:
     virtual void setupWidget(QWidget*) {}
 
     // Used to display the widget regularly
-    virtual void drawToViewer(QGLViewer *viewer);
+    virtual void drawToViewer(QGLViewer *) {}
 
     // Get/Set the state's name
     const QString& name() const

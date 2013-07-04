@@ -5,6 +5,7 @@
 
 #include "sphereintersecterproxy.h"
 
+class QGridLayout;
 class WindowStateWidget;
 
 class Window : public QMainWindow
@@ -22,6 +23,10 @@ public:
 private:
     // Window state widget
     WindowStateWidget *wsw;
+
+    // Window UI
+    QWidget *centralWidget;
+    QGridLayout *gridLayout;
 
     // Sphere intersecter proxy
     SphereIntersecterProxy siProxyMember;

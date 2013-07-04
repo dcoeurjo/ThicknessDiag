@@ -15,6 +15,7 @@ public:
     enum StateId { SPHERES, EVENT_QUEUE };
     WindowState& makeState(StateId id);
 
+    // Exception thrown when asking for a bad state
     struct InvalidStateId: std::exception {};
 
 private:

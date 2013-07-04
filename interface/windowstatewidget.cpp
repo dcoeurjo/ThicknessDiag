@@ -2,6 +2,9 @@
 
 #include "windowstatewidget.h"
 
+#include <iostream>
+
+#include <QMenu>
 #include <QColor>
 #include <QMenuBar>
 #include <QStatusBar>
@@ -19,7 +22,8 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
     currentState(0)
 {
     // Setup UI elements
-    // TODO
+    viewer = new QGLViewer(this);
+    stateMenu = mw().menuBar()->addMenu(tr("Window Mode"));
 
     // Connect to sphere addition/deletion
     QObject::connect(&siProxyInstance, SIGNAL(sphereAdded(SphereHandle)),
@@ -29,18 +33,29 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
 
     // Connect to viewer update
     QObject::connect(viewer, SIGNAL(drawNeeded()),
-                     this, SIGNAL(drawNeeded(viewer)));
+                     this, SLOT(drawViewer()));
+
+    // Add widget states
+    WindowStateFactory stateFactory = factory();
+    WindowState &spheresState = stateFactory.makeState(WindowStateFactory::SPHERES);
+    changeState(spheresState);
 }
+
+WindowStateWidget::~WindowStateWidget() {}
 
 void WindowStateWidget::onSphereAdded(const SphereHandle &sh)
 {
+    // Sphere handle mustn't be nil
+    Q_ASSERT(sh.is_null() == false);
+
     // Compute approximate data
     using CGAL::to_double;
-    const Point_3 &c = sh->center();
-    double radius = std::sqrt(to_double(sh->squared_radius())),
-            x = to_double(c.x()),
-            y = to_double(c.y()),
-            z = to_double(c.z());
+    const Point_3 &c = sh->center(); // FIXME invalid reference ???
+
+    double radius = std::sqrt(to_double(sh->squared_radius()));
+    double x = to_double(c.x());
+    double y = to_double(c.y());
+    double z = to_double(c.z());
 
     // Make sphere color
     QColor color;
@@ -80,7 +95,7 @@ WindowStateFactory WindowStateWidget::factory()
 void WindowStateWidget::addState(WindowState &state)
 {
     QAction *enterAction = state.makeEnterAction();
-    mw().menuBar()->addAction(enterAction);
+    stateMenu->addAction(enterAction);
 }
 
 void WindowStateWidget::changeState(WindowState &state)
@@ -97,3 +112,8 @@ const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)
     Q_ASSERT(it != sphereViews.end());
     return it->second;
 }
+
+
+void WindowStateWidget::drawViewer()
+{ if (currentState != 0)
+    { currentState->drawToViewer(viewer); } }

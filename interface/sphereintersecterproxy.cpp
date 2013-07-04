@@ -16,7 +16,7 @@ SphereHandle SphereIntersecterProxy::addSphere(const Sphere_3 &s)
 void SphereIntersecterProxy::removeSphere(const SphereHandle &sh)
 {
     emit sphereRemoved(sh);
-    Q_ASSERT(si.remove_sphere(sh));
+    si.remove_sphere(sh);
 }
 
 const SphereIntersecter& SphereIntersecterProxy::directAccess() const

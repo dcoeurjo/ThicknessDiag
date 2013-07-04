@@ -23,14 +23,17 @@
 typedef SphereIntersecter SI;
 
 SpheresWindowState::SpheresWindowState(WindowStateWidget &wsw) :
-    WindowState(wsw) {}
+    WindowState(wsw)
+{
+    setName(tr("Spheres"));
+}
 
 SpheresWindowState::~SpheresWindowState() {}
 
 void SpheresWindowState::setupWidget(QWidget *widget)
 {
-    QMenu *menu = new QMenu(&mw());
-    menu->setTitle("Spheres");
+    // Create menu
+    QMenu *menu = mw().menuBar()->addMenu(name());
 
     // Create actions for menu
     actionNew = new QAction(tr("Create"), this);
@@ -102,13 +105,14 @@ void SpheresWindowState::addNewPrompt()
         SphereHandle sh = siProxy.addSphere(s);
         if (sh.is_null() == false)
         { const SphereView& sv = addNew(sh);
-            setStatus("Sphere " + sv.asString() + "added"); }
+            QString msg = "Sphere " + sv.asString() + "added";
+            setStatus(tr(msg.toStdString().c_str())); }
         else
         { QMessageBox::warning(&wsw(), tr("Sphere not added"),
               tr("The sphere wasn't added, since it already exists")); }
     }
     else
-    { setStatus("Sphere addition cancelled"); }
+    { setStatus(tr("Sphere addition cancelled")); }
 }
 
 void SpheresWindowState::toggleAllCheckState()
@@ -130,7 +134,7 @@ void SpheresWindowState::loadPrompt()
 {
     // Get file to load spheres from
     QString fileName = QFileDialog::getOpenFileName(&wsw(),
-            tr("Open spheres"), "", "Text files (*.txt)");
+            tr("Open spheres"), "", tr("Text files (*.txt)"));
     if (QFile::exists(fileName) == false)
     { return; }
 
@@ -174,14 +178,14 @@ void SpheresWindowState::savePrompt()
         { ofs << **it << std::endl; }
 
         // Show status message
-        setStatus("Saved spheres to " + openFilename);
+        setStatus(tr("Saved spheres to ") + openFilename);
     }
 }
 
 void SpheresWindowState::saveAsPrompt()
 {
     QString fileName = QFileDialog::getSaveFileName(&wsw(),
-            tr("Save spheres"), "", "Text files (*.txt)");
+            tr("Save spheres"), "", tr("Text files (*.txt)"));
     openFilename = fileName;
     savePrompt();
 }
@@ -240,7 +244,7 @@ void SpheresWindowState::generatePrompt()
         // Show status message
         std::ostringstream oss;
         oss << "Generated " << real_nb << " spheres";
-        setStatus(QString(oss.str().c_str()));
+        setStatus(tr(oss.str().c_str()));
     }
 }
 
@@ -273,7 +277,7 @@ void SpheresWindowState::deleteSelected()
     // Show status message
     std::ostringstream oss;
     oss << "Deleted " << nb << " spheres";
-    setStatus(QString(oss.str().c_str()));
+    setStatus(tr(oss.str().c_str()));
 }
 
 void SpheresWindowState::drawToViewer(QGLViewer *viewer)
@@ -312,7 +316,7 @@ void SpheresWindowState::showCustomContextMenuAt(const QPoint &point)
         // "delete" action"
         QAction *deleteAction = new QAction(tr("Delete"), &contextMenu);
         QObject::connect(deleteAction, SIGNAL(triggered()),
-                         this, SLOT(deleteSelectedSpheres()));
+                         this, SLOT(deleteSelected()));
         contextMenu.addAction(deleteAction);
     }
     else
@@ -320,13 +324,13 @@ void SpheresWindowState::showCustomContextMenuAt(const QPoint &point)
         // "new sphere" action
         QAction *newSphereAction = new QAction(tr("Add new sphere"), &contextMenu);
         QObject::connect(newSphereAction, SIGNAL(triggered()),
-                         this, SLOT(addNewSphere()));
+                         this, SLOT(addNewPrompt()));
         contextMenu.addAction(newSphereAction);
 
         // "generate spheres" action
         QAction *genAction = new QAction(tr("Generate spheres"), &contextMenu);
         QObject::connect(genAction, SIGNAL(triggered()),
-                         this, SLOT(generateSpheres()));
+                         this, SLOT(generatePrompt()));
         contextMenu.addAction(genAction);
 
     }

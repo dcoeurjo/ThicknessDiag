@@ -27,6 +27,7 @@ WindowState& WindowStateFactory::makeState(WindowStateFactory::StateId id)
     }
 
     // Add state's menu item, connected to enter request
+    state->setupWidget(&wsw);
     wsw.addState(*state);
 
     return *state;
