@@ -5,6 +5,10 @@ EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
 
 EventQueueWindowState::~EventQueueWindowState() {}
 
+void EventQueueWindowState::setup()
+{
+}
+
 void EventQueueWindowState::onEnterState()
 {
 }

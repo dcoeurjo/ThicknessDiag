@@ -9,6 +9,8 @@ public:
     explicit EventQueueWindowState(WindowStateWidget &wsw);
     ~EventQueueWindowState();
 
+    void setup();
+
 protected:
     void onEnterState();
     void onLeaveState();

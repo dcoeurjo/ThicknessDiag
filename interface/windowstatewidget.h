@@ -5,13 +5,12 @@
 #include <QWidget>
 #include <QString>
 
-#include <QGLViewer/qglviewer.h>
-
 #include "sphereview.h"
 #include "sphereintersecterproxy.h"
 #include "windowstatefactory.h"
 
 class QMenu;
+class QGLViewer;
 class QMainWindow;
 
 class WindowState;

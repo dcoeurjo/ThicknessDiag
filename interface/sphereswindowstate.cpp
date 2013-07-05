@@ -1,6 +1,7 @@
 #include "sphereswindowstate.h"
 
 #include <fstream>
+#include <limits>
 
 #include <QMenu>
 #include <QMenuBar>
@@ -22,6 +23,8 @@
 #include "sphereintersecterproxy.h"
 
 #include "spherelistwidgetitem.h"
+
+static CGAL::Random randgen;
 
 typedef SphereIntersecter SI;
 
@@ -60,42 +63,50 @@ void SpheresWindowState::setup()
     QObject::connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
     // Setup layout
-    QHBoxLayout *horizontalLayout = new QHBoxLayout();
+    horizontalLayout = new QHBoxLayout();
     horizontalLayout->setSpacing(0);
     //horizontalLayout->setSizeConstraint(QLayout::SetMaximumSize);
     horizontalLayout->setContentsMargins(2, -1, 2, -1);
-    horizontalLayout->addWidget(wsw.viewer());
-    wsw.setLayout(horizontalLayout);
 
     // Setup sidebar
-    QWidget *verticalLayout_widget = new QWidget(&wsw);
+    verticalLayout_widget = new QWidget();
     verticalLayout_widget->setMaximumWidth(150);
+    // vertical layout
     QVBoxLayout *verticalLayout = new QVBoxLayout(verticalLayout_widget);
     verticalLayout->setSpacing(3);
     verticalLayout->setContentsMargins(11, 11, 11, 11);
     verticalLayout->setContentsMargins(0, 0, 0, 0);
+    // sphere list widget
     listWidget = new QListWidget();
     listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    listWidget->setSelectionMode(QListWidget::ExtendedSelection);
     QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showCustomContextMenuAt(QPoint)));
+    // sphere list widget's toggle button
     QPushButton *toggleCheckBtn = new QPushButton(tr("Check/Uncheck all"), verticalLayout_widget);
     QObject::connect(toggleCheckBtn, SIGNAL(clicked()),
                      this, SLOT(toggleAllCheckState()));
     verticalLayout->addWidget(listWidget);
     verticalLayout->addWidget(toggleCheckBtn);
     horizontalLayout->addWidget(verticalLayout_widget);
+    verticalLayout_widget->hide();
 }
 
 void SpheresWindowState::onEnterState()
 {
     WindowStateWithMenu::onEnterState();
-    // TODO
+    wsw.setLayout(horizontalLayout);
+    horizontalLayout->addWidget(wsw.viewer());
+    horizontalLayout->addWidget(verticalLayout_widget);
+    verticalLayout_widget->show();
 }
 
 void SpheresWindowState::onLeaveState()
 {
     WindowStateWithMenu::onLeaveState();
-    // TODO
+    horizontalLayout->removeWidget(wsw.viewer());
+    horizontalLayout->removeWidget(verticalLayout_widget);
+    verticalLayout_widget->hide();
 }
 
 const SphereView& SpheresWindowState::addNew(const SphereHandle &sh)
@@ -122,15 +133,22 @@ void SpheresWindowState::addNewPrompt()
         Sphere_3 s(Point_3(sd.x, sd.y, sd.z), sd.radius*sd.radius);
         SphereHandle sh = siProxy.addSphere(s);
         if (sh.is_null() == false)
-        { const SphereView& sv = addNew(sh);
+        {
+            const SphereView& sv = addNew(sh);
             QString msg = "Sphere " + sv.asString() + "added";
-            setStatus(tr(msg.toStdString().c_str())); }
+            setStatus(tr(msg.toStdString().c_str()));
+            updateDisplay();
+        }
         else
-        { QMessageBox::warning(&wsw, tr("Sphere not added"),
-              tr("The sphere wasn't added, since it already exists")); }
+        {
+            QMessageBox::warning(&wsw, tr("Sphere not added"),
+                                 tr("The sphere wasn't added, since it already exists"));
+        }
     }
     else
-    { setStatus(tr("Sphere addition cancelled")); }
+    {
+        setStatus(tr("Sphere addition cancelled"));
+    }
 }
 
 void SpheresWindowState::toggleAllCheckState()
@@ -145,7 +163,7 @@ void SpheresWindowState::toggleAllCheckState()
     }
 
     // Update UI
-    listWidget->update();
+    updateDisplay();
 }
 
 void SpheresWindowState::loadPrompt()
@@ -153,26 +171,62 @@ void SpheresWindowState::loadPrompt()
     // Get file to load spheres from
     QString fileName = QFileDialog::getOpenFileName(&wsw,
             tr("Open spheres"), "", tr("Text files (*.txt)"));
-    if (QFile::exists(fileName) == false)
-    { return; }
+    //if (QFile::exists(fileName) == false) { return; }
+    std::ifstream ifs(fileName.toStdString().c_str());
+
+    // Progress bar display
+    QProgressDialog pd(&wsw);
+    pd.setMinimum(0);
+    pd.setCancelButton(0);
+    pd.setWindowModality(Qt::WindowModal);
+    pd.setContextMenuPolicy(Qt::NoContextMenu);
+    pd.setFixedSize(pd.size());
+
+    // Disable menu and window update
+    wsw.setUpdatesEnabled(false);
 
     // Parse file
-    std::ifstream ifs(fileName.toStdString().c_str());
     std::vector<Sphere_3> spheres;
-    std::copy(std::istream_iterator<Sphere_3>(ifs),
-        std::istream_iterator<Sphere_3>(),
-        std::back_inserter(spheres));
+    std::size_t nblines = std::count(std::istreambuf_iterator<char>(ifs),
+                         std::istreambuf_iterator<char>(), '\n');
+    if (nblines > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+    {
+        std::ostringstream oss;
+        oss <<  "Cannot load spheres from " << fileName.toStdString()
+             << ": file too large";
+        QMessageBox::warning(&wsw, tr("Error loading"), tr(oss.str().c_str()));
+        return;
+    }
+    ifs.seekg(0);
+    pd.setMaximum(nblines);
+    pd.setLabelText("Parsing spheres from file '" + fileName + "'");
+    pd.show();
+    spheres.resize(nblines);
+    for (std::istream_iterator<Sphere_3> ifs_it(ifs);
+         ifs_it != std::istream_iterator<Sphere_3>(); ifs_it++)
+    {
+        spheres.push_back(*ifs_it);
+        pd.setValue(pd.value() + 1);
+    }
 
     // Copy parsed spheres
     std::size_t nb = 0;
+    pd.setValue(0);
+    pd.setLabelText("Copying spheres and computing intersections");
     for (std::vector<Sphere_3>::const_iterator it = spheres.begin();
          it != spheres.end(); it++)
     {
         SphereHandle sh = siProxy.addSphere(*it);
         if (sh.is_null() == false)
-        { addNew(sh);
-          nb++; }
+        {
+            addNew(sh);
+            nb++;
+        }
     }
+
+
+    // Update the UI
+    updateDisplay();
 
     // Show status message
     std::ostringstream oss;
@@ -227,7 +281,6 @@ void SpheresWindowState::generatePrompt()
         wsw.setUpdatesEnabled(false);
 
         // Generate spheres
-        CGAL::Random randgen;
         std::size_t real_nb = 0;
         for (std::size_t nb = 0; nb < gsd.nb; nb++)
         {
@@ -257,7 +310,7 @@ void SpheresWindowState::generatePrompt()
 
         // Update the UI
         wsw.setUpdatesEnabled(true);
-        listWidget->update();
+        updateDisplay();
 
         // Show status message
         std::ostringstream oss;
@@ -290,7 +343,7 @@ void SpheresWindowState::deleteSelected()
     }
 
     // Update UI
-    listWidget->update();
+    updateDisplay();
 
     // Show status message
     std::ostringstream oss;
@@ -354,4 +407,10 @@ void SpheresWindowState::showCustomContextMenuAt(const QPoint &point)
 
     }
     contextMenu.exec(listWidget->mapToGlobal(point));
+}
+
+void SpheresWindowState::updateDisplay()
+{
+    listWidget->update();
+    wsw.viewer()->update();
 }

@@ -39,8 +39,13 @@ private slots:
 private:
     // Helpers
     const SphereView& addNew(const SphereHandle &sh);
+    void updateDisplay();
+
+    // Layout
+    QHBoxLayout * horizontalLayout;
 
     // Sidebar
+    QWidget *verticalLayout_widget;
     QListWidget *listWidget;
 
     // Saved check state for list widget

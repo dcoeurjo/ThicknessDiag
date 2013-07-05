@@ -12,11 +12,14 @@
 #include <QMainWindow>
 
 #include <QGLViewer/frame.h>
+#include "customviewer.h"
 
 #include <CGAL/Random.h>
 
 #include "window.h"
 #include "windowstate.h"
+
+static CGAL::Random randgen;
 
 WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindow *window) :
     QWidget(window), siProxyInstance(siProxy),
@@ -24,7 +27,7 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
 {
     // Setup UI elements
     stateMenu = mw().menuBar()->addMenu(tr("Window Mode"));
-    viewerMember = new QGLViewer(this);
+    viewerMember = new CustomViewer(this);
     viewerMember->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Connect to sphere addition/deletion
@@ -66,7 +69,6 @@ void WindowStateWidget::onSphereAdded(const Sphere_3 &s)
 
     // Make sphere color
     QColor color;
-    CGAL::Random randgen;
     color.setRed(randgen.get_int(0, 255));
     color.setGreen(randgen.get_int(0, 255));
     color.setBlue(randgen.get_int(0, 255));
@@ -121,6 +123,7 @@ void WindowStateWidget::changeState(WindowState &state)
     currentState = &state;
     currentState->enterAction()->setEnabled(false);
     currentState->enterState();
+    viewerMember->update();
 }
 
 const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)
@@ -137,5 +140,7 @@ const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)
 
 
 void WindowStateWidget::drawViewer()
-{ if (currentState != 0)
-    { currentState->draw(); } }
+{
+    if (currentState != 0)
+    { currentState->draw(); }
+}
