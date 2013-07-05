@@ -45,6 +45,14 @@ public:
     // Get the view bound to a sphere
     const SphereView& sphereView(const SphereHandle& sh);
 
+    // Get the viewer
+    QGLViewer *viewer() const
+    { return viewerMember; }
+
+    // Get the bound window (direct parent)
+    QMainWindow& mw()
+    { return reinterpret_cast<QMainWindow&>(*window()); }
+
 protected slots:
     // Slots for adding/removing spheres
     void onSphereAdded(const Sphere_3 &s);
@@ -55,16 +63,12 @@ private slots:
     void drawViewer();
 
 private:
-    // Get the bound window (direct parent)
-    QMainWindow& mw()
-    { return reinterpret_cast<QMainWindow&>(*window()); }
-
     // Sphere display
     typedef std::set<SphereView> SphereViews;
     SphereViews sphereViews;
 
     // UI
-    QGLViewer *viewer;
+    QGLViewer *viewerMember;
     QMenu *stateMenu;
 
     // Sphere intersecter proxy

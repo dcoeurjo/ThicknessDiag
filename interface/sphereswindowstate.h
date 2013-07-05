@@ -6,6 +6,8 @@
 #include "windowstate.h"
 #include <QGLWidget>
 
+class QHBoxLayout;
+
 class SpheresWindowState : public WindowState
 {
     Q_OBJECT
@@ -14,9 +16,11 @@ public:
     explicit SpheresWindowState(WindowStateWidget &wsw);
     ~SpheresWindowState();
 
-    void setupWidget(QWidget *widget);
+    // Setup override
+    void setup();
 
-    void drawToViewer(QGLViewer *viewer);
+    // Draw override
+    void draw();
 
 protected:
     void onEnterState();
@@ -35,6 +39,9 @@ private slots:
 private:
     // Helpers
     const SphereView& addNew(const SphereHandle &sh);
+
+    // Layout
+    QHBoxLayout *horizontalLayout;
 
     // Actions
     QAction *actionNew;

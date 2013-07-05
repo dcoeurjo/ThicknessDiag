@@ -13,7 +13,7 @@ class WindowState : public QObject
 {
     Q_OBJECT
 public:
-    explicit WindowState(WindowStateWidget &wsw);
+    explicit WindowState(WindowStateWidget &wsw, const QString &n);
     virtual ~WindowState();
 
     // Used by widget for notification
@@ -22,10 +22,10 @@ public:
 
     //Used by widget for setup at each enter
     // (override in subclasses)
-    virtual void setupWidget(QWidget*) {}
+    virtual void setup() {}
 
     // Used to display the widget regularly
-    virtual void drawToViewer(QGLViewer *) {}
+    virtual void draw() {}
 
     // Get/Set the state's name
     const QString& name() const
@@ -34,10 +34,12 @@ public:
     { nameVal = name; }
 
     // Make a new enter action and return it
-    QAction* makeEnterAction();
+    QAction* enterAction() const
+    { return enterActionMember; }
 
 public slots:
-    void requestEnter();
+    void requestEnter()
+    { wsw.changeState(*this); }
 
 signals:
     void stateEntered();
@@ -51,18 +53,20 @@ protected:
     // Sphere intersecter proxy
     SphereIntersecterProxy &siProxy;
 
-    // Helper for obtaining the bound widget
-    WindowStateWidget& wsw()
-    { return reinterpret_cast<WindowStateWidget&>(*parent());  }
-    // helper for obtaining the main window (as a QMainWindow)
+    // Bound widget
+    WindowStateWidget& wsw;
+
+    // Helper for obtaining the main window (as a QMainWindow)
     QMainWindow& mw()
-    { return reinterpret_cast<QMainWindow&>(*wsw().window()); }
+    { return wsw.mw(); }
 
     // Helper for setting the status
-    void setStatus(const QString &status);
+    void setStatus(const QString &status)
+    { wsw.setStatus(status); }
 
 private:
     QString nameVal;
+    QAction *enterActionMember;
 };
 
 #endif // WINDOWSTATE_H

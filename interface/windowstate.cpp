@@ -2,16 +2,15 @@
 
 #include <QAction>
 
-WindowState::WindowState(WindowStateWidget & wsw):
-    QObject(&wsw), siProxy(wsw.siProxy()) {}
+WindowState::WindowState(WindowStateWidget & wsw, const QString &n):
+    QObject(&wsw), siProxy(wsw.siProxy()), wsw(wsw), nameVal(n)
+{
+    enterActionMember = new QAction(name(), this);
+    QObject::connect(enterActionMember, SIGNAL(triggered()),
+                     this, SLOT(requestEnter()));
+}
 
 WindowState::~WindowState() {}
-
-void WindowState::setStatus(const QString &status)
-{ wsw().setStatus(status); }
-
-void WindowState::requestEnter()
-{ wsw().changeState(*this); }
 
 void WindowState::enterState()
 { onEnterState();
@@ -20,10 +19,3 @@ void WindowState::enterState()
 void WindowState::leaveState()
 { onLeaveState();
   emit stateLeft(); }
-
-QAction* WindowState::makeEnterAction()
-{
-    QAction *action = new QAction(name(), this);
-    QObject::connect(action, SIGNAL(triggered()), this, SLOT(requestEnter()));
-    return action;
-}

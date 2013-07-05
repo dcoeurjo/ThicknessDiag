@@ -7,6 +7,7 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QHBoxLayout>
 #include <QProgressDialog>
 
 #include <QGLViewer/qglviewer.h>
@@ -23,14 +24,11 @@
 typedef SphereIntersecter SI;
 
 SpheresWindowState::SpheresWindowState(WindowStateWidget &wsw) :
-    WindowState(wsw)
-{
-    setName(tr("Spheres"));
-}
+    WindowState(wsw, tr("Spheres")) {}
 
 SpheresWindowState::~SpheresWindowState() {}
 
-void SpheresWindowState::setupWidget(QWidget *widget)
+void SpheresWindowState::setup()
 {
     // Create menu
     QMenu *menu = mw().menuBar()->addMenu(name());
@@ -60,10 +58,16 @@ void SpheresWindowState::setupWidget(QWidget *widget)
     QObject::connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
     // Setup sidebar
-    listWidget = new QListWidget(widget);
+    listWidget = new QListWidget(&wsw);
     listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showCustomContextMenuAt(QPoint)));
+
+    // Setup layout
+    horizontalLayout = new QHBoxLayout();
+    horizontalLayout->addWidget(wsw.viewer());
+    horizontalLayout->addWidget(listWidget);
+    wsw.setLayout(horizontalLayout);
 }
 
 void SpheresWindowState::onEnterState()
@@ -83,7 +87,7 @@ void SpheresWindowState::onLeaveState()
 const SphereView& SpheresWindowState::addNew(const SphereHandle &sh)
 {
     // Make view by adding to main window
-    const SphereView& sv = wsw().sphereView(sh);
+    const SphereView& sv = wsw.sphereView(sh);
 
     // Add to list
     QListWidgetItem *item;
@@ -97,7 +101,7 @@ const SphereView& SpheresWindowState::addNew(const SphereHandle &sh)
 
 void SpheresWindowState::addNewPrompt()
 {
-    SphereFormDialog sd(&wsw());
+    SphereFormDialog sd(&wsw);
     if (sd.exec())
     {
         // Construct sphere and add to intersecter
@@ -108,7 +112,7 @@ void SpheresWindowState::addNewPrompt()
             QString msg = "Sphere " + sv.asString() + "added";
             setStatus(tr(msg.toStdString().c_str())); }
         else
-        { QMessageBox::warning(&wsw(), tr("Sphere not added"),
+        { QMessageBox::warning(&wsw, tr("Sphere not added"),
               tr("The sphere wasn't added, since it already exists")); }
     }
     else
@@ -133,7 +137,7 @@ void SpheresWindowState::toggleAllCheckState()
 void SpheresWindowState::loadPrompt()
 {
     // Get file to load spheres from
-    QString fileName = QFileDialog::getOpenFileName(&wsw(),
+    QString fileName = QFileDialog::getOpenFileName(&wsw,
             tr("Open spheres"), "", tr("Text files (*.txt)"));
     if (QFile::exists(fileName) == false)
     { return; }
@@ -184,7 +188,7 @@ void SpheresWindowState::savePrompt()
 
 void SpheresWindowState::saveAsPrompt()
 {
-    QString fileName = QFileDialog::getSaveFileName(&wsw(),
+    QString fileName = QFileDialog::getSaveFileName(&wsw,
             tr("Save spheres"), "", tr("Text files (*.txt)"));
     openFilename = fileName;
     savePrompt();
@@ -192,11 +196,11 @@ void SpheresWindowState::saveAsPrompt()
 
 void SpheresWindowState::generatePrompt()
 {
-    GenerateSpheresDialog gsd(&wsw());
+    GenerateSpheresDialog gsd(&wsw);
     if (gsd.exec())
     {
         // Progress bar display
-        QProgressDialog pd(&wsw());
+        QProgressDialog pd(&wsw);
         pd.setMinimum(0);
         pd.setMaximum(gsd.nb);
         pd.setCancelButton(0);
@@ -206,7 +210,7 @@ void SpheresWindowState::generatePrompt()
         pd.show();
 
         // Disable menu and window update
-        wsw().setUpdatesEnabled(false);
+        wsw.setUpdatesEnabled(false);
 
         // Generate spheres
         CGAL::Random randgen;
@@ -238,7 +242,7 @@ void SpheresWindowState::generatePrompt()
         }
 
         // Update the UI
-        wsw().setUpdatesEnabled(true);
+        wsw.setUpdatesEnabled(true);
         listWidget->update();
 
         // Show status message
@@ -280,8 +284,9 @@ void SpheresWindowState::deleteSelected()
     setStatus(tr(oss.str().c_str()));
 }
 
-void SpheresWindowState::drawToViewer(QGLViewer *viewer)
+void SpheresWindowState::draw()
 {
+    QGLViewer *viewer = wsw.viewer();
     for (int i = 0; i < listWidget->count(); i++)
     {
         // Get item and display if checked
@@ -309,7 +314,7 @@ void SpheresWindowState::drawToViewer(QGLViewer *viewer)
 
 void SpheresWindowState::showCustomContextMenuAt(const QPoint &point)
 {
-    QMenu contextMenu(tr("Context menu"), &wsw());
+    QMenu contextMenu(tr("Context menu"), &wsw);
     QListWidgetItem *item = listWidget->currentItem();
     if (item && item->isSelected())
     {

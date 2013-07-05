@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QGridLayout>
 #include <QMainWindow>
 
 #include <QGLViewer/frame.h>
@@ -22,8 +23,9 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
     currentState(0)
 {
     // Setup UI elements
-    viewer = new QGLViewer(this);
     stateMenu = mw().menuBar()->addMenu(tr("Window Mode"));
+    viewerMember = new QGLViewer(this);
+    viewerMember->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Connect to sphere addition/deletion
     QObject::connect(&siProxyInstance, SIGNAL(sphereAdded(Sphere_3)),
@@ -32,7 +34,7 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
                      this, SLOT(onSphereRemoved(Sphere_3)));
 
     // Connect to viewer update
-    QObject::connect(viewer, SIGNAL(drawNeeded()),
+    QObject::connect(viewerMember, SIGNAL(drawNeeded()),
                      this, SLOT(drawViewer()));
 
     // Add widget states
@@ -80,7 +82,7 @@ void WindowStateWidget::onSphereAdded(const Sphere_3 &s)
                        sceneBbox.zmin()),
             max(sceneBbox.xmax(), sceneBbox.ymax(),
                 sceneBbox.zmax());
-    viewer->setSceneRadius((max - min).norm() / 2.0);
+    viewerMember->setSceneRadius((max - min).norm() / 2.0);
 }
 
 void WindowStateWidget::onSphereRemoved(const Sphere_3 &s)
@@ -103,15 +105,19 @@ WindowStateFactory WindowStateWidget::factory()
 
 void WindowStateWidget::addState(WindowState &state)
 {
-    QAction *enterAction = state.makeEnterAction();
+    QAction *enterAction = state.enterAction();
     stateMenu->addAction(enterAction);
 }
 
 void WindowStateWidget::changeState(WindowState &state)
 {
     if (currentState != 0)
-    { currentState->leaveState(); }
+    {
+        currentState->leaveState();
+        currentState->enterAction()->setEnabled(true);
+    }
     currentState = &state;
+    currentState->enterAction()->setEnabled(false);
     currentState->enterState();
 }
 
@@ -130,4 +136,4 @@ const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)
 
 void WindowStateWidget::drawViewer()
 { if (currentState != 0)
-    { currentState->drawToViewer(viewer); } }
+    { currentState->draw(); } }
