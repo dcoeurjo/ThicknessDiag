@@ -6,8 +6,6 @@
 #include "windowstatewithmenu.h"
 #include <QGLWidget>
 
-class QHBoxLayout;
-
 class SpheresWindowState : public WindowStateWithMenu
 {
     Q_OBJECT
@@ -40,9 +38,6 @@ private:
     // Helpers
     const SphereView& addNew(const SphereHandle &sh);
     void updateDisplay();
-
-    // Layout
-    QHBoxLayout * horizontalLayout;
 
     // Sidebar
     QWidget *verticalLayout_widget;

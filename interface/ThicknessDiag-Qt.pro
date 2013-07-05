@@ -39,7 +39,9 @@ HEADERS *= \
     sphereview.h \
     windowstatewithmenu.h \
     kernel.h \
-    customviewer.h
+    customviewer.h \
+    eventqueue.h \
+    eventqueuebuilder.h
 
 INCLUDEPATH *= ..
 

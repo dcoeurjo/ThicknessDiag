@@ -31,7 +31,8 @@ typedef SphereIntersecter SI;
 SpheresWindowState::SpheresWindowState(WindowStateWidget &wsw) :
     WindowStateWithMenu(wsw, tr("Spheres")) {}
 
-SpheresWindowState::~SpheresWindowState() {}
+SpheresWindowState::~SpheresWindowState()
+{ delete verticalLayout_widget; }
 
 void SpheresWindowState::setup()
 {
@@ -62,12 +63,6 @@ void SpheresWindowState::setup()
     QObject::connect(actionGenerate, SIGNAL(triggered()), this, SLOT(generatePrompt()));
     QObject::connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
-    // Setup layout
-    horizontalLayout = new QHBoxLayout();
-    horizontalLayout->setSpacing(0);
-    //horizontalLayout->setSizeConstraint(QLayout::SetMaximumSize);
-    horizontalLayout->setContentsMargins(2, -1, 2, -1);
-
     // Setup sidebar
     verticalLayout_widget = new QWidget();
     verticalLayout_widget->setMaximumWidth(150);
@@ -75,9 +70,9 @@ void SpheresWindowState::setup()
     QVBoxLayout *verticalLayout = new QVBoxLayout(verticalLayout_widget);
     verticalLayout->setSpacing(3);
     verticalLayout->setContentsMargins(11, 11, 11, 11);
-    verticalLayout->setContentsMargins(0, 0, 0, 0);
+    verticalLayout->setContentsMargins(1, 1, 1, 1);
     // sphere list widget
-    listWidget = new QListWidget();
+    listWidget = new QListWidget(verticalLayout_widget);
     listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     listWidget->setSelectionMode(QListWidget::ExtendedSelection);
     QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
@@ -88,13 +83,15 @@ void SpheresWindowState::setup()
                      this, SLOT(toggleAllCheckState()));
     verticalLayout->addWidget(listWidget);
     verticalLayout->addWidget(toggleCheckBtn);
-    horizontalLayout->addWidget(verticalLayout_widget);
     verticalLayout_widget->hide();
 }
 
 void SpheresWindowState::onEnterState()
 {
     WindowStateWithMenu::onEnterState();
+    QHBoxLayout *horizontalLayout = new QHBoxLayout();
+    horizontalLayout->setSpacing(0);
+    horizontalLayout->setContentsMargins(2, -1, 2, -1);
     wsw.setLayout(horizontalLayout);
     horizontalLayout->addWidget(wsw.viewer());
     horizontalLayout->addWidget(verticalLayout_widget);
@@ -104,8 +101,12 @@ void SpheresWindowState::onEnterState()
 void SpheresWindowState::onLeaveState()
 {
     WindowStateWithMenu::onLeaveState();
+    QHBoxLayout *horizontalLayout = dynamic_cast<QHBoxLayout*>(wsw.layout());
+    Q_ASSERT(horizontalLayout != 0);
     horizontalLayout->removeWidget(wsw.viewer());
     horizontalLayout->removeWidget(verticalLayout_widget);
+    horizontalLayout->removeWidget(&wsw);
+    delete horizontalLayout;
     verticalLayout_widget->hide();
 }
 
