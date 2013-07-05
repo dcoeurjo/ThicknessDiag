@@ -12,6 +12,7 @@ class QGLViewer;
 class WindowState : public QObject
 {
     Q_OBJECT
+
 public:
     explicit WindowState(WindowStateWidget &wsw, const QString &n);
     virtual ~WindowState();

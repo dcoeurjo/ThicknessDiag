@@ -3,12 +3,12 @@
 
 #include <QListWidget>
 
-#include "windowstate.h"
+#include "windowstatewithmenu.h"
 #include <QGLWidget>
 
 class QHBoxLayout;
 
-class SpheresWindowState : public WindowState
+class SpheresWindowState : public WindowStateWithMenu
 {
     Q_OBJECT
 
@@ -39,17 +39,6 @@ private slots:
 private:
     // Helpers
     const SphereView& addNew(const SphereHandle &sh);
-
-    // Layout
-    QHBoxLayout *horizontalLayout;
-
-    // Actions
-    QAction *actionNew;
-    QAction *actionLoad;
-    QAction *actionSave;
-    QAction *actionSaveAs;
-    QAction *actionDelete;
-    QAction *actionGenerate;
 
     // Sidebar
     QListWidget *listWidget;

@@ -8,6 +8,8 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QPushButton>
 #include <QProgressDialog>
 
 #include <QGLViewer/qglviewer.h>
@@ -24,30 +26,30 @@
 typedef SphereIntersecter SI;
 
 SpheresWindowState::SpheresWindowState(WindowStateWidget &wsw) :
-    WindowState(wsw, tr("Spheres")) {}
+    WindowStateWithMenu(wsw, tr("Spheres")) {}
 
 SpheresWindowState::~SpheresWindowState() {}
 
 void SpheresWindowState::setup()
 {
     // Create menu
-    QMenu *menu = mw().menuBar()->addMenu(name());
+    WindowStateWithMenu::setup();
 
     // Create actions for menu
-    actionNew = new QAction(tr("Create"), this);
-    actionLoad = new QAction(tr("Load"), this);
-    actionSave = new QAction(tr("Save"), this);
-    actionSaveAs = new QAction(tr("Save As"), this);
-    actionDelete = new QAction(tr("Delete"), this);
-    actionGenerate = new QAction(tr("Generate"), this);
+    QAction *actionNew = new QAction(tr("Create"), this);
+    QAction *actionLoad = new QAction(tr("Load"), this);
+    QAction *actionSave = new QAction(tr("Save"), this);
+    QAction *actionSaveAs = new QAction(tr("Save As"), this);
+    QAction *actionDelete = new QAction(tr("Delete"), this);
+    QAction *actionGenerate = new QAction(tr("Generate"), this);
 
     // Add actions to menu
-    menu->addAction(actionNew);
-    menu->addAction(actionLoad);
-    menu->addAction(actionSave);
-    menu->addAction(actionSaveAs);
-    menu->addAction(actionGenerate);
-    menu->addAction(actionDelete);
+    addAction(actionNew);
+    addAction(actionLoad);
+    addAction(actionSave);
+    addAction(actionSaveAs);
+    addAction(actionGenerate);
+    addAction(actionDelete);
 
     // Connect menu actions
     QObject::connect(actionNew, SIGNAL(triggered()), this, SLOT(addNewPrompt()));
@@ -57,31 +59,43 @@ void SpheresWindowState::setup()
     QObject::connect(actionGenerate, SIGNAL(triggered()), this, SLOT(generatePrompt()));
     QObject::connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
+    // Setup layout
+    QHBoxLayout *horizontalLayout = new QHBoxLayout();
+    horizontalLayout->setSpacing(0);
+    //horizontalLayout->setSizeConstraint(QLayout::SetMaximumSize);
+    horizontalLayout->setContentsMargins(2, -1, 2, -1);
+    horizontalLayout->addWidget(wsw.viewer());
+    wsw.setLayout(horizontalLayout);
+
     // Setup sidebar
-    listWidget = new QListWidget(&wsw);
+    QWidget *verticalLayout_widget = new QWidget(&wsw);
+    verticalLayout_widget->setMaximumWidth(150);
+    QVBoxLayout *verticalLayout = new QVBoxLayout(verticalLayout_widget);
+    verticalLayout->setSpacing(3);
+    verticalLayout->setContentsMargins(11, 11, 11, 11);
+    verticalLayout->setContentsMargins(0, 0, 0, 0);
+    listWidget = new QListWidget();
     listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showCustomContextMenuAt(QPoint)));
-
-    // Setup layout
-    horizontalLayout = new QHBoxLayout();
-    horizontalLayout->addWidget(wsw.viewer());
-    horizontalLayout->addWidget(listWidget);
-    wsw.setLayout(horizontalLayout);
+    QPushButton *toggleCheckBtn = new QPushButton(tr("Check/Uncheck all"), verticalLayout_widget);
+    QObject::connect(toggleCheckBtn, SIGNAL(clicked()),
+                     this, SLOT(toggleAllCheckState()));
+    verticalLayout->addWidget(listWidget);
+    verticalLayout->addWidget(toggleCheckBtn);
+    horizontalLayout->addWidget(verticalLayout_widget);
 }
 
 void SpheresWindowState::onEnterState()
 {
-    actionNew->setEnabled(true);
-    actionDelete->setEnabled(true);
-    actionGenerate->setEnabled(true);
+    WindowStateWithMenu::onEnterState();
+    // TODO
 }
 
 void SpheresWindowState::onLeaveState()
 {
-    actionNew->setEnabled(false);
-    actionDelete->setEnabled(false);
-    actionGenerate->setEnabled(false);
+    WindowStateWithMenu::onLeaveState();
+    // TODO
 }
 
 const SphereView& SpheresWindowState::addNew(const SphereHandle &sh)

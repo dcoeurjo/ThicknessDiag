@@ -12,6 +12,7 @@ Window::Window(QWidget *parent) :
     // Setup basic UI elements
     centralWidget = new QWidget(this);
     gridLayout = new QGridLayout(centralWidget);
+    gridLayout->setContentsMargins(1, 1, 1, 1);
     setCentralWidget(centralWidget);
 
     // Add window state widget

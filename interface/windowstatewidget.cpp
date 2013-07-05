@@ -40,7 +40,12 @@ WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindo
     // Add widget states
     WindowStateFactory stateFactory = factory();
     WindowState &spheresState = stateFactory.makeState(WindowStateFactory::SPHERES);
+    addState(spheresState);
+    addState(stateFactory.makeState(WindowStateFactory::EVENT_QUEUE));
     changeState(spheresState);
+
+    // Show startup message
+    setStatus(tr("Loaded"));
 }
 
 WindowStateWidget::~WindowStateWidget() {}
@@ -99,9 +104,6 @@ void WindowStateWidget::onSphereRemoved(const Sphere_3 &s)
 
 void WindowStateWidget::setStatus(const QString &status, int timeout)
 { mw().statusBar()->showMessage(status, timeout);  }
-
-WindowStateFactory WindowStateWidget::factory()
-{ return WindowStateFactory(*this); }
 
 void WindowStateWidget::addState(WindowState &state)
 {

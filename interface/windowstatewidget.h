@@ -33,14 +33,18 @@ public:
     // Set the status (~statusbar)
     void setStatus(const QString &status, int timeout = 5000);
 
-    // Get a builder bound to this widget
-    WindowStateFactory factory();
-
     // Used for switching state from an external state
     void changeState(WindowState &state);
 
     // Used to add menu actions for states
     void addState(WindowState &state);
+    // shortcut to use a state id
+    void addState(WindowStateFactory::StateId &stateId)
+    { addState(factory().makeState(stateId)); }
+
+    // Get a state factory bound to this widget
+    WindowStateFactory factory()
+    { return WindowStateFactory(*this); }
 
     // Get the view bound to a sphere
     const SphereView& sphereView(const SphereHandle& sh);

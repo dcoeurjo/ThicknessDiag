@@ -26,9 +26,7 @@ WindowState& WindowStateFactory::makeState(WindowStateFactory::StateId id)
         throw InvalidStateId();
     }
 
-    // Add state's menu item, connected to enter request
+    // Setup state and return it
     state->setup();
-    wsw.addState(*state);
-
     return *state;
 }
