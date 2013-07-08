@@ -122,6 +122,11 @@ void WindowStateWidget::changeState(WindowState &state)
     currentState->enterAction()->setEnabled(false);
     currentState->enterState();
     viewerMember->update();
+
+    // Display a status message
+    std::ostringstream oss;
+    oss << "Entered '" << currentState->name().toStdString() << "' mode";
+    setStatus(tr(oss.str().c_str()));
 }
 
 const SphereView& WindowStateWidget::sphereView(const SphereHandle& sh)

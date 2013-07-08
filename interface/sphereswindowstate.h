@@ -40,7 +40,7 @@ private:
     void updateDisplay();
 
     // Sidebar
-    QWidget *verticalLayout_widget;
+    QWidget *sideBarWidget;
     QListWidget *listWidget;
 
     // Saved check state for list widget

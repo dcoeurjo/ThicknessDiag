@@ -7,6 +7,7 @@
 // Shortcuts for sphere intersecter
 typedef Sphere_intersecter<Kernel> SphereIntersecter;
 typedef SphereIntersecter::Sphere_handle SphereHandle;
+typedef SphereIntersecter::Sphere_iterator_range SphereIteratorRange;
 typedef SphereIntersecter::Sphere_iterator SphereIterator;
 typedef SphereIntersecter::Circle_handle CircleHandle;
 typedef SphereIntersecter::Bounding_box BoundingBox;

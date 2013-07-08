@@ -4,11 +4,12 @@
 #include "windowstate.h"
 #include "eventqueue.h"
 
-class QListWidget;
-class QListWidgetItem;
+class QTreeWidget;
 
 class EventQueueWindowState : public WindowState
 {
+    Q_OBJECT
+
 public:
     explicit EventQueueWindowState(WindowStateWidget &wsw);
     ~EventQueueWindowState();
@@ -22,14 +23,21 @@ protected:
 
 private slots:
     void buildEventQueue();
-    void eventSelectionChanged(QListWidgetItem *prev, QListWidgetItem *current);
+    void selectSphere();
 
 private:
+    // Helper for updating the UI
+    void updateUI();
+
     // Event queue
     EventQueue eventQueue;
 
-    // List widget for events
-    QListWidget *listWidget;
+    // Selected sphere
+    SphereView selectedSphere;
+
+    // UI
+    QWidget *bottomWidget;
+    QTreeWidget *treeWidget;
 };
 
 #endif // EVENTQUEUEWINDOWSTATE_H

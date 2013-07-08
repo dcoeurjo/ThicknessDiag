@@ -32,7 +32,7 @@ SpheresWindowState::SpheresWindowState(WindowStateWidget &wsw) :
     WindowStateWithMenu(wsw, tr("Spheres")) {}
 
 SpheresWindowState::~SpheresWindowState()
-{ delete verticalLayout_widget; }
+{ delete sideBarWidget; }
 
 void SpheresWindowState::setup()
 {
@@ -45,14 +45,13 @@ void SpheresWindowState::setup()
     QAction *actionSave = new QAction(tr("Save"), this);
     QAction *actionSaveAs = new QAction(tr("Save As"), this);
     QAction *actionGenerate = new QAction(tr("Generate"), this);
-    QAction *actionDelete = new QAction(tr("Delete"), listWidget);
+    QAction *actionDelete = new QAction(tr("Delete"), this);
 
     // Set shortcuts
     actionNew->setShortcut(Qt::CTRL + Qt::Key_N);
     actionLoad->setShortcut(Qt::CTRL + Qt::Key_O);
     actionSave->setShortcut(Qt::CTRL + Qt::Key_S);
     actionDelete->setShortcut(Qt::Key_Delete);
-    actionDelete->setShortcutContext(Qt::WidgetShortcut);
     actionSaveAs->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_S);
     actionGenerate->setShortcut(Qt::CTRL + Qt::Key_G);
 
@@ -73,27 +72,26 @@ void SpheresWindowState::setup()
     QObject::connect(actionDelete, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
     // Setup sidebar
-    verticalLayout_widget = new QWidget();
-    verticalLayout_widget->setMaximumWidth(150);
+    sideBarWidget = new QWidget();
+    sideBarWidget->setMaximumWidth(150);
+    sideBarWidget->hide();
     // vertical layout
-    QVBoxLayout *verticalLayout = new QVBoxLayout(verticalLayout_widget);
+    QVBoxLayout *verticalLayout = new QVBoxLayout(sideBarWidget);
     verticalLayout->setSpacing(3);
-    verticalLayout->setContentsMargins(11, 11, 11, 11);
     verticalLayout->setContentsMargins(1, 1, 1, 1);
     // sphere list widget
-    listWidget = new QListWidget(verticalLayout_widget);
+    listWidget = new QListWidget(sideBarWidget);
     listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     listWidget->setSelectionMode(QListWidget::ExtendedSelection);
+    verticalLayout->addWidget(listWidget);
     QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showCustomContextMenuAt(QPoint)));
     QObject::connect(listWidget, SIGNAL(clicked(QModelIndex)), wsw.viewer(), SLOT(update()));
     // sphere list widget's toggle button
-    QPushButton *toggleCheckBtn = new QPushButton(tr("Check/Uncheck all"), verticalLayout_widget);
+    QPushButton *toggleCheckBtn = new QPushButton(tr("Check/Uncheck all"), sideBarWidget);
     QObject::connect(toggleCheckBtn, SIGNAL(clicked()),
                      this, SLOT(toggleAllCheckState()));
-    verticalLayout->addWidget(listWidget);
     verticalLayout->addWidget(toggleCheckBtn);
-    verticalLayout_widget->hide();
 }
 
 void SpheresWindowState::onEnterState()
@@ -104,8 +102,8 @@ void SpheresWindowState::onEnterState()
     horizontalLayout->setContentsMargins(2, -1, 2, -1);
     wsw.setLayout(horizontalLayout);
     horizontalLayout->addWidget(wsw.viewer());
-    horizontalLayout->addWidget(verticalLayout_widget);
-    verticalLayout_widget->show();
+    horizontalLayout->addWidget(sideBarWidget);
+    sideBarWidget->show();
 }
 
 void SpheresWindowState::onLeaveState()
@@ -114,10 +112,10 @@ void SpheresWindowState::onLeaveState()
     QHBoxLayout *horizontalLayout = dynamic_cast<QHBoxLayout*>(wsw.layout());
     Q_ASSERT(horizontalLayout != 0);
     horizontalLayout->removeWidget(wsw.viewer());
-    horizontalLayout->removeWidget(verticalLayout_widget);
+    horizontalLayout->removeWidget(sideBarWidget);
     horizontalLayout->removeWidget(&wsw);
     delete horizontalLayout;
-    verticalLayout_widget->hide();
+    sideBarWidget->hide();
 }
 
 const SphereView& SpheresWindowState::addNew(const SphereHandle &sh)
@@ -235,6 +233,8 @@ void SpheresWindowState::loadPrompt()
         }
     }
 
+    // Disable menu and window update
+    wsw.setUpdatesEnabled(true);
 
     // Update the UI
     updateDisplay();
