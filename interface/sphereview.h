@@ -7,6 +7,8 @@
 
 #include "sphereintersecter.h"
 
+class QGLViewer;
+
 struct SphereView
 {
     // Get the string representation of a sphere view
@@ -14,6 +16,9 @@ struct SphereView
 
     // Compare a sphere view by its handle
     bool operator<(const SphereView &sv) const;
+
+    // Draw a sphere
+    void draw(QGLViewer *viewer) const;
 
     // Handle to sphere
     SphereHandle handle;

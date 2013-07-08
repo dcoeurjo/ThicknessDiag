@@ -44,8 +44,17 @@ void SpheresWindowState::setup()
     QAction *actionLoad = new QAction(tr("Load"), this);
     QAction *actionSave = new QAction(tr("Save"), this);
     QAction *actionSaveAs = new QAction(tr("Save As"), this);
-    QAction *actionDelete = new QAction(tr("Delete"), this);
     QAction *actionGenerate = new QAction(tr("Generate"), this);
+    QAction *actionDelete = new QAction(tr("Delete"), listWidget);
+
+    // Set shortcuts
+    actionNew->setShortcut(Qt::CTRL + Qt::Key_N);
+    actionLoad->setShortcut(Qt::CTRL + Qt::Key_O);
+    actionSave->setShortcut(Qt::CTRL + Qt::Key_S);
+    actionDelete->setShortcut(Qt::Key_Delete);
+    actionDelete->setShortcutContext(Qt::WidgetShortcut);
+    actionSaveAs->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_S);
+    actionGenerate->setShortcut(Qt::CTRL + Qt::Key_G);
 
     // Add actions to menu
     addAction(actionNew);
@@ -77,6 +86,7 @@ void SpheresWindowState::setup()
     listWidget->setSelectionMode(QListWidget::ExtendedSelection);
     QObject::connect(listWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showCustomContextMenuAt(QPoint)));
+    QObject::connect(listWidget, SIGNAL(clicked(QModelIndex)), wsw.viewer(), SLOT(update()));
     // sphere list widget's toggle button
     QPushButton *toggleCheckBtn = new QPushButton(tr("Check/Uncheck all"), verticalLayout_widget);
     QObject::connect(toggleCheckBtn, SIGNAL(clicked()),
@@ -365,18 +375,7 @@ void SpheresWindowState::draw()
         SphereListWidgetItem *sphereItem;
         sphereItem = reinterpret_cast<SphereListWidgetItem*>(item);
         const SphereView &sv = sphereItem->sv();
-
-        // Actually draw the sphere
-        glPushMatrix();
-            viewer->qglColor(sv.color);
-            glMultMatrixd(sv.frame.matrix());
-            GLUquadricObj * sphere = gluNewQuadric();
-            gluQuadricDrawStyle(sphere, GLU_SILHOUETTE);
-            gluQuadricNormals(sphere, GLU_SMOOTH);
-            gluQuadricOrientation(sphere, GLU_OUTSIDE);
-            gluSphere(sphere, sv.radius, 20, 20);
-            gluDeleteQuadric(sphere);
-        glPopMatrix();
+        sv.draw(viewer);
     }
 }
 

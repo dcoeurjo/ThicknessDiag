@@ -1,5 +1,3 @@
-#include <GL/glew.h>
-
 #include "windowstatewidget.h"
 
 #include <iostream>

@@ -1,5 +1,6 @@
 #include "eventqueuewindowstate.h"
 
+#include <QAction>
 #include <QListWidget>
 #include <QVBoxLayout>
 
@@ -15,9 +16,17 @@ EventQueueWindowState::~EventQueueWindowState()
 
 void EventQueueWindowState::setup()
 {
+    // Create actions
+    QAction *buildAction = new QAction(tr("Build"), this);
+    buildAction->setShortcut(Qt::CTRL + Qt::Key_B);
+    QObject::connect(buildAction, SIGNAL(triggered()),
+                         this, SLOT(buildEventQueue()));
+
     // Setup list widget
     listWidget = new QListWidget();
     listWidget->setMaximumHeight(200);
+    QObject::connect(listWidget, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)),
+                     this, SLOT(eventSelectionChanged(QListWidgetItem*,QListWidgetItem*)));
 }
 
 void EventQueueWindowState::onEnterState()
@@ -40,4 +49,19 @@ void EventQueueWindowState::onLeaveState()
     verticalLayout->removeWidget(&wsw);
     delete verticalLayout;
     listWidget->hide();
+}
+
+void EventQueueWindowState::draw()
+{
+    // TODO
+}
+
+void EventQueueWindowState::buildEventQueue()
+{
+    EventQueueBuilder eqb;
+    //eqb(siProxy, );
+}
+
+void EventQueueWindowState::eventSelectionChanged(QListWidgetItem *prev, QListWidgetItem *current)
+{
 }

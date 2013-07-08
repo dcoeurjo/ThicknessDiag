@@ -1,8 +1,8 @@
 #include "window.h"
 
-#include <QGridLayout>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QGridLayout>
 
 #include "windowstatewidget.h"
 

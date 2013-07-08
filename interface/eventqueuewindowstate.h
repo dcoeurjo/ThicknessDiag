@@ -5,6 +5,7 @@
 #include "eventqueue.h"
 
 class QListWidget;
+class QListWidgetItem;
 
 class EventQueueWindowState : public WindowState
 {
@@ -13,10 +14,15 @@ public:
     ~EventQueueWindowState();
 
     void setup();
+    void draw();
 
 protected:
     void onEnterState();
     void onLeaveState();
+
+private slots:
+    void buildEventQueue();
+    void eventSelectionChanged(QListWidgetItem *prev, QListWidgetItem *current);
 
 private:
     // Event queue
