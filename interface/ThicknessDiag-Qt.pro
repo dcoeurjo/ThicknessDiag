@@ -7,22 +7,45 @@ TEMPLATE = app
 LIBS *= -lQGLViewer -lGLU -lCGAL -lgmp -lmpfr -lboost_thread -lboost_system
 
 SOURCES *= main.cpp\
-        mainwindow.cpp \
     sphereformdialog.cpp \
     generatespheresdialog.cpp \
-    selectspheredialog.cpp
+    selectspheredialog.cpp \
+    sphereintersecterproxy.cpp \
+    window.cpp \
+    windowstate.cpp \
+    sphereswindowstate.cpp \
+    windowstatewidget.cpp \
+    windowstatefactory.cpp \
+    eventqueuewindowstate.cpp \
+    spherelistwidgetitem.cpp \
+    sphereview.cpp \
+    windowstatewithmenu.cpp \
+    customviewer.cpp
 
-HEADERS *= mainwindow.h \
+HEADERS *= \
     sphereformdialog.h \
     generatespheresdialog.h \
     selectspheredialog.h \
     sphereintersecter.h \
+    sphereintersecterproxy.h \
+    window.h \
+    sphereswindowstate.h \
+    windowstate.h \
+    windowstatewidget.h \
+    windowstatefactory.h \
+    allwindowstates.h \
+    eventqueuewindowstate.h \
+    spherelistwidgetitem.h \
+    sphereview.h \
+    windowstatewithmenu.h \
+    kernel.h \
+    customviewer.h \
     eventqueue.h \
-    kernel.h
+    eventqueuebuilder.h
 
 INCLUDEPATH *= ..
 
-FORMS *= mainwindow.ui \
+FORMS *= \
     sphereformdialog.ui \
     generatespheresdialog.ui \
     selectspheredialog.ui

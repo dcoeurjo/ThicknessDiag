@@ -6,7 +6,7 @@
 typedef SphereIntersecter SI;
 
 SelectSphereDialog::SelectSphereDialog(QWidget *parent) :
-    QDialog(parent), selectedIndex(-1),
+    QDialog(parent), selectedSphere(0),
     ui(new Ui::SelectSphereDialog)
 {
     ui->setupUi(this);
@@ -19,17 +19,17 @@ SelectSphereDialog::~SelectSphereDialog()
 
 void SelectSphereDialog::accept()
 {
-    if (selectedIndex == -1)
+    if (selectedSphere == 0)
     { QMessageBox::warning(this, "No sphere selected",
           "You must select a sphere"); }
     else
     { QDialog::accept();  }
 }
 
-void SelectSphereDialog::addSphereItem(const QString &s)
+void SelectSphereDialog::addSphere(const SphereView &sv)
 {
-    QRadioButton *radio = new QRadioButton(s, ui->listWidget);
-    positionMap[radio] = ui->listWidget->count();
+    QRadioButton *radio = new QRadioButton(sv.asString(), ui->listWidget);
+    sphereViewMap[radio] = &sv;
     QListWidgetItem *item = new QListWidgetItem(ui->listWidget);
     ui->listWidget->setItemWidget(item, radio);
     QObject::connect(radio, SIGNAL(clicked(bool)), this, SLOT(radioChanged(bool)));
@@ -38,5 +38,5 @@ void SelectSphereDialog::addSphereItem(const QString &s)
 void SelectSphereDialog::radioChanged(bool selected)
 {
     if (selected)
-    { selectedIndex = positionMap[qobject_cast<QRadioButton *>(sender())]; }
+    { selectedSphere = sphereViewMap[qobject_cast<QRadioButton*>(sender())]; }
 }

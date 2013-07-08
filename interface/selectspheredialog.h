@@ -2,10 +2,11 @@
 #define SELECTSPHEREDIALOG_H
 
 #include <QHash>
+#include <QList>
 #include <QDialog>
 #include <QRadioButton>
 
-#include "sphereintersecter.h"
+#include "sphereview.h"
 
 namespace Ui {
 class SelectSphereDialog;
@@ -21,10 +22,10 @@ public:
     explicit SelectSphereDialog(QWidget *parent = 0);
     ~SelectSphereDialog();
 
-    void addSphereItem(const QString &s);
+    void addSphere(const SphereView &sv);
 
     // Selected index
-    int selectedIndex;
+    const SphereView* selectedSphere;
 
 private slots:
     void accept();
@@ -32,7 +33,7 @@ private slots:
 
 private:
     // Radio button -> position
-    QHash<QRadioButton *, int> positionMap;
+    QHash<QRadioButton*, const SphereView*> sphereViewMap;
 
     // UI
     Ui::SelectSphereDialog *ui;
