@@ -22,7 +22,8 @@ SOURCES *= main.cpp\
     windowstatewithmenu.cpp \
     customviewer.cpp \
     spheretreewidgetitem.cpp \
-    normaleventsitetreewidget.cpp
+    nestreewidgetitem.cpp \
+    estreewidgetitem.cpp
 
 HEADERS *= \
     sphereformdialog.h \
@@ -45,7 +46,8 @@ HEADERS *= \
     eventqueue.h \
     eventqueuebuilder.h \
     spheretreewidgetitem.h \
-    normaleventsitetreewidget.h
+    nestreewidgetitem.h \
+    estreewidgetitem.h
 
 INCLUDEPATH *= ..
 

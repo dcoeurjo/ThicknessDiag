@@ -14,24 +14,35 @@
 #include "eventqueuebuilder.h"
 #include "selectspheredialog.h"
 #include "spheretreewidgetitem.h"
-#include "normaleventsitetreewidget.h"
+#include "nestreewidgetitem.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
-    WindowState(wsw, tr("Event Queue")) {}
+    WindowStateWithMenu(wsw, tr("Event Queue")) {}
 
 EventQueueWindowState::~EventQueueWindowState()
 { delete bottomWidget; }
 
 void EventQueueWindowState::setup()
 {
+    // Setup parent
+    WindowStateWithMenu::setup();
+
     // Create actions
     QAction *buildAction = new QAction(tr("Build"), this);
+    QAction *selectSphereAction = new QAction(tr("Select sphere"), this);
+
+    // Setup shortcuts
     buildAction->setShortcut(Qt::CTRL + Qt::Key_B);
+
+    // Connect actions to slots
     QObject::connect(buildAction, SIGNAL(triggered()),
                          this, SLOT(buildEventQueue()));
-    QAction *selectSphereAction = new QAction(tr("Select sphere"), this);
     QObject::connect(selectSphereAction, SIGNAL(triggered()),
                      this, SLOT(selectSphere()));
+
+    // Add actions to menu
+    addAction(buildAction);
+    addAction(selectSphereAction);
 
     // Bottom widget
     bottomWidget = new QWidget();
@@ -44,24 +55,28 @@ void EventQueueWindowState::setup()
     treeWidget = new QTreeWidget(bottomWidget);
     treeWidget->setColumnCount(1);
     treeWidget->setHeaderLabel(tr("Event queue display"));
+    QObject::connect(treeWidget, SIGNAL(itemSelectionChanged()),
+                     this, SLOT(updateSelectedEventSites()));
     horizontalLayout->addWidget(treeWidget);
 
     // button group
-    QGroupBox *buttonGroupBox = new QGroupBox(bottomWidget);
-    QVBoxLayout *buttonGroupLayout = new QVBoxLayout(buttonGroupBox);
-    QPushButton *selectSphereButton = new QPushButton(tr("Select a sphere"));
-    QObject::connect(selectSphereButton, SIGNAL(clicked()),
-                     selectSphereAction, SIGNAL(triggered()));
-    QPushButton *buildButton = new QPushButton(tr("Build event queue"));
-    QObject::connect(buildButton, SIGNAL(clicked()),
-                     buildAction, SIGNAL(triggered()));
-    buttonGroupLayout->addWidget(selectSphereButton);
-    buttonGroupLayout->addWidget(buildButton);
-    horizontalLayout->addWidget(buttonGroupBox);
+    //QGroupBox *buttonGroupBox = new QGroupBox(bottomWidget);
+    //QVBoxLayout *buttonGroupLayout = new QVBoxLayout(buttonGroupBox);
+    //QPushButton *selectSphereButton = new QPushButton(tr("Select a sphere"));
+    //QObject::connect(selectSphereButton, SIGNAL(clicked()),
+    //                 selectSphereAction, SIGNAL(triggered()));
+    //QPushButton *buildButton = new QPushButton(tr("Build event queue"));
+    //QObject::connect(buildButton, SIGNAL(clicked()),
+    //                 buildAction, SIGNAL(triggered()));
+    //buttonGroupLayout->addWidget(selectSphereButton);
+    //buttonGroupLayout->addWidget(buildButton);
+    //horizontalLayout->addWidget(buttonGroupBox);
 }
 
 void EventQueueWindowState::onEnterState()
 {
+    WindowStateWithMenu::onEnterState();
+
     QVBoxLayout *verticalLayout = new QVBoxLayout();
     verticalLayout->setSpacing(0);
     verticalLayout->setContentsMargins(2, -1, 2, -1);
@@ -73,6 +88,8 @@ void EventQueueWindowState::onEnterState()
 
 void EventQueueWindowState::onLeaveState()
 {
+    WindowStateWithMenu::onLeaveState();
+
     QVBoxLayout *verticalLayout = dynamic_cast<QVBoxLayout*>(wsw.layout());
     Q_ASSERT(verticalLayout != 0);
     verticalLayout->removeWidget(wsw.viewer());
@@ -89,6 +106,8 @@ void EventQueueWindowState::draw()
     { return; }
 
     selectedSphere.draw(wsw.viewer());
+    for (int i = 0; i < eventSites.count(); i++)
+    { eventSites[i]->draw(wsw.viewer()); }
 }
 
 void EventQueueWindowState::selectSphere()
@@ -115,12 +134,9 @@ void EventQueueWindowState::buildEventQueue()
     if (selectedSphere.handle.is_null())
     { selectSphere(); }
 
-    // Fail with message if no sphere is selected
+    // Fail with status message if no sphere is selected
     if (selectedSphere.handle.is_null())
-    {
-        QMessageBox::warning(&wsw, tr("No sphere selected"),
-                             tr("You need to select a sphere in order to build its event queue"));
-    }
+    { setStatus(tr("No sphere selected")); }
     else
     {
         // Build event queue
@@ -128,8 +144,10 @@ void EventQueueWindowState::buildEventQueue()
 
         // Clear sphere item's children
         QTreeWidgetItem *sphereItem = treeWidget->topLevelItem(0);
-        for (int i = 0; i < sphereItem->childCount(); i++)
-        { sphereItem->removeChild(sphereItem->child(i)); }
+        QList<QTreeWidgetItem*> childrenItems = sphereItem->takeChildren();
+        for (int i = 0; i < childrenItems.count(); i++)
+        { delete childrenItems[i]; }
+        eventSites.clear();
 
         // Add its new children
         for (EventSiteType evsType = eventQueue.next_event(); evsType != EventQueue::None;
@@ -139,7 +157,7 @@ void EventQueueWindowState::buildEventQueue()
             if (evsType == EventQueue::Normal)
             {
                 NormalEventSite event = eventQueue.pop_normal();
-                eventItem = new NormalEventSiteTreeWidget(event);
+                eventItem = new NESTreeWidgetItem(event);
             }
             else
             {
@@ -148,6 +166,7 @@ void EventQueueWindowState::buildEventQueue()
                 //eventItem = new PolarEventSiteTreeWidget(event);
             }
             sphereItem->addChild(eventItem);
+            sphereItem->setExpanded(true);
         }
     }
 }
@@ -156,4 +175,17 @@ void EventQueueWindowState::updateUI()
 {
     bottomWidget->update();
     wsw.viewer()->update();
+}
+
+void EventQueueWindowState::updateSelectedEventSites()
+{
+    eventSites.clear();
+    QList<QTreeWidgetItem*> selectedItems = treeWidget->selectedItems();
+    for (int i = 0; i < selectedItems.count(); i++)
+    {
+        ESTreeWidgetItem *eventItem = dynamic_cast<ESTreeWidgetItem*>(selectedItems[i]);
+        if (eventItem)
+        { eventSites.push_back(eventItem); }
+    }
+    updateUI();
 }

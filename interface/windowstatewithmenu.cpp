@@ -15,6 +15,7 @@ void WindowStateWithMenu::setup()
 {
     menu = wsw.mw().menuBar()->addMenu(name());
     menu->setEnabled(false);
+    std::cout << "setting up menu for " << name().toStdString() << " state" << std::endl;
 }
 
 void WindowStateWithMenu::onEnterState()
@@ -32,4 +33,7 @@ void WindowStateWithMenu::onLeaveState()
 }
 
 void WindowStateWithMenu::addAction(QAction *action)
-{ menu->addAction(action); }
+{
+    menu->addAction(action);
+    action->setEnabled(false);
+}

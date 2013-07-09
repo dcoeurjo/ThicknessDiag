@@ -38,10 +38,6 @@ public:
     QAction* enterAction() const
     { return enterActionMember; }
 
-public slots:
-    void requestEnter()
-    { wsw.changeState(*this); }
-
 signals:
     void stateEntered();
     void stateLeft();
@@ -64,6 +60,10 @@ protected:
     // Helper for setting the status
     void setStatus(const QString &status)
     { wsw.setStatus(status); }
+
+private slots:
+    void requestEnter()
+    { wsw.changeState(*this); }
 
 private:
     QString nameVal;
