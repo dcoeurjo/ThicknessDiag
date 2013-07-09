@@ -329,7 +329,7 @@ class Polar_event_site
     bool is_bipolar() const
     { return _event.is_bipolar(); }
 
-    bool occurs_before(const Normal_event_site<Kernel> & es) const
+    bool occurs_before(const Normal_event_site<Kernel> &) const
     { return is_bipolar() || _event.is_end(); }
 
     bool occurs_before(const Polar_event_site<Kernel> & es) const

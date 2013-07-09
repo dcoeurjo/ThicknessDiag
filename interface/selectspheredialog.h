@@ -19,7 +19,7 @@ class SelectSphereDialog : public QDialog
     typedef SphereIntersecter SI;
 
 public:
-    explicit SelectSphereDialog(QWidget *parent = 0);
+     SelectSphereDialog(QWidget *parent = 0);
     ~SelectSphereDialog();
 
     void addSphere(const SphereView &sv);

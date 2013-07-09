@@ -12,7 +12,7 @@ class Window : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit Window(QWidget *parent = 0);
+     Window(QWidget *parent = 0);
 
     // Access to sphere intersecter proxy
     const SphereIntersecterProxy& siProxy() const

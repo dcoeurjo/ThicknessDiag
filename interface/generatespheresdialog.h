@@ -12,7 +12,7 @@ class GenerateSpheresDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit GenerateSpheresDialog(QWidget *parent = 0);
+     GenerateSpheresDialog(QWidget *parent = 0);
     ~GenerateSpheresDialog();
 
     double center[3];

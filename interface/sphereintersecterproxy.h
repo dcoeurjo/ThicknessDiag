@@ -9,7 +9,7 @@ class SphereIntersecterProxy: public QObject
 {
     Q_OBJECT
 public:
-    explicit SphereIntersecterProxy(QObject *parent = 0);
+     SphereIntersecterProxy(QObject *parent = 0);
     virtual ~SphereIntersecterProxy();
 
     SphereHandle addSphere(const Sphere_3 &s);

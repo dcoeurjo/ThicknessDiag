@@ -19,7 +19,7 @@ class WindowStateWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit WindowStateWidget(SphereIntersecterProxy &siProxy,
+     WindowStateWidget(SphereIntersecterProxy &siProxy,
                                QMainWindow *window = 0);
     virtual ~WindowStateWidget();
 

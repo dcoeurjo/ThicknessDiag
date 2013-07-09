@@ -20,7 +20,8 @@ SOURCES *= main.cpp\
     spherelistwidgetitem.cpp \
     sphereview.cpp \
     windowstatewithmenu.cpp \
-    customviewer.cpp
+    customviewer.cpp \
+    spheretreewidgetitem.cpp
 
 HEADERS *= \
     sphereformdialog.h \
@@ -41,7 +42,8 @@ HEADERS *= \
     kernel.h \
     customviewer.h \
     eventqueue.h \
-    eventqueuebuilder.h
+    eventqueuebuilder.h \
+    spheretreewidgetitem.h
 
 INCLUDEPATH *= ..
 

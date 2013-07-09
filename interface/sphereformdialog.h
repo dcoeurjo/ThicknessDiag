@@ -12,7 +12,7 @@ class SphereFormDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit SphereFormDialog(QWidget *parent = 0);
+     SphereFormDialog(QWidget *parent = 0);
     ~SphereFormDialog();
     double x, y, z;
     double radius;

@@ -11,7 +11,7 @@ class EventQueueWindowState : public WindowState
     Q_OBJECT
 
 public:
-    explicit EventQueueWindowState(WindowStateWidget &wsw);
+    EventQueueWindowState(WindowStateWidget &wsw);
     ~EventQueueWindowState();
 
     void setup();

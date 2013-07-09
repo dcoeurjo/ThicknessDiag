@@ -13,6 +13,7 @@
 
 #include "eventqueuebuilder.h"
 #include "selectspheredialog.h"
+#include "spheretreewidgetitem.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
     WindowState(wsw, tr("Event Queue")) {}
@@ -40,6 +41,8 @@ void EventQueueWindowState::setup()
 
     // list widget
     treeWidget = new QTreeWidget(bottomWidget);
+    treeWidget->setColumnCount(1);
+    treeWidget->setHeaderLabel(tr("Event queue display"));
     horizontalLayout->addWidget(treeWidget);
 
     // button group
@@ -97,7 +100,10 @@ void EventQueueWindowState::selectSphere()
     // Execute and assign selected
     if (ssd.exec())
     {
+        treeWidget->clear();
         selectedSphere = *ssd.selectedSphere;
+        SphereTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere, treeWidget);
+        treeWidget->addTopLevelItem(sphereItem);
         updateUI();
     }
 }
@@ -116,9 +122,28 @@ void EventQueueWindowState::buildEventQueue()
     }
     else
     {
-        EventQueueBuilder eqb;
-        eqb(siProxy.directAccess(), selectedSphere.handle);
-        // TODO
+        // Build event queue
+        eventQueue = EventQueueBuilder()(siProxy.directAccess(), selectedSphere.handle);
+
+        // Clear sphere item's children
+        QTreeWidgetItem *sphereItem = treeWidget->topLevelItem(0);
+        for (int i = 0; i < sphereItem->childCount(); i++)
+        { sphereItem->removeChild(sphereItem->child(i)); }
+
+        // Add its new children
+        for (EventSiteType evsType = eventQueue.next_event(); evsType != EventQueue::None;
+             evsType = eventQueue.next_event())
+        {
+            if (evsType == EventQueue::Normal)
+            {
+                NormalEventSite event = eventQueue.pop_normal();
+            }
+            else
+            {
+                Q_ASSERT(evsType == EventQueue::Polar);
+                PolarEventSite event = eventQueue.pop_polar();
+            }
+        }
     }
 }
 

@@ -14,7 +14,7 @@ class WindowState : public QObject
     Q_OBJECT
 
 public:
-    explicit WindowState(WindowStateWidget &wsw, const QString &n);
+     WindowState(WindowStateWidget &wsw, const QString &n);
     virtual ~WindowState();
 
     // Used by widget for notification

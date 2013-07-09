@@ -6,7 +6,7 @@
 class CustomViewer : public QGLViewer
 {
 public:
-    explicit CustomViewer(QWidget *parent = 0);
+    CustomViewer(QWidget *parent = 0);
 
 protected:
     void init();

@@ -9,7 +9,7 @@ class QAction;
 class WindowStateWithMenu : public WindowState
 {
 public:
-    explicit WindowStateWithMenu(WindowStateWidget &wsw, const QString &n);
+     WindowStateWithMenu(WindowStateWidget &wsw, const QString &n);
     virtual ~WindowStateWithMenu();
 
     virtual void setup();

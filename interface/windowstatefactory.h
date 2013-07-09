@@ -9,7 +9,7 @@ class WindowStateWidget;
 class WindowStateFactory
 {
 public:
-    explicit WindowStateFactory(WindowStateWidget &wsw);
+     WindowStateFactory(WindowStateWidget &wsw);
 
     // Construct state given by id
     enum StateId { SPHERES, EVENT_QUEUE };

@@ -11,7 +11,7 @@ class SpheresWindowState : public WindowStateWithMenu
     Q_OBJECT
 
 public:
-    explicit SpheresWindowState(WindowStateWidget &wsw);
+     SpheresWindowState(WindowStateWidget &wsw);
     ~SpheresWindowState();
 
     // Setup override
