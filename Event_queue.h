@@ -300,6 +300,10 @@ class Normal_event_site
         const Normal_event_site<Kernel> & _nes;
     };
 
+    // Get the corresponding sphere handle
+    const Sphere_handle& sphere_handle() const
+    { return _sphere_handle; }
+
   private:
     // Location of event site
     Circular_arc_point_3 _point;

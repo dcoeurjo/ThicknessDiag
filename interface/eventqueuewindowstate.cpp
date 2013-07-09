@@ -14,6 +14,7 @@
 #include "eventqueuebuilder.h"
 #include "selectspheredialog.h"
 #include "spheretreewidgetitem.h"
+#include "normaleventsitetreewidget.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
     WindowState(wsw, tr("Event Queue")) {}
@@ -134,15 +135,19 @@ void EventQueueWindowState::buildEventQueue()
         for (EventSiteType evsType = eventQueue.next_event(); evsType != EventQueue::None;
              evsType = eventQueue.next_event())
         {
+            QTreeWidgetItem *eventItem = 0;
             if (evsType == EventQueue::Normal)
             {
                 NormalEventSite event = eventQueue.pop_normal();
+                eventItem = new NormalEventSiteTreeWidget(event);
             }
             else
             {
                 Q_ASSERT(evsType == EventQueue::Polar);
                 PolarEventSite event = eventQueue.pop_polar();
+                //eventItem = new PolarEventSiteTreeWidget(event);
             }
+            sphereItem->addChild(eventItem);
         }
     }
 }
