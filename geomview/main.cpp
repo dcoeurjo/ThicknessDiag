@@ -258,7 +258,7 @@ static void do_main(int argc, const char * argv[])
     if (ev_type == EQ::Normal)
     {
       typedef Normal_event_site<Kernel> NES;
-      NES nes = ev_queue.pop_normal_event();
+      NES nes = ev_queue.pop_normal();
 #ifdef DISPLAY_ON_GEOMVIEW
       NES::Intersection_events_range ie_range(nes);
       for (NES::Intersection_events_iterator it = ie_range.begin();

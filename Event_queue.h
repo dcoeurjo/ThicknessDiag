@@ -256,7 +256,16 @@ class Normal_event_site
     // placed in a frame local to the sphere (ie with its origin at the
     // center of the sphere), in cylindrical coordinates.
     bool occurs_before(const Normal_event_site<Kernel> & es) const
-    { return Comp_theta_z_3<Kernel>()(_point, es._point, *_sphere_handle); }
+    {
+      // FIXME this is a hack to check that ordering is correct
+      double r = std::sqrt(CGAL::to_double(_sphere_handle->squared_radius()));
+      double x = CGAL::to_double(_point.x() - _sphere_handle->center().x()), es_x = CGAL::to_double(es._point.x() - _sphere_handle->center().x());
+      double theta = std::acos(x / r), es_theta = std::acos(es_x / r);
+      return theta < es_theta;
+
+      // Exact comparing
+      return Comp_theta_z_3<Kernel>()(_point, es._point, *_sphere_handle);
+    }
 
     // Symmetric version of Polar_event_site::occurs_before
     bool occurs_before(const Polar_event_site<Kernel> & es) const
@@ -417,7 +426,7 @@ class Event_queue
 
     // Pop a polar event from the queue
     // Concept: there is at least one polar event
-    Polar_event_site<Kernel> pop_polar_event()
+    Polar_event_site<Kernel> pop_polar()
     {
       Polar_event_site<Kernel> pes = _polar_events.top();
       _polar_events.pop();
@@ -427,12 +436,12 @@ class Event_queue
 
     // Get a polar event from the queue (without removing it)
     // Concept: there is at least one polar event
-    const Polar_event_site<Kernel> & top_polar_event() const
+    const Polar_event_site<Kernel> & top_polar() const
     { return _polar_events.top(); }
 
     // Pop a normal event from the queue
     // Concept: there is at least one normal event
-    Normal_event_site<Kernel> pop_normal_event()
+    Normal_event_site<Kernel> pop_normal()
     {
       Normal_event_site<Kernel> nes = _normal_events.top();
       _normal_events.pop();
@@ -442,7 +451,7 @@ class Event_queue
 
     // Get a normal event from the queue (without removing it)
     // Concept: there is at least one normal event
-    const Normal_event_site<Kernel> & top_normal_event() const
+    const Normal_event_site<Kernel> & top_normal() const
     { return _normal_events.top(); }
 
   private:
