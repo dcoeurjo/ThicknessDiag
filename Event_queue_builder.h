@@ -111,6 +111,12 @@ class Event_queue_builder
               NE_site(sh, POINT))).first; }                          \
         it->second.add_event(IE(c1, c2, IE::TYPE)); }
 
+      // Polar event sites, 3 exactly:
+      //   0) North polar event site
+      //   1) South polar event site
+      //   2) North/South bipolar event site
+      // TODO
+
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
       {

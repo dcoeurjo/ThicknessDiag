@@ -194,6 +194,9 @@ class Normal_event_site
   // Iterator ranges should have access to hidden members
   friend class Intersection_events_range;
 
+  // Compare theta-z
+  typedef Comp_theta_z_3<Kernel> Compare_theta_z_3;
+
   // Compare normal events' circles (increasing/decreasing)
   typedef Comp_event_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_arc_radii;
   typedef Comp_event_inv_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_arc_radii;
@@ -256,16 +259,7 @@ class Normal_event_site
     // placed in a frame local to the sphere (ie with its origin at the
     // center of the sphere), in cylindrical coordinates.
     bool occurs_before(const Normal_event_site<Kernel> & es) const
-    {
-      // FIXME this is a hack to check that ordering is correct
-      double x = CGAL::to_double(_point.x() - _sphere_handle->center().x()), es_x = CGAL::to_double(es._point.x() - _sphere_handle->center().x());
-      double y = CGAL::to_double(_point.y() - _sphere_handle->center().y()), es_y = CGAL::to_double(es._point.y() - _sphere_handle->center().y());
-      double theta = std::atan2(x, y), es_theta = std::atan2(es_x, es_y);
-      return theta < es_theta;
-
-      // Exact comparing (doesn't work, why ?)
-      return Comp_theta_z_3<Kernel>()(_point, es._point, *_sphere_handle);
-    }
+    { return Compare_theta_z_3()(_point, es._point, *_sphere_handle); }
 
     // Symmetric version of Polar_event_site::occurs_before
     bool occurs_before(const Polar_event_site<Kernel> & es) const

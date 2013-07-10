@@ -25,12 +25,7 @@ struct Comp_theta_z_3
 
   bool operator()(const Circular_arc_point_3 & left,
       const Circular_arc_point_3 & right, const Sphere_3 & sphere) const
-  {
-    using namespace CGAL;
-    return compare_theta_z(left, right, sphere);
-    //Comparison_result cr = compare_theta<Kernel>(left, right, sphere);
-    //return cr == SMALLER || (cr == EQUAL && compare_z<Kernel>(left, right) == LARGER);
-  }
+  { return CGAL::compare_theta_z(left, right, sphere) == CGAL::SMALLER; }
 };
 
 #endif // CIRCLE_UTILS_H // vim: sw=2 et ts=2 sts=2
