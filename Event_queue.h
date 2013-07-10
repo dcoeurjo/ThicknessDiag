@@ -206,7 +206,7 @@ class Normal_event_site
   public:
     Normal_event_site(const Sphere_handle & sh,
         const Circular_arc_point_3 & p):
-      _sphere_handle(sh), _point(p), _start_normal_events(),
+      _point(p), _sphere_handle(sh), _start_normal_events(),
       _end_normal_events(), _intersection_events() {}
 
     // Add a base normal event
@@ -258,12 +258,12 @@ class Normal_event_site
     bool occurs_before(const Normal_event_site<Kernel> & es) const
     {
       // FIXME this is a hack to check that ordering is correct
-      double r = std::sqrt(CGAL::to_double(_sphere_handle->squared_radius()));
       double x = CGAL::to_double(_point.x() - _sphere_handle->center().x()), es_x = CGAL::to_double(es._point.x() - _sphere_handle->center().x());
-      double theta = std::acos(x / r), es_theta = std::acos(es_x / r);
+      double y = CGAL::to_double(_point.y() - _sphere_handle->center().y()), es_y = CGAL::to_double(es._point.y() - _sphere_handle->center().y());
+      double theta = std::atan2(x, y), es_theta = std::atan2(es_x, es_y);
       return theta < es_theta;
 
-      // Exact comparing
+      // Exact comparing (doesn't work, why ?)
       return Comp_theta_z_3<Kernel>()(_point, es._point, *_sphere_handle);
     }
 
