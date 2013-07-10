@@ -90,7 +90,7 @@ struct Display_circle_on_gv: Display_on_gv
     Plane_3 plane = ch->supporting_plane();
     Line_3 line_theta(ch->center(), plane.base1()),
            line_phi(ch->center(), plane.base2());
-     
+
     // Get intersection points
     Object_3 c_theta_points[2], c_phi_points[2];
     Intersect_3()(*ch, line_theta, c_theta_points);
@@ -163,33 +163,19 @@ class usage_error: public std::runtime_error
       std::runtime_error(what_arg) {}
 };
 
+static const std::size_t NB_SPHERES_DEFAULT = 200;
 static const Kernel::FT RAND_AMP_DEFAULT = 100;
 
 static void do_main(int argc, const char * argv[])
 {
-  // Parse command line arguments
-  if (argc < 2)
-  { throw usage_error("Need number of spheres to work with"); }
-
   // Amount of spheres to intersect
-  std::size_t nb_spheres;
+  std::size_t nb_spheres = NB_SPHERES_DEFAULT;
 
   // Convert nb_spheres
+  if (argc > 1)
   { std::istringstream iss(argv[1]);
     if ( (iss >> nb_spheres).fail() )
     { throw usage_error("Bad number format (positive integer)"); } }
-
-  // Globally accessible random number generator
-  Random rand;
-
-#ifdef DISPLAY_ON_GEOMVIEW // Setup gv
-  Geomview_stream gv;
-  gv.set_wired(false);
-  gv.set_bg_color(Color(0, 0, 0));
-  gv.clear();
-  set_panel_enabled(gv, Geomview_panel::TOOLS, false);
-  set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
-#endif // DISPLAY_ON_GEOMVIEW //
 
   // Random amplitude for sphere generation
   FT rand_amp = RAND_AMP_DEFAULT;
@@ -204,6 +190,15 @@ static void do_main(int argc, const char * argv[])
     if ( (iss >> rand_amp).fail() )
     { throw usage_error("Bad number format (real number)"); }
   }
+
+#ifdef DISPLAY_ON_GEOMVIEW // Setup gv
+  Geomview_stream gv;
+  gv.set_wired(false);
+  gv.set_bg_color(Color(0, 0, 0));
+  gv.clear();
+  set_panel_enabled(gv, Geomview_panel::TOOLS, false);
+  set_panel_enabled(gv, Geomview_panel::GEOMVIEW, false);
+#endif // DISPLAY_ON_GEOMVIEW //
 
   // Circle proxy to test
   SI si;
@@ -280,7 +275,7 @@ static void do_main(int argc, const char * argv[])
         CGAL_assertion(shp2.first == sh || shp2.second == sh);
 
         // Display each circle
-        gv.clear();              
+        gv.clear();
         display_cap(nes.point());
         display_circle(ch1);
         //display_sphere(shp1.first);

@@ -15,7 +15,6 @@ void WindowStateWithMenu::setup()
 {
     menu = wsw.mw().menuBar()->addMenu(name());
     menu->setEnabled(false);
-    std::cout << "setting up menu for " << name().toStdString() << " state" << std::endl;
 }
 
 void WindowStateWithMenu::onEnterState()

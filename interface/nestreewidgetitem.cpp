@@ -19,7 +19,6 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
     double z = to_double(nes.point().z());
     double theta = std::atan2(to_double(nes.sphere_handle()->center().x() - nes.point().x()),
                               to_double(nes.sphere_handle()->center().y() - nes.point().y()));
-    //theta += M_PI;
     theta *= static_cast<double>(180) / M_PI;
 
     // Set label text
@@ -39,6 +38,4 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
 NESTreeWidgetItem::~NESTreeWidgetItem() {}
 
 void NESTreeWidgetItem::draw(QGLViewer *viewer)
-{
-    pointSv.draw(viewer);
-}
+{ pointSv.draw(viewer); }

@@ -25,7 +25,7 @@ endif()
 
 # Needed packages
 find_package(CGAL COMPONENTS)
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED system)
 # helper file
 include(${CGAL_USE_FILE})
 
@@ -57,4 +57,5 @@ add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
     ${CGAL_LIBRARIES}
     ${CGAL_3RD_PARTY_LIBRARIES}
+    ${Boost_LIBRARIES}
     )

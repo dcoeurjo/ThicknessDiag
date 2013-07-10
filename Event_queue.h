@@ -301,7 +301,7 @@ class Normal_event_site
     };
 
     // Get the corresponding sphere handle
-    const Sphere_handle& sphere_handle() const
+    const Sphere_handle & sphere_handle() const
     { return _sphere_handle; }
 
   private:
