@@ -119,10 +119,6 @@ class Intersection_event: public Normal_event<Kernel>
 
 // (Bi)Polar events are defined by:
 //  - the circle itself (~arc bounded by poles)
-//  - a tag { Start, End }
-//
-// Difference between polar and bipolar events
-// is done by accessing the "polarity" flag.
 template <typename Kernel>
 class Polar_event: public Tagged_event
 {

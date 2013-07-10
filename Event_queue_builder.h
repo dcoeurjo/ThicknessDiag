@@ -58,7 +58,6 @@ class Event_queue_builder
       typedef std::vector<Object_3> Intersection_list;
       typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
       const Sphere_3 & sphere = *sh;
-      const Point_3 & sphere_center = sh->center();
 
       // Get the sphere's circles
       typedef std::vector<Circle_handle> Circle_list;
@@ -96,8 +95,8 @@ class Event_queue_builder
       // ...helper macro for redundant code
 #define ASSIGN_POLE_TO_CAP(OBJ, CAP)           \
       { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ)); \
-      /*CGAL_assertion(CAP.first == north      \
-          || CAP.first == south);*/ } // FIXME
+      CGAL_assertion(CAP.first == north      \
+          || CAP.first == south); } // FIXME
 
       // Normal event sites, ordered by corresponding point
       typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
@@ -112,9 +111,9 @@ class Event_queue_builder
         it->second.add_event(IE(c1, c2, IE::TYPE)); }
 
       // Polar event sites, 3 exactly:
-      //   0) North polar event site
-      //   1) South polar event site
-      //   2) North/South bipolar event site
+      //  * north pole
+      //  * south pole
+      //  * north / south bipole
       // TODO
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
