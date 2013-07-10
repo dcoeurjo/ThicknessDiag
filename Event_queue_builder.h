@@ -103,7 +103,7 @@ class Event_queue_builder
       typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
       NE_site_map ne_site_map;
       // ...helper macro for redundant code
-#define ADD_NE_TO_NE_SITE(POINT, TYPE)                                  \
+#define ADD_NE_TO_NE_SITE(POINT, TYPE)                               \
       { typedef std::pair<const Circular_arc_point_3, NE_site> pair; \
         typename NE_site_map::iterator it = ne_site_map.find(POINT); \
         if (it == ne_site_map.end())                                 \

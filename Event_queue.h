@@ -53,22 +53,68 @@ struct Tagged_event
 };
 
 // Basic normal events are defined by:
-//  - the pair of arcs defining its circle (pair of intersecting arcs ?)
-//  - a tag { Start, End }
+//  - the pair circles originating it
 template <typename Kernel>
-class Normal_event: public Tagged_event
+class Normal_event
 {
-  typedef typename Kernel::Circular_arc_3 Circular_arc_3;
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Circle_handle Circle_handle;
 
   public:
-    Normal_event(const Circular_arc_3 & ca1, const Circular_arc_3 & ca2,
-        Tagged_event::Tag_type tag):
-      Tagged_event(tag), arcs(ca1, ca2) {}
+    Normal_event(const Circle_handle & ch1, const Circle_handle & ch2):
+      circles(ch1, ch2) {}
 
-    std::pair<Circular_arc_3, Circular_arc_3> arcs;
+    std::pair<Circle_handle, Circle_handle> circles;
 
     bool operator==(const Normal_event<Kernel> & ev) const
-    { return Tagged_event::operator==(ev) && arcs == ev.arcs; }
+    { return circles == ev.circles; }
+};
+
+// Cirtical normal events are defined by:
+//  - a tag { Start, End }
+template <typename Kernel>
+class Critical_event: public Normal_event<Kernel>, public Tagged_event
+{
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Circle_handle Circle_handle;
+
+  public:
+  Critical_event(const Circle_handle & ch1,
+      const Circle_handle & ch2, Tag_type t):
+    Normal_event<Kernel>(ch1, ch2), Tagged_event(t) {}
+
+  bool operator==(const Critical_event<Kernel> & ev) const
+  { return Tagged_event::operator==(ev)
+    && Normal_event<Kernel>::operator==(ev); }
+};
+
+// Intersection normal events are defined by:
+//  - the intersection point (implicit, but stored for convenience)
+//  - a tag { Smallest_crossing, Largest_crossing, Tangency }
+//
+// Note: points are compared using lexicographic
+//  order away from poles. Treated as a normal event.
+template <typename Kernel>
+class Intersection_event: public Normal_event<Kernel>
+{
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Circle_handle Circle_handle;
+
+  public:
+    enum Intersection_type {
+      Smallest_crossing,
+      Largest_crossing,
+      Tangency
+    };
+
+    Intersection_type tag;
+
+    Intersection_event(const Circle_handle & c1, const Circle_handle & c2,
+        Intersection_type t):
+      Normal_event<Kernel>(c1, c2), tag(t) {}
+
+    bool operator==(const Intersection_event<Kernel> & ev) const
+    { return Normal_event<Kernel>::operator==(ev) && tag == ev.tag; }
 };
 
 // (Bi)Polar events are defined by:
@@ -80,7 +126,6 @@ class Normal_event: public Tagged_event
 template <typename Kernel>
 class Polar_event: public Tagged_event
 {
-  typedef typename Kernel::Circle_3 Circle_3;
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Circle_handle Circle_handle;
 
@@ -96,10 +141,10 @@ class Polar_event: public Tagged_event
     Polar_event(const Circle_handle & ch,
         Polarity_type t, Pole_type p,
         Tagged_event::Tag_type tag):
-      Tagged_event(tag), circle_handle(ch),
+      Tagged_event(tag), circle(ch),
       polarity(t), pole(p) {}
 
-    Circle_handle circle_handle;
+    Circle_handle circle;
     Polarity_type polarity;
     Pole_type pole;
 
@@ -115,65 +160,31 @@ class Polar_event: public Tagged_event
     bool is_south() const
     { return pole == North; }
 
-    const Circle_3 & circle() const
-    { return *circle_handle; }
-
     bool operator==(const Polar_event<Kernel> & ev) const
     { return Tagged_event::operator==(ev)
-      && circle_handle == ev.circle_handle
       && polarity == ev.polarity && pole == ev.pole; }
 };
 
-// Intersection normal events are defined by:
-//  - the intersection point (implicit, but stored for convenience)
-//  - the pair of intersecting arcs (<-> circles)
-//  - a tag { Smallest_crossing, Largest_crossing, Tangency }
-//
-// Note: points are compared using lexicographic
-//  order away from poles. Treated as a normal event.
-template <typename Kernel>
-class Intersection_event
-{
-  typedef typename Kernel::Circle_3 Circle_3;
-
-  public:
-    enum Intersection_type {
-      Smallest_crossing,
-      Largest_crossing,
-      Tangency
-    };
-
-    std::pair<Circle_3, Circle_3> circles;
-    Intersection_type tag;
-
-    Intersection_event(const Circle_3 & c1, const Circle_3 & c2,
-        Intersection_type t):
-      circles(c1, c2), tag(t) {}
-
-    bool operator==(const Intersection_event<Kernel> & ev) const
-    { return circles == ev.circles && tag == ev.tag; }
-};
-
-// Compare two events' first arc by increasing radius,
+// Compare two events' first circle by increasing radius,
 // works with Normal/Intersection events.
 template <typename Kernel, typename Event>
-struct Comp_event_arc_radii:
-  std::unary_function<Event, bool>
+class Comp_event_circle_radii: public std::unary_function<Event, bool>
 {
-  bool operator()(const Event & left,
-      const Event & right) const
-  {
-    typedef typename Kernel::Circular_arc_3 Arc_type;
-    return Comp_by_squared_radii<Arc_type>()(left.arcs.first, right.arcs.first);
-  }
+  typedef typename Kernel::Circle_3 Circle_3;
+  typedef Comp_by_squared_radii<Circle_3> Comp_circle_radii;
+  
+  public:
+    bool operator()(const Event & left,
+        const Event & right) const
+    { return Comp_circle_radii()(*left.circles.first, *right.circles.first); }
 };
 // ...inverse
 template <typename Kernel, typename Event>
-struct Comp_event_inv_arc_radii:
+struct Comp_event_inv_circle_radii:
   std::unary_function<Event, bool>
 { bool operator()(const Event & left,
       const Event & right) const
-  { return Comp_event_arc_radii<Kernel, Event>()(right, left); } };
+  { return Comp_event_circle_radii<Kernel, Event>()(right, left); } };
 
 // An event site is the location where several events come in
 // conflict, and allows ordering independently of the type of
@@ -185,9 +196,9 @@ class Polar_event_site;
 template <typename Kernel>
 class Normal_event_site
 {
-  typedef typename Kernel::Circle_3 Circle_3;
   typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
 
+  typedef typename Kernel::Circle_3 Circle_3;
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Sphere_handle Sphere_handle;
 
@@ -198,11 +209,11 @@ class Normal_event_site
   typedef Comp_theta_z_3<Kernel> Compare_theta_z_3;
 
   // Compare normal events' circles (increasing/decreasing)
-  typedef Comp_event_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_arc_radii;
-  typedef Comp_event_inv_arc_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_arc_radii;
+  typedef Comp_event_circle_radii<Kernel, Normal_event<Kernel> > Comp_ne_circle_radii;
+  typedef Comp_event_inv_circle_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_circle_radii;
   // Start/End events
-  typedef std::multiset<Normal_event<Kernel>, Comp_ne_inv_arc_radii> End_normal_events;
-  typedef std::multiset<Normal_event<Kernel>, Comp_ne_arc_radii> Start_normal_events;
+  typedef std::multiset<Normal_event<Kernel>, Comp_ne_inv_circle_radii> End_normal_events;
+  typedef std::multiset<Normal_event<Kernel>, Comp_ne_circle_radii> Start_normal_events;
   // Crossing/Tangency events
   typedef std::vector<Intersection_event<Kernel> > Intersection_events;
 
@@ -316,6 +327,8 @@ template <typename Kernel>
 class Polar_event_site
 {
   typedef typename Kernel::Circle_3 Circle_3;
+  typedef Sphere_intersecter<Kernel> SI;
+  typedef typename SI::Circle_handle Circle_handle;
 
   public:
     Polar_event_site(const Polar_event<Kernel> & ev):
@@ -350,8 +363,8 @@ class Polar_event_site
           // Store the polar event site having the biggest
           // associated circle radius
           const Polar_event_site<Kernel> * es_biggest_circle = this;
-          if (Comp_by_squared_radii<Circle_3>()
-              (es._event.circle(), _event.circle()))
+          typedef Comp_by_squared_radii<Circle_3> Comp_circle_radii;
+          if (Comp_circle_radii()(*es._event.circle, *_event.circle))
           { es_biggest_circle = &es; }
 
           // Start -> biggest occurs first, end -> smallest occurs first

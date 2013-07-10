@@ -58,19 +58,6 @@ void EventQueueWindowState::setup()
     QObject::connect(treeWidget, SIGNAL(itemSelectionChanged()),
                      this, SLOT(updateSelectedEventSites()));
     horizontalLayout->addWidget(treeWidget);
-
-    // button group
-    //QGroupBox *buttonGroupBox = new QGroupBox(bottomWidget);
-    //QVBoxLayout *buttonGroupLayout = new QVBoxLayout(buttonGroupBox);
-    //QPushButton *selectSphereButton = new QPushButton(tr("Select a sphere"));
-    //QObject::connect(selectSphereButton, SIGNAL(clicked()),
-    //                 selectSphereAction, SIGNAL(triggered()));
-    //QPushButton *buildButton = new QPushButton(tr("Build event queue"));
-    //QObject::connect(buildButton, SIGNAL(clicked()),
-    //                 buildAction, SIGNAL(triggered()));
-    //buttonGroupLayout->addWidget(selectSphereButton);
-    //buttonGroupLayout->addWidget(buildButton);
-    //horizontalLayout->addWidget(buttonGroupBox);
 }
 
 void EventQueueWindowState::onEnterState()

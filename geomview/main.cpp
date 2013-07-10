@@ -263,8 +263,7 @@ static void do_main(int argc, const char * argv[])
         const IE & ie = *it;
 
         // Intersection event circles
-        SI::Circle_handle ch1 = si.find_circle_in_sphere(sh, ie.circles.first),
-          ch2 = si.find_circle_in_sphere(sh, ie.circles.second);
+        SI::Circle_handle ch1 = ie.circles.first, ch2 = ie.circles.second;
         CGAL_assertion(ch1.is_null() == false);
         CGAL_assertion(ch2.is_null() == false);
 
