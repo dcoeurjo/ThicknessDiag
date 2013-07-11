@@ -64,6 +64,10 @@ class Event_queue_builder
       Circle_list circle_list;
       si.circles_on_sphere(sh, std::back_inserter(circle_list));
 
+      // Normal event sites, ordered by corresponding point
+      typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
+      NE_site_map ne_site_map;
+
       // Store the line passing through the poles
       Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
       CAP poles[2];
@@ -93,22 +97,9 @@ class Event_queue_builder
         CGAL_assertion(compare_z(south, north) == SMALLER);
       }
       // ...helper macro for redundant code
-#define ASSIGN_POLE_TO_CAP(OBJ, CAP)           \
-      { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ)); \
-      CGAL_assertion(CAP.first == north      \
-          || CAP.first == south); } // FIXME
-
-      // Normal event sites, ordered by corresponding point
-      typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
-      NE_site_map ne_site_map;
-      // ...helper macro for redundant code
-#define ADD_NE_TO_NE_SITE(POINT, TYPE)                               \
-      { typedef std::pair<const Circular_arc_point_3, NE_site> pair; \
-        typename NE_site_map::iterator it = ne_site_map.find(POINT); \
-        if (it == ne_site_map.end())                                 \
-        { it = ne_site_map.insert(std::make_pair(POINT,              \
-              NE_site(sh, POINT))).first; }                          \
-        it->second.add_event(IE(c1, c2, IE::TYPE)); }
+#define ASSIGN_POLE_TO_CAP(OBJ, CAP)                                \
+      { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ));                      \
+        CGAL_assertion(CAP.first == north || CAP.first == south); }
 
       // Polar event sites
       typedef std::vector<PE_site> PE_sites;
@@ -120,6 +111,9 @@ class Event_queue_builder
         // Cleaner code
         const Circle_handle & ch1 = *it;
         const Circle_3 & c1 = *ch1;
+        // ...helper macro for redundant code
+#define ADD_PE_SITE(POLE, TYPE)                           \
+        pe_sites.push_back(PE_site(PE(ch1, POLE, TYPE)));
 
         // Make polar/bipolar events
         Intersection_list intersections_at_poles;
@@ -131,17 +125,29 @@ class Event_queue_builder
           {
             CAP cap;
             ASSIGN_POLE_TO_CAP(intersections_at_poles[0], cap);
-            // TODO add polar event
+
+            // North or south pole ?
+            PE::Pole_type pole;
+            if (cap.first == north)
+            { pole = PE::North; }
+            else
+            { pole = PE::South; }
+
+            // Add polar event site
+            ADD_PE_SITE(pole, PE::Start);
+            ADD_PE_SITE(pole, PE::End);
           }
           else
           {
             CGAL_assertion(intersections_at_poles.size() == 2);
-            CAP caps[2];
-            ASSIGN_POLE_TO_CAP(intersections_at_poles[0], caps[0]);
-            ASSIGN_POLE_TO_CAP(intersections_at_poles[1], caps[1]);
-            // TODO add bipolar event
+            // TODO remove this block, only here for debugging
+            { CAP caps[2];
+              ASSIGN_POLE_TO_CAP(intersections_at_poles[0], caps[0]);
+              ASSIGN_POLE_TO_CAP(intersections_at_poles[1], caps[1]); }
+            ADD_PE_SITE(pole, PE::Bipole);
           }
         }
+#undef ADD_PE_SITE
 #undef ASSIGN_POLE_TO_CAP
         else
         {
@@ -157,6 +163,14 @@ class Event_queue_builder
           typedef Intersection_event<Kernel> IE;
           const Circle_handle & ch2 = *it2;
           const Circle_3 & c2 = *ch2;
+          // ...helper macro for redundant code
+#define ADD_NE_TO_NE_SITE(POINT, TYPE)                                   \
+          { typedef std::pair<const Circular_arc_point_3, NE_site> pair; \
+            typename NE_site_map::iterator it = ne_site_map.find(POINT); \
+            if (it == ne_site_map.end())                                 \
+            { it = ne_site_map.insert(std::make_pair(POINT,              \
+                  NE_site(sh, POINT))).first; }                          \
+            it->second.add_event(IE(ch1, ch2, IE::TYPE)); }
 
           // Intersection circles must be different
           CGAL_assertion(ch1 != ch2 && c1 != c2);
@@ -213,6 +227,10 @@ class Event_queue_builder
       for (typename NE_site_map::const_iterator it = ne_site_map.begin();
           it != ne_site_map.end(); it++)
       { ev_queue.push(it->second); }
+      // ...same for polar events sites
+      for (typename PE_sites::const_iterator it = pe_sites.begin();
+          it != pe_sites.end(); it++)
+      { ev_queue.push(*it); }
 
       return ev_queue;
     }

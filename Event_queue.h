@@ -109,9 +109,9 @@ class Intersection_event: public Normal_event<Kernel>
 
     Intersection_type tag;
 
-    Intersection_event(const Circle_handle & c1, const Circle_handle & c2,
+    Intersection_event(const Circle_handle & ch1, const Circle_handle & ch2,
         Intersection_type t):
-      Normal_event<Kernel>(c1, c2), tag(t) {}
+      Normal_event<Kernel>(ch1, ch2), tag(t) {}
 
     bool operator==(const Intersection_event<Kernel> & ev) const
     { return Normal_event<Kernel>::operator==(ev) && tag == ev.tag; }
