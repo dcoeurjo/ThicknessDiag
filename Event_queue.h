@@ -117,7 +117,7 @@ class Intersection_event: public Normal_event<Kernel>
     { return Normal_event<Kernel>::operator==(ev) && tag == ev.tag; }
 };
 
-// (Bi)Polar events are defined by:
+// Polar events are defined by:
 //  - the circle itself (~arc bounded by poles)
 template <typename Kernel>
 class Polar_event: public Tagged_event
@@ -126,39 +126,29 @@ class Polar_event: public Tagged_event
   typedef typename SI::Circle_handle Circle_handle;
 
   public:
-    enum Polarity_type {
-      Single, Dual
-    };
-
     enum Pole_type {
-      North, South
+      North, South, Bipole
     };
 
     Polar_event(const Circle_handle & ch,
-        Polarity_type t, Pole_type p,
-        Tagged_event::Tag_type tag):
-      Tagged_event(tag), circle(ch),
-      polarity(t), pole(p) {}
+        Pole_type p, Tagged_event::Tag_type tag):
+      Tagged_event(tag), circle(ch), pole(p) {}
 
     Circle_handle circle;
-    Polarity_type polarity;
     Pole_type pole;
-
-    bool is_single_polar() const
-    { return polarity == Single; }
-
-    bool is_bipolar() const
-    { return polarity == Dual; }
 
     bool is_north() const
     { return pole == North; }
 
     bool is_south() const
-    { return pole == North; }
+    { return pole == South; }
+
+    bool is_bipolar() const
+    { return pole == Bipole; }
 
     bool operator==(const Polar_event<Kernel> & ev) const
     { return Tagged_event::operator==(ev)
-      && polarity == ev.polarity && pole == ev.pole; }
+      && pole == ev.pole && circle == ev.circle; }
 };
 
 // Compare two events' first circle by increasing radius,
@@ -330,25 +320,19 @@ class Polar_event_site
     Polar_event_site(const Polar_event<Kernel> & ev):
       _event(ev) {}
 
-    bool is_single_polar() const
-    { return _event.is_single_polar(); }
-
-    bool is_bipolar() const
-    { return _event.is_bipolar(); }
-
     bool occurs_before(const Normal_event_site<Kernel> &) const
-    { return is_bipolar() || _event.is_end(); }
+    { return _event.is_bipolar() || _event.is_end(); }
 
     bool occurs_before(const Polar_event_site<Kernel> & es) const
     {
-      if (_event.polarity != es._event.polarity) // Different polarities
+      if (_event.is_bipolar() != es._event.is_bipolar()) // Different polarities
       {
-        if (_event.is_single_polar())
+        if (_event.is_bipolar() == false)
         { return _event.is_end(); } // Polar end before bipolar
         else
         { return es._event.is_start(); } // Bipolar only before polar start
       }
-      else if (_event.is_single_polar()) // Both "single" polar
+      else if (_event.is_bipolar() == false) // Both "single" polar
       {
         if (_event.tag != es._event.tag)
         { return _event.is_end(); } // End before start
