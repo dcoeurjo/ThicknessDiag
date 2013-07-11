@@ -52,50 +52,34 @@ struct Tagged_event
   { return tag == ev.tag; }
 };
 
-// Basic normal events are defined by:
-//  - the pair circles originating it
-template <typename Kernel>
-class Normal_event
-{
-  typedef Sphere_intersecter<Kernel> SI;
-  typedef typename SI::Circle_handle Circle_handle;
-
-  public:
-    Normal_event(const Circle_handle & ch1, const Circle_handle & ch2):
-      circles(ch1, ch2) {}
-
-    std::pair<Circle_handle, Circle_handle> circles;
-
-    bool operator==(const Normal_event<Kernel> & ev) const
-    { return circles == ev.circles; }
-};
-
 // Cirtical normal events are defined by:
 //  - a tag { Start, End }
+//  - the corresponding circle
 template <typename Kernel>
-class Critical_event: public Normal_event<Kernel>, public Tagged_event
+class Critical_event: public Tagged_event
 {
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Circle_handle Circle_handle;
 
   public:
-  Critical_event(const Circle_handle & ch1,
-      const Circle_handle & ch2, Tag_type t):
-    Normal_event<Kernel>(ch1, ch2), Tagged_event(t) {}
+    Critical_event(const Circle_handle & ch, Tag_type t):
+      Tagged_event(t), circle(ch) {}
 
-  bool operator==(const Critical_event<Kernel> & ev) const
-  { return Tagged_event::operator==(ev)
-    && Normal_event<Kernel>::operator==(ev); }
+    Circle_handle circle;
+
+    bool operator==(const Critical_event<Kernel> & ev) const
+    { return Tagged_event::operator==(ev) && circle == ev.circle; }
 };
 
 // Intersection normal events are defined by:
 //  - the intersection point (implicit, but stored for convenience)
 //  - a tag { Smallest_crossing, Largest_crossing, Tangency }
+//  - the pair of circles intersecting
 //
 // Note: points are compared using lexicographic
 //  order away from poles. Treated as a normal event.
 template <typename Kernel>
-class Intersection_event: public Normal_event<Kernel>
+class Intersection_event
 {
   typedef Sphere_intersecter<Kernel> SI;
   typedef typename SI::Circle_handle Circle_handle;
@@ -107,14 +91,15 @@ class Intersection_event: public Normal_event<Kernel>
       Tangency
     };
 
+    Intersection_event(const Circle_handle & ch1,
+        const Circle_handle & ch2, Intersection_type t):
+      circles(ch1, ch2), tag(t) {}
+
+    std::pair<Circle_handle, Circle_handle> circles;
     Intersection_type tag;
 
-    Intersection_event(const Circle_handle & ch1, const Circle_handle & ch2,
-        Intersection_type t):
-      Normal_event<Kernel>(ch1, ch2), tag(t) {}
-
     bool operator==(const Intersection_event<Kernel> & ev) const
-    { return Normal_event<Kernel>::operator==(ev) && tag == ev.tag; }
+    { return tag == ev.tag && circles == ev.circles; }
 };
 
 // Polar events are defined by:
@@ -151,8 +136,7 @@ class Polar_event: public Tagged_event
       && pole == ev.pole && circle == ev.circle; }
 };
 
-// Compare two events' first circle by increasing radius,
-// works with Normal/Intersection events.
+// Compare two events' circle by increasing radius
 template <typename Kernel, typename Event>
 class Comp_event_circle_radii: public std::unary_function<Event, bool>
 {
@@ -162,7 +146,7 @@ class Comp_event_circle_radii: public std::unary_function<Event, bool>
   public:
     bool operator()(const Event & left,
         const Event & right) const
-    { return Comp_circle_radii()(*left.circles.first, *right.circles.first); }
+    { return Comp_circle_radii()(*left.circle, *right.circle); }
 };
 // ...inverse
 template <typename Kernel, typename Event>
@@ -195,49 +179,26 @@ class Normal_event_site
   typedef Comp_theta_z_3<Kernel> Compare_theta_z_3;
 
   // Compare normal events' circles (increasing/decreasing)
-  typedef Comp_event_circle_radii<Kernel, Normal_event<Kernel> > Comp_ne_circle_radii;
-  typedef Comp_event_inv_circle_radii<Kernel, Normal_event<Kernel> > Comp_ne_inv_circle_radii;
+  typedef Comp_event_circle_radii<Kernel, Critical_event<Kernel> > Comp_ce_circle_radii;
+  typedef Comp_event_inv_circle_radii<Kernel, Critical_event<Kernel> > Comp_ce_inv_circle_radii;
   // Start/End events
-  typedef std::multiset<Normal_event<Kernel>, Comp_ne_inv_circle_radii> End_normal_events;
-  typedef std::multiset<Normal_event<Kernel>, Comp_ne_circle_radii> Start_normal_events;
+  typedef std::multiset<Critical_event<Kernel>, Comp_ce_inv_circle_radii> End_events;
+  typedef std::multiset<Critical_event<Kernel>, Comp_ce_circle_radii> Start_events;
   // Crossing/Tangency events
   typedef std::vector<Intersection_event<Kernel> > Intersection_events;
 
   public:
     Normal_event_site(const Sphere_handle & sh,
         const Circular_arc_point_3 & p):
-      _point(p), _sphere_handle(sh), _start_normal_events(),
-      _end_normal_events(), _intersection_events() {}
+      _point(p), _sphere_handle(sh), _start_events(),
+      _end_events(), _intersection_events() {}
 
     // Add a base normal event
-    void add_event(const Normal_event<Kernel> & ev)
+    void add_event(const Critical_event<Kernel> & ev)
     {
-#ifndef NDEBUG // Check that events added to the site are *valid*
-      Circle_3 c(ev.arcs.first.supporting_circle()),
-               ac(ev.arcs.second.supporting_circle());
-
-      // Both arcs of event should lie on the same circle
-      if (c != ac)
-      {
-        std::ostringstream oss;
-        oss << "Normal event isn't valid, arcs do not lie on the "
-          << "same circle " << c << " != " << ac;
-        throw std::logic_error(oss.str());
-      }
-
-      // Event site should be located somewhere on the event's arcs
-      if (c.has_on(_point) == false)
-      {
-        std::ostringstream oss;
-        oss << "Can only add valid events to normal event site at "
-          << _point << ", circle " << c << " does not pass here";
-        throw std::logic_error(oss.str());
-      }
-#endif // NDEBUG //
-
       // Add event to accurate container
-      if (ev.is_start()) { _start_normal_events.insert(ev); }
-      else { _end_normal_events.insert(ev); }
+      if (ev.is_start()) { _start_events.insert(ev); }
+      else { _end_events.insert(ev); }
     }
 
     // Overload for adding an intersection event
@@ -302,8 +263,8 @@ class Normal_event_site
     Sphere_handle _sphere_handle;
 
     // Start/End events
-    Start_normal_events _start_normal_events;
-    End_normal_events _end_normal_events;
+    Start_events _start_events;
+    End_events _end_events;
 
     // Crossing/Tangency events
     Intersection_events _intersection_events;

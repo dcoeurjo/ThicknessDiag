@@ -7,7 +7,7 @@
 typedef Event_queue<Kernel> EventQueue;
 typedef EventQueue::Event_site_type EventSiteType;
 
-typedef Normal_event<Kernel> NormalEvent;
+typedef Critical_event<Kernel> CriticalEvent;
 typedef Intersection_event<Kernel> IntersectionEvent;
 typedef Normal_event_site<Kernel> NormalEventSite;
 
