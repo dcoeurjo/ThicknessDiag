@@ -21,7 +21,7 @@ static CGAL::Random randgen;
 
 WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindow *window) :
     QWidget(window), siProxyInstance(siProxy),
-    currentState(0)
+    currentState(0), nbStates(0)
 {
     // Setup UI elements
     stateMenu = mw().menuBar()->addMenu(tr("Window Mode"));
@@ -109,6 +109,12 @@ void WindowStateWidget::addState(WindowState &state)
 {
     QAction *enterAction = state.enterAction();
     stateMenu->addAction(enterAction);
+    if (nbStates++ < 10)
+    {
+        std::ostringstream oss;
+        oss << "CTRL+" << nbStates % 10;
+        enterAction->setShortcut(QKeySequence(QString(oss.str().c_str())));
+    }
 }
 
 void WindowStateWidget::changeState(WindowState &state)

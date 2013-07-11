@@ -1,9 +1,12 @@
 #include "spheretreewidgetitem.h"
 
 SphereTreeWidgetItem::SphereTreeWidgetItem(const SphereView &sv, QTreeWidget *parent) :
-    QTreeWidgetItem(parent, UserType), sv(sv)
+    DrawableTreeWidgetItem(parent), sv(sv)
 {
-    setText(0, sv.asString());
+    setText(0, "Sphere " + sv.asString());
 }
 
 SphereTreeWidgetItem::~SphereTreeWidgetItem() {}
+
+void SphereTreeWidgetItem::draw(QGLViewer *viewer)
+{ sv.draw(viewer); }

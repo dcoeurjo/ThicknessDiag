@@ -23,7 +23,7 @@ SOURCES *= main.cpp\
     customviewer.cpp \
     spheretreewidgetitem.cpp \
     nestreewidgetitem.cpp \
-    estreewidgetitem.cpp
+    drawabletreewidgetitem.cpp
 
 HEADERS *= \
     sphereformdialog.h \
@@ -47,7 +47,7 @@ HEADERS *= \
     eventqueuebuilder.h \
     spheretreewidgetitem.h \
     nestreewidgetitem.h \
-    estreewidgetitem.h
+    drawabletreewidgetitem.h
 
 INCLUDEPATH *= ..
 

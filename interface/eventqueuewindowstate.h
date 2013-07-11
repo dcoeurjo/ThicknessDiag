@@ -1,12 +1,12 @@
 #ifndef EVENTQUEUEWINDOWSTATE_H
 #define EVENTQUEUEWINDOWSTATE_H
 
+#include <QSet>
 #include "windowstatewithmenu.h"
 #include "eventqueue.h"
 
 class QTreeWidget;
-class QTreeWidgetItem;
-class ESTreeWidgetItem;
+class DrawableTreeWidgetItem;
 
 class EventQueueWindowState : public WindowStateWithMenu
 {
@@ -24,9 +24,8 @@ protected:
     void onLeaveState();
 
 private slots:
-    void updateSelectedEventSites();
     void buildEventQueue();
-    void selectSphere();
+    void updateDrawables();
 
 private:
     // Helper for updating the UI
@@ -35,11 +34,8 @@ private:
     // Event queue
     EventQueue eventQueue;
 
-    // Selected sphere
-    SphereView selectedSphere;
-
-    // Event sites currently visualized
-    QList<ESTreeWidgetItem*> eventSites;
+    // Tree items to display
+    QSet<DrawableTreeWidgetItem*> drawableItems;
 
     // UI
     QWidget *bottomWidget;

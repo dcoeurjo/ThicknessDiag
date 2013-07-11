@@ -5,11 +5,11 @@
 
 class QGLViewer;
 
-class ESTreeWidgetItem : public QTreeWidgetItem
+class DrawableTreeWidgetItem : public QTreeWidgetItem
 {
 public:
-    ESTreeWidgetItem(QTreeWidget *parent=0);
-    virtual ~ESTreeWidgetItem();
+    DrawableTreeWidgetItem(QTreeWidget *parent=0);
+    virtual ~DrawableTreeWidgetItem();
     virtual void draw(QGLViewer *viewer) = 0;
 };
 

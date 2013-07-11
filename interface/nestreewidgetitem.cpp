@@ -9,7 +9,7 @@
 static CGAL::Random randgen;
 
 NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *parent):
-    ESTreeWidgetItem(parent), nes(nes)
+    DrawableTreeWidgetItem(parent), nes(nes)
 {
     // Convert (x, y, z) coordinates and compute theta angle
     using CGAL::to_double;

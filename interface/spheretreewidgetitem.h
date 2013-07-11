@@ -1,17 +1,16 @@
 #ifndef SPHERETREEWIDGETITEM_H
 #define SPHERETREEWIDGETITEM_H
 
-#include <QTreeWidgetItem>
+#include "drawabletreewidgetitem.h"
 #include "sphereview.h"
 
-class SphereTreeWidgetItem : public QTreeWidgetItem
+class SphereTreeWidgetItem : public DrawableTreeWidgetItem
 {
 public:
     SphereTreeWidgetItem(const SphereView &sv, QTreeWidget *parent = 0);
     ~SphereTreeWidgetItem();
 
-    const SphereView& sphereView() const
-    { return sv; }
+    void draw(QGLViewer *viewer);
 
 private:
     const SphereView &sv;

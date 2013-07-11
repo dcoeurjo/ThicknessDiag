@@ -79,6 +79,8 @@ private:
 
     // Current state (used for update)
     WindowState *currentState;
+    // nb states added (used for shortcut setup)
+    std::size_t nbStates;
 };
 
 #endif // WINDOWSTATEWIDGET_H

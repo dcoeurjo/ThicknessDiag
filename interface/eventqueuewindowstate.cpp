@@ -29,7 +29,6 @@ void EventQueueWindowState::setup()
 
     // Create actions
     QAction *buildAction = new QAction(tr("Build"), this);
-    QAction *selectSphereAction = new QAction(tr("Select sphere"), this);
 
     // Setup shortcuts
     buildAction->setShortcut(Qt::CTRL + Qt::Key_B);
@@ -37,12 +36,9 @@ void EventQueueWindowState::setup()
     // Connect actions to slots
     QObject::connect(buildAction, SIGNAL(triggered()),
                          this, SLOT(buildEventQueue()));
-    QObject::connect(selectSphereAction, SIGNAL(triggered()),
-                     this, SLOT(selectSphere()));
 
     // Add actions to menu
     addAction(buildAction);
-    addAction(selectSphereAction);
 
     // Bottom widget
     bottomWidget = new QWidget();
@@ -54,16 +50,16 @@ void EventQueueWindowState::setup()
     // list widget
     treeWidget = new QTreeWidget(bottomWidget);
     treeWidget->setColumnCount(1);
+    treeWidget->setSelectionMode(QTreeWidget::ExtendedSelection);
     treeWidget->setHeaderLabel(tr("Event queue display"));
     QObject::connect(treeWidget, SIGNAL(itemSelectionChanged()),
-                     this, SLOT(updateSelectedEventSites()));
+                     this, SLOT(updateDrawables()));
     horizontalLayout->addWidget(treeWidget);
 }
 
 void EventQueueWindowState::onEnterState()
 {
     WindowStateWithMenu::onEnterState();
-
     QVBoxLayout *verticalLayout = new QVBoxLayout();
     verticalLayout->setSpacing(0);
     verticalLayout->setContentsMargins(2, -1, 2, -1);
@@ -76,7 +72,6 @@ void EventQueueWindowState::onEnterState()
 void EventQueueWindowState::onLeaveState()
 {
     WindowStateWithMenu::onLeaveState();
-
     QVBoxLayout *verticalLayout = dynamic_cast<QVBoxLayout*>(wsw.layout());
     Q_ASSERT(verticalLayout != 0);
     verticalLayout->removeWidget(wsw.viewer());
@@ -88,74 +83,55 @@ void EventQueueWindowState::onLeaveState()
 
 void EventQueueWindowState::draw()
 {
-    // Do nothing if no sphere is selected
-    if (selectedSphere.handle.is_null())
-    { return; }
-
-    selectedSphere.draw(wsw.viewer());
-    for (int i = 0; i < eventSites.count(); i++)
-    { eventSites[i]->draw(wsw.viewer()); }
+    foreach(DrawableTreeWidgetItem *drawableItem, drawableItems)
+    {
+        std::cout << "drawing " << drawableItem->text(0).toStdString() << std::endl;
+        drawableItem->draw(wsw.viewer());
+    }
 }
 
-void EventQueueWindowState::selectSphere()
+void EventQueueWindowState::buildEventQueue()
 {
+    // Select a sphere
     SelectSphereDialog ssd;
     SphereIteratorRange spheres(siProxy.directAccess());
     for (SphereIterator it = spheres.begin(); it != spheres.end(); it++)
     { ssd.addSphere(wsw.sphereView(*it)); }
 
     // Execute and assign selected
-    if (ssd.exec())
+    if (ssd.exec() == false)
+    { setStatus(tr("No sphere selected"));
+      return; }
+
+    // Setup top level tree item (sphere selected)
+    treeWidget->clear();
+    const SphereView &selectedSphere = *ssd.selectedSphere;
+    QTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere, treeWidget);
+    treeWidget->addTopLevelItem(sphereItem);
+
+    // Build event queue
+    eventQueue = EventQueueBuilder()(siProxy.directAccess(), selectedSphere.handle);
+
+    // Add its new children
+    for (EventSiteType evsType = eventQueue.next_event(); evsType != EventQueue::None;
+         evsType = eventQueue.next_event())
     {
-        treeWidget->clear();
-        selectedSphere = *ssd.selectedSphere;
-        SphereTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere, treeWidget);
-        treeWidget->addTopLevelItem(sphereItem);
-        updateUI();
-    }
-}
-
-void EventQueueWindowState::buildEventQueue()
-{
-    // Select a sphere if non is yet selected
-    if (selectedSphere.handle.is_null())
-    { selectSphere(); }
-
-    // Fail with status message if no sphere is selected
-    if (selectedSphere.handle.is_null())
-    { setStatus(tr("No sphere selected")); }
-    else
-    {
-        // Build event queue
-        eventQueue = EventQueueBuilder()(siProxy.directAccess(), selectedSphere.handle);
-
-        // Clear sphere item's children
-        QTreeWidgetItem *sphereItem = treeWidget->topLevelItem(0);
-        QList<QTreeWidgetItem*> childrenItems = sphereItem->takeChildren();
-        for (int i = 0; i < childrenItems.count(); i++)
-        { delete childrenItems[i]; }
-        eventSites.clear();
-
-        // Add its new children
-        for (EventSiteType evsType = eventQueue.next_event(); evsType != EventQueue::None;
-             evsType = eventQueue.next_event())
+        QTreeWidgetItem *eventItem = 0;
+        if (evsType == EventQueue::Normal)
         {
-            QTreeWidgetItem *eventItem = 0;
-            if (evsType == EventQueue::Normal)
-            {
-                NormalEventSite event = eventQueue.pop_normal();
-                eventItem = new NESTreeWidgetItem(event);
-            }
-            else
-            {
-                Q_ASSERT(evsType == EventQueue::Polar);
-                PolarEventSite event = eventQueue.pop_polar();
-                //eventItem = new PolarEventSiteTreeWidget(event);
-            }
-            sphereItem->addChild(eventItem);
-            sphereItem->setExpanded(true);
+            NormalEventSite event = eventQueue.pop_normal();
+            eventItem = new NESTreeWidgetItem(event);
         }
+        else
+        {
+            Q_ASSERT(evsType == EventQueue::Polar);
+            PolarEventSite event = eventQueue.pop_polar();
+            //eventItem = new PolarEventSiteTreeWidget(event);
+        }
+        sphereItem->addChild(eventItem);
+        sphereItem->setExpanded(true);
     }
+    treeWidget->setCurrentItem(sphereItem);
 }
 
 void EventQueueWindowState::updateUI()
@@ -164,15 +140,20 @@ void EventQueueWindowState::updateUI()
     wsw.viewer()->update();
 }
 
-void EventQueueWindowState::updateSelectedEventSites()
+void EventQueueWindowState::updateDrawables()
 {
-    eventSites.clear();
+    drawableItems.clear();
     QList<QTreeWidgetItem*> selectedItems = treeWidget->selectedItems();
     for (int i = 0; i < selectedItems.count(); i++)
     {
-        ESTreeWidgetItem *eventItem = dynamic_cast<ESTreeWidgetItem*>(selectedItems[i]);
-        if (eventItem)
-        { eventSites.push_back(eventItem); }
+        for (QTreeWidgetItem *item = selectedItems[i];
+             item != 0; item = item->parent())
+        {
+            DrawableTreeWidgetItem *drawableItem = 0;
+            drawableItem = dynamic_cast<DrawableTreeWidgetItem*>(item);
+            if (drawableItem != 0)
+            { drawableItems.insert(drawableItem); }
+        }
     }
     updateUI();
 }

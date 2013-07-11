@@ -1,11 +1,11 @@
 #ifndef NESTREEWIDGETITEM_H
 #define NESTREEWIDGETITEM_H
 
-#include "estreewidgetitem.h"
+#include "drawabletreewidgetitem.h"
 #include "eventqueue.h"
 #include "sphereview.h"
 
-class NESTreeWidgetItem : public ESTreeWidgetItem
+class NESTreeWidgetItem : public DrawableTreeWidgetItem
 {
 public:
     NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *parent = 0);
