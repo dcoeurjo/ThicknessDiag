@@ -84,10 +84,7 @@ void EventQueueWindowState::onLeaveState()
 void EventQueueWindowState::draw()
 {
     foreach(DrawableTreeWidgetItem *drawableItem, drawableItems)
-    {
-        std::cout << "drawing " << drawableItem->text(0).toStdString() << std::endl;
-        drawableItem->draw(wsw.viewer());
-    }
+    { drawableItem->draw(wsw.viewer()); }
 }
 
 void EventQueueWindowState::buildEventQueue()
@@ -103,18 +100,29 @@ void EventQueueWindowState::buildEventQueue()
     { setStatus(tr("No sphere selected"));
       return; }
 
+    // Remove last build of this sphere
+    for (int i = 0; i < treeWidget->topLevelItemCount(); i++)
+    {
+        typedef SphereTreeWidgetItem STWI;
+        STWI* sphereItem = reinterpret_cast<STWI*>(treeWidget->topLevelItem(i));
+        if (ssd.selectedSphere == &sphereItem->sphereView())
+        { delete sphereItem;
+          break; }
+    }
+
     // Setup top level tree item (sphere selected)
-    treeWidget->clear();
     const SphereView &selectedSphere = *ssd.selectedSphere;
-    QTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere, treeWidget);
+    QTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere,
+                                                           treeWidget);
     treeWidget->addTopLevelItem(sphereItem);
 
     // Build event queue
-    eventQueue = EventQueueBuilder()(siProxy.directAccess(), selectedSphere.handle);
+    eventQueue = EventQueueBuilder()(siProxy.directAccess(),
+                                     selectedSphere.handle);
 
     // Add its new children
-    for (EventSiteType evsType = eventQueue.next_event(); evsType != EventQueue::None;
-         evsType = eventQueue.next_event())
+    for (EventSiteType evsType = eventQueue.next_event();
+         evsType != EventQueue::None; evsType = eventQueue.next_event())
     {
         QTreeWidgetItem *eventItem = 0;
         if (evsType == EventQueue::Normal)

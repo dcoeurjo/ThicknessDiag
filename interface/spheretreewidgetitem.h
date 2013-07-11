@@ -12,6 +12,9 @@ public:
 
     void draw(QGLViewer *viewer);
 
+    const SphereView& sphereView() const
+    { return sv; }
+
 private:
     const SphereView &sv;
 };
