@@ -127,7 +127,7 @@ class Event_queue_builder
             ASSIGN_POLE_TO_CAP(intersections_at_poles[0], cap);
 
             // North or south pole ?
-            PE::Pole_type pole;
+            typename PE::Pole_type pole;
             if (cap.first == north)
             { pole = PE::North; }
             else
@@ -144,7 +144,8 @@ class Event_queue_builder
             { CAP caps[2];
               ASSIGN_POLE_TO_CAP(intersections_at_poles[0], caps[0]);
               ASSIGN_POLE_TO_CAP(intersections_at_poles[1], caps[1]); }
-            ADD_PE_SITE(pole, PE::Bipole);
+            ADD_PE_SITE(PE::Bipole, PE::Start);
+            ADD_PE_SITE(PE::Bipole, PE::End);
           }
         }
 #undef ADD_PE_SITE
