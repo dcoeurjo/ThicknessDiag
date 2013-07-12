@@ -238,6 +238,7 @@ class Event_bundle
     // location, but more on the type of the underlying event.
 
     class Polar_event_site;
+    class Bipolar_event_site;
 
     class Normal_event_site
     {
@@ -295,6 +296,9 @@ class Event_bundle
         // Symmetric version of Polar_event_site::occurs_before
         bool occurs_before(const Polar_event_site & es) const
         { return es.occurs_before(*this) == false; }
+        // same for Bipolar_event_site
+        bool occurs_before(const Bipolar_event_site & es) const
+        { return es.occurs_before(*this) == false; }
 
         // Getter for event point
         Circular_arc_point_3 const & point() const
@@ -350,47 +354,57 @@ class Event_bundle
           _event(ev) {}
 
         bool occurs_before(const Normal_event_site &) const
-        { return _event.is_bipolar() || _event.is_end(); }
+        { return _event.is_end(); }
 
         bool occurs_before(const Polar_event_site & es) const
         {
-          if (_event.is_bipolar() != es._event.is_bipolar()) // Different polarities
+          if (_event.tag != es._event.tag)
+          { return _event.is_end(); } // End before start
+          else if (_event.pole != es._event.pole)
+          { return _event.is_north(); } // North pole before south
+          else
           {
-            if (_event.is_bipolar() == false)
-            { return _event.is_end(); } // Polar end before bipolar
-            else
-            { return es._event.is_start(); } // Bipolar only before polar start
-          }
-          else if (_event.is_bipolar() == false) // Both "single" polar
-          {
-            if (_event.tag != es._event.tag)
-            { return _event.is_end(); } // End before start
-            else if (_event.pole != es._event.pole)
-            { return _event.is_north(); } // North pole before south
-            else
-            {
-              // Store the polar event site having the biggest
-              // associated circle radius
-              const Polar_event_site * es_biggest_circle = this;
-              typedef Comp_by_squared_radii<Circle_3> Comp_circle_radii;
-              if (Comp_circle_radii()(*es._event.circle, *_event.circle))
-              { es_biggest_circle = &es; }
+            // Store the polar event site having the biggest
+            // associated circle radius
+            const Polar_event_site * es_biggest_circle = this;
+            typedef Comp_by_squared_radii<Circle_3> Comp_circle_radii;
+            if (Comp_circle_radii()(*es._event.circle, *_event.circle))
+            { es_biggest_circle = &es; }
 
-              // Start -> biggest occurs first, end -> smallest occurs first
-              if (_event.is_start())
-              { return es_biggest_circle == this; }
-              else
-              { return !(es_biggest_circle == this); }
-            }
-          }
-          else // Both bipolar
-          {
-            return false; // FIXME two bipolar events cannot be in conflict (?)
+            // Start -> biggest occurs first, end -> smallest occurs first
+            if (_event.is_start())
+            { return es_biggest_circle == this; }
+            else
+            { return !(es_biggest_circle == this); }
           }
         }
 
+        bool occurs_before(const Bipolar_event_site & es) const
+        { return es.occurs_before(*this) == false; }
+
       private:
         Polar_event _event;
+    };
+
+    class Bipolar_event_site
+    {
+      public:
+        Polar_event_site(const Polar_event & ev):
+          _event(ev) {}
+
+        bool occurs_before(const Normal_event_site &) const
+        { return true; }
+
+        bool occurs_before(const Polar_event_site & es) const
+        { return es.is_end() == false; }
+
+        bool occurs_before(const Bipolar_event_site &) const
+        {
+          // TODO
+        }
+
+      private:
+        Bipolar_event _event;
     };
 }
 
@@ -410,7 +424,7 @@ class Event_queue
     };
 
     Event_queue():
-      _normal_events(), _polar_events(),
+      _normal_events(), _polar_events(), _bipolar_events(),
       _computed_state(None) {}
 
     // Push events to our queue
@@ -515,6 +529,9 @@ class Event_queue
 
     // Polar event sites
     typename Event_site_queue<Polar_event_site>::Type _polar_events;
+
+    // Bipolar event sites
+    typename Event_site_queue<Bipolar_event_site>::Type _bipolar_events;
 
     // Event queue state, reset after each pop/push, computed
     Event_site_type _computed_state;
