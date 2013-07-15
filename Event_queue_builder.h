@@ -9,38 +9,47 @@
 #include <CGAL/assertions.h>
 #include <CGAL/Kernel/global_functions_3.h>
 
-#ifndef NDEBUG
-#  define POSSIBLY_ASSERT(S) CGAL_assertion(S);
-#else
-#  define POSSIBLY_ASSERT(S) S;
-#endif // NDEBUG
-
 #include <Event_queue.h>
 #include <Sphere_intersecter.h>
 
-template <typename Kernel>
+template <typename SK>
 class Event_queue_builder
 {
-  typedef typename Kernel::Line_3 Line_3;
-  typedef typename Kernel::Point_3 Point_3;
-  typedef typename Kernel::Plane_3 Plane_3;
-  typedef typename Kernel::Circle_3 Circle_3;
-  typedef typename Kernel::Sphere_3 Sphere_3;
-  typedef typename Kernel::Segment_3 Segment_3;
-  typedef typename Kernel::Direction_3 Direction_3;
-  typedef typename Kernel::Circular_arc_3 Circular_arc_3;
-  typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
+  // Geometrical objects
+  typedef typename SK::Line_3 Line_3;
+  typedef typename SK::Point_3 Point_3;
+  typedef typename SK::Plane_3 Plane_3;
+  typedef typename SK::Circle_3 Circle_3;
+  typedef typename SK::Sphere_3 Sphere_3;
+  typedef typename SK::Segment_3 Segment_3;
+  typedef typename SK::Direction_3 Direction_3;
+  typedef typename SK::Circular_arc_3 Circular_arc_3;
+  typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
 
-  typedef typename Kernel::Object_3 Object_3;
-  typedef typename Kernel::Assign_3 Assign_3;
-  typedef typename Kernel::Intersect_3 Intersect_3;
+  // Function objects
+  typedef typename SK::Object_3 Object_3;
+  typedef typename SK::Assign_3 Assign_3;
+  typedef typename SK::Intersect_3 Intersect_3;
+  typedef typename SK::Compare_theta_z_3 Compare_theta_z_3;
 
-  typedef Sphere_intersecter<Kernel> SI;
+  // Sphere intersecter and related
+  typedef Sphere_intersecter<SK> SI;
   typedef typename SI::Sphere_handle Sphere_handle;
   typedef typename SI::Circle_handle Circle_handle;
 
-  typedef Event_queue_builder<Kernel> Self;
-  typedef Event_queue<Kernel> EQ;
+  // Event queue, events and event sites
+  typedef Event_queue<SK> EQ;
+  typedef typename EQ::Events Events;
+  typedef typename Events::Polar_event Polar_event;
+  typedef typename Events::Critical_event Critical_event;
+  typedef typename Events::Bipolar_event Bipolar_event;
+  typedef typename Events::Intersection_event Intersection_event;
+  typedef typename Events::Polar_event_site Polar_event_site;
+  typedef typename Events::Normal_event_site Normal_event_site;
+  typedef typename Events::Bipolar_event_site Bipolar_event_site;
+  // ...event builders
+  typedef typename Events::Event_builder Event_builder;
+  typedef typename Events::Circle_event_builder Circle_event_builder;
 
   public:
     EQ operator()(const SI & si, const Sphere_3 & s)
@@ -54,10 +63,6 @@ class Event_queue_builder
       CGAL_assertion(si.find_sphere(*sh).is_null() == false);
 
       // Cleaner code helpers
-      typedef Polar_event<Kernel> PE;
-      typedef Polar_event_site<Kernel> PE_site;
-      typedef Normal_event_site<Kernel> NE_site;
-      typedef std::vector<Object_3> Intersection_list;
       typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
       const Sphere_3 & sphere = *sh;
 
@@ -66,55 +71,27 @@ class Event_queue_builder
       Circle_list circle_list;
       si.circles_on_sphere(sh, std::back_inserter(circle_list));
 
-      // Normal event sites, ordered by corresponding point
-      typedef std::map<Circular_arc_point_3, NE_site> NE_site_map;
-      NE_site_map ne_site_map;
-      // ...helper macro for redundant code
-#define ADD_TO_NE_SITE(POINT, EVENT)                           \
-      { typedef std::pair<const Circular_arc_point_3, NE_site> pair; \
-        typename NE_site_map::iterator it = ne_site_map.find(POINT); \
-        if (it == ne_site_map.end())                                 \
-        { it = ne_site_map.insert(std::make_pair(POINT,              \
-              NE_site(sh, POINT))).first; }                          \
-        it->second.add_event(EVENT); }
-
-
       // Store the line passing through the poles
       Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
-      CAP poles[2];
-      Intersection_list poles_found;
-      Intersect_3()(pole_axis, sphere, std::back_inserter(poles_found));
-      CGAL_assertion(poles_found.size() == 2);
-      POSSIBLY_ASSERT(Assign_3()(poles[0], poles_found[0]));
-      POSSIBLY_ASSERT(Assign_3()(poles[1], poles_found[1]));
-      Circular_arc_point_3 north, south;
-      // Minmax along Z to find the north/south
-      {
-        using namespace CGAL;
-        const Circular_arc_point_3 & a = poles[0].first;
-        const Circular_arc_point_3 & b = poles[1].first;
-        const Comparison_result comp_res = compare_z(a, b);
-        if (comp_res == SMALLER)
-        {
-          north = b;
-          south = a;
-        }
-        else
-        {
-          CGAL_assertion(comp_res == LARGER);
-          north = a;
-          south = b;
-        }
-        CGAL_assertion(compare_z(south, north) == SMALLER);
-      }
+
+      // Normal event sites, mapped by corresponding point
+      typedef std::map<Circular_arc_point_3,
+              Normal_event_site> Normal_event_sites;
+      Normal_event_sites normal_sites;
       // ...helper macro for redundant code
-#define ASSIGN_POLE_TO_CAP(OBJ, CAP)                                \
-      { POSSIBLY_ASSERT(Assign_3()(CAP, OBJ));                      \
-        CGAL_assertion(CAP.first == north || CAP.first == south); }
+#define ADD_TO_NE_SITE(POINT, EVENT)                                         \
+      { typename Normal_event_sites::iterator it = normal_sites.find(POINT); \
+        if (it == normal_sites.end())                                        \
+        { it = normal_sites.insert(std::make_pair(POINT,                     \
+              Normal_event_site(sh, POINT))).first; }                        \
+        it->second.add_event(EVENT); }
 
       // Polar event sites
-      typedef std::vector<PE_site> PE_sites;
-      PE_sites pe_sites;
+      typedef std::vector<Polar_event_site> Polar_event_sites;
+      Polar_event_sites pe_sites;
+
+      // Event builder for this sphere
+      Event_builder ev_builder(*sh);
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -122,118 +99,16 @@ class Event_queue_builder
         // Cleaner code
         const Circle_handle & ch1 = *it;
         const Circle_3 & c1 = *ch1;
-        // ...helper macro for redundant code
-#define ADD_PE_SITE(POLE, TYPE)                           \
-        pe_sites.push_back(PE_site(PE(ch1, POLE, TYPE)));
 
-        // Make polar/bipolar events
-        Intersection_list intersections_at_poles;
-        Intersect_3()(c1, pole_axis,
-            std::back_inserter(intersections_at_poles));
-        if (intersections_at_poles.size() > 0)
-        {
-          if (intersections_at_poles.size() == 1)
-          {
-            CAP cap;
-            ASSIGN_POLE_TO_CAP(intersections_at_poles[0], cap);
-
-            // North or south pole ?
-            typename PE::Pole_type pole;
-            if (cap.first == north)
-            { pole = PE::North; }
-            else
-            { pole = PE::South; }
-
-            // Add polar event site
-            ADD_PE_SITE(pole, PE::Start);
-            ADD_PE_SITE(pole, PE::End);
-          }
-          else
-          {
-            CGAL_assertion(intersections_at_poles.size() == 2);
-            // TODO remove this block, only here for debugging
-            { CAP caps[2];
-              ASSIGN_POLE_TO_CAP(intersections_at_poles[0], caps[0]);
-              ASSIGN_POLE_TO_CAP(intersections_at_poles[1], caps[1]); }
-            ADD_PE_SITE(PE::Bipole, PE::Start);
-            ADD_PE_SITE(PE::Bipole, PE::End);
-          }
-        }
-#undef ADD_PE_SITE
-#undef ASSIGN_POLE_TO_CAP
-        else
-        {
-          // Make normal start/end events
-
-          // Setup by getting the intersecting spheres for the current circle
-          typename SI::Sphere_handle_pair sh_pair = si.originating_spheres(c1);
-
-          // Get the intersection point between the current sphere
-          // and the segment joining its center with the other
-          // intersecting sphere's center
-          std::vector<Object_3> center_on_s_holder;
-          Segment_3 centers_line(sh_pair.first->center(),
-              sh_pair.second->center());
-          Intersect_3()(*sh, centers_line,
-              std::back_inserter(center_on_s_holder));
-          CGAL_assertion(center_on_s_holder.size() == 1); // FIXME this fails sometimes
-          CAP center_on_s_cap;
-          POSSIBLY_ASSERT(Assign_3()(center_on_s_cap, center_on_s_holder[0]));
-          Point_3 center_on_s(
-              CGAL::to_double(center_on_s_cap.first.x()),
-              CGAL::to_double(center_on_s_cap.first.y()),
-              CGAL::to_double(center_on_s_cap.first.z())
-              ); // FIXME very, very ugly
-
-          // Get the start/end points, by intersecting the plane passing
-          // through the previously computed point, perpendicular to
-          // the vertical axis, and the current circle
-          std::vector<Object_3> start_end_holder;
-          Plane_3 longitude_plane(center_on_s, Direction_3(0, 0, 1));
-          Intersect_3()(c1, longitude_plane,
-              std::back_inserter(start_end_holder));
-          if (start_end_holder.size() != 2)
-          {
-            // TODO replace this block with an assertion
-            std::cout << "Invalid start/end intersection : "
-              << start_end_holder.size()
-              << " intersections found, expected 2" << std::endl;
-          }
-          else
-          {
-            // Convert intersections
-            CAP cap[2];
-            POSSIBLY_ASSERT(Assign_3()(cap[0], start_end_holder[0]));
-            POSSIBLY_ASSERT(Assign_3()(cap[1], start_end_holder[1]));
-            CGAL_assertion(cap[0].second == 1 && cap[1].second == 1);
-
-            // Decide on which is start/end with a minmax
-            Circular_arc_point_3 start_point, end_point;
-            if (Comp_theta_z_3<Kernel>()(cap[0].first, cap[1].first, *sh))
-            {
-              start_point = cap[0].first;
-              end_point = cap[1].first;
-            }
-            else
-            {
-              start_point = cap[1].first;
-              end_point = cap[0].first;
-            }
-
-            // Handle circle crossing
-            typedef Critical_event<Kernel> CE;
-            Circle_handle ch(c1);
-            ADD_TO_NE_SITE(start_point, CE(ch, CE::Start));
-            ADD_TO_NE_SITE(end_point, CE(ch, CE::End));
-          }
-        }
+        // Add circles events
+        CGAL::Circle_type circle_type = CGAL::classify(c1, *sh);
+        // TODO
 
         // Make crossing/tangency events
         for (typename Circle_list::const_iterator it2 = it + 1;
             it2 != circle_list.end(); it2++)
         {
           // *More* syntaxic sugar
-          typedef Intersection_event<Kernel> IE;
           const Circle_handle & ch2 = *it2;
           const Circle_3 & c2 = *ch2;
 
@@ -241,6 +116,7 @@ class Event_queue_builder
           CGAL_assertion(ch1 != ch2 && c1 != c2);
 
           // Do intersections
+          typedef std::vector<Object_3> Intersection_list;
           Intersection_list circle_intersections;
           Intersect_3()(c1, c2, std::back_inserter(circle_intersections));
 
@@ -254,14 +130,14 @@ class Event_queue_builder
             if (Assign_3()(cap, circle_intersections[0]))
             {
               // Handle circle tangency
-              ADD_TO_NE_SITE(cap.first, IE(ch1, ch2, IE::Tangency));
+              //ADD_TO_NE_SITE(cap.first, ev_builder.intersection_event(ch1, ch2, cap.first, Intersection_event::Tangency)); FIXME
               continue;
             }
 
             // Intersection is necessarily a circle
             Circle_3 c;
-            POSSIBLY_ASSERT(Assign_3()(c, circle_intersections[0]));
-            //handle_circle_equality(c1, c2); FIXME
+            Assign_3()(c, circle_intersections[0]);
+            // FIXME
           }
           else // Crossing
           {
@@ -269,17 +145,17 @@ class Event_queue_builder
             CGAL_assertion(circle_intersections.size() == 2);
 
             CAP cap1, cap2;
-            POSSIBLY_ASSERT(Assign_3()(cap1, circle_intersections[0]));
-            POSSIBLY_ASSERT(Assign_3()(cap2, circle_intersections[1]));
+            Assign_3()(cap1, circle_intersections[0]);
+            Assign_3()(cap2, circle_intersections[1]);
             CGAL_assertion(cap1.second == 1 && cap2.second == 1);
 
             // Handle circle crossing
             // ...first point
-            ADD_TO_NE_SITE(cap1.first, IE(ch1, ch2, IE::Largest_crossing));
-            ADD_TO_NE_SITE(cap1.first, IE(ch1, ch2, IE::Smallest_crossing));
-            // ...second point
-            ADD_TO_NE_SITE(cap2.first, IE(ch1, ch2, IE::Largest_crossing));
-            ADD_TO_NE_SITE(cap2.first, IE(ch1, ch2, IE::Smallest_crossing));
+            //ADD_TO_NE_SITE(cap1.first, IE(ch1, ch2, IE::Largest_crossing));  FIXME
+            //ADD_TO_NE_SITE(cap1.first, IE(ch1, ch2, IE::Smallest_crossing)); FIXME
+            // ...second point                                                 FIXME
+            //ADD_TO_NE_SITE(cap2.first, IE(ch1, ch2, IE::Largest_crossing));  FIXME
+            //ADD_TO_NE_SITE(cap2.first, IE(ch1, ch2, IE::Smallest_crossing)); FIXME
           }
         }
       }
@@ -289,11 +165,11 @@ class Event_queue_builder
 
       // Now that the normal events are all regrouped in event sites,
       // add all the event sites to the event queue
-      for (typename NE_site_map::const_iterator it = ne_site_map.begin();
-          it != ne_site_map.end(); it++)
+      for (typename Normal_event_sites::const_iterator it = normal_sites.begin();
+          it != normal_sites.end(); it++)
       { ev_queue.push(it->second); }
       // ...same for polar events sites
-      for (typename PE_sites::const_iterator it = pe_sites.begin();
+      for (typename Polar_event_sites::const_iterator it = pe_sites.begin();
           it != pe_sites.end(); it++)
       { ev_queue.push(*it); }
 

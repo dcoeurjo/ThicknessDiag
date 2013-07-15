@@ -6,12 +6,13 @@
 
 typedef Event_queue<Kernel> EventQueue;
 typedef EventQueue::Event_site_type EventSiteType;
+typedef EventQueue::Events Events;
 
-typedef Critical_event<Kernel> CriticalEvent;
-typedef Intersection_event<Kernel> IntersectionEvent;
-typedef Normal_event_site<Kernel> NormalEventSite;
+typedef Events::Critical_event CriticalEvent;
+typedef Events::Intersection_event IntersectionEvent;
+typedef Events::Normal_event_site NormalEventSite;
 
-typedef Polar_event<Kernel> PolarEvent;
-typedef Polar_event_site<Kernel> PolarEventSite;
+typedef Events::Polar_event PolarEvent;
+typedef Events::Polar_event_site PolarEventSite;
 
 #endif // EVENTQUEUE_H

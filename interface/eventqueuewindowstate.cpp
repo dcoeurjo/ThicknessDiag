@@ -118,7 +118,7 @@ void EventQueueWindowState::buildEventQueue()
 
     // Build event queue
     eventQueue = EventQueueBuilder()(siProxy.directAccess(),
-                                     selectedSphere.handle);
+            selectedSphere.handle);
 
     // Add its new children
     for (EventSiteType evsType = eventQueue.next_event();
