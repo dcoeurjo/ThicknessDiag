@@ -5,6 +5,7 @@
 #include <queue>
 #include <vector>
 #include <utility>
+#include <stdexcept>
 #include <functional>
 
 #include <CGAL/assertions.h>
@@ -36,12 +37,13 @@ class Event_bundle
 
   // Geometric objects
   typedef typename SK::Circle_3 Circle_3;
+  typedef typename SK::Vector_3 Vector_3;
   typedef typename SK::Sphere_3 Sphere_3;
   typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
 
-
   // Function objects
-  typedef Comp_theta_z_3<SK> Compare_theta_z_3;
+  typedef typename SK::CompareTheta_3 CompareTheta_3;
+  typedef typename SK::CompareThetaZ_3 CompareThetaZ_3;
 
   public:
     // Base class for all events, holding a link to the source sphere
@@ -51,28 +53,6 @@ class Event_bundle
 
       bool operator==(const Sphere_event & ev) const
       { return sphere == ev.sphere; }
-    };
-
-    // CRTP for events which occur at a particular point on a sphere
-    //
-    // Concepts :
-    //  - Derived defines a point() method, returning the point where the
-    //    event is located (which must be on the sphere of course)
-    //  - Derived has a sphere data member (which is a Sphere_handle), for
-    //    example by deriving from Sphere_event as a mixin
-    template <typename Derived>
-    struct Point_event
-    {
-      const Circular_arc_point_3 & point() const
-      { return static_cast<const Derived &>(*this).point(); }
-
-      const Sphere_handle & sphere() const
-      { return static_cast<const Derived &>(*this).sphere; }
-
-      template <typename Other_derived>
-      bool operator<(const Point_event<Other_derived> & ev) const
-      { CGAL_assertion(sphere() == ev.sphere());
-        return Compare_theta_z_3()(point(), ev.point(), *sphere()); }
     };
 
     // Used to refactor comparing between events which
@@ -101,13 +81,16 @@ class Event_bundle
     // Critical normal events are defined by:
     struct Critical_event: Circle_event
     {
-      // TODO
+      Circular_arc_point_3 point;
+
+      bool operator==(const Critical_event & ev) const
+      { return Circle_event::operator==(ev) && point == ev.point; }
     };
 
     // Intersection normal events are defined by:
     //  - a tag { Smallest_crossing, Largest_crossing, Tangency }
     //  - the pair of circles intersecting
-    struct Intersection_event: Point_event<Intersection_event>, Sphere_event
+    struct Intersection_event: Sphere_event
     {
       typedef std::pair<Circle_handle, Circle_handle> Circle_handle_pair;
 
@@ -119,10 +102,7 @@ class Event_bundle
 
       Intersection_type type;
       Circle_handle_pair circles;
-      Circular_arc_point_3 intersection_point;
-
-      const Circular_arc_point_3 & point() const
-      { return intersection_point; }
+      Circular_arc_point_3 point;
 
       bool operator==(const Intersection_event & ev) const
       { return type == ev.type && circles == ev.circles;
@@ -132,17 +112,13 @@ class Event_bundle
     // Polar events are defined by:
     //  - a pole { North, South }
     //  - a critical event's data
-    struct Polar_event: Point_event<Polar_event>, Circle_event
+    struct Polar_event: Critical_event
     {
       enum Pole_type {
         North, South
       };
 
       Pole_type pole;
-      Circular_arc_point_3 pole_point;
-
-      const Circular_arc_point_3 & point() const
-      { return pole_point; }
 
       bool is_north() const
       { return pole == North; }
@@ -151,14 +127,15 @@ class Event_bundle
       { return pole == South; }
 
       bool operator==(const Polar_event & ev) const
-      { return Circle_event::operator==(ev)
-        && pole == ev.pole && pole_point == ev.pole_point; }
+      { return Critical_event::operator==(ev) && pole == ev.pole; }
     };
 
     // Bipolar events are defined by:
+    //  - a normal vector to the plane containing the meridian at their given
+    //    angle, also oriented in the positive direction of the meridian
     struct Bipolar_event: Circle_event
     {
-      // TODO add angle/circular arc member
+      Vector_3 normal;
     };
 
     // Compare two circles events by their circles' radius (increasing)
@@ -195,11 +172,13 @@ class Event_bundle
         // Build an intersection event, passing the
         // two circles in intersection
         Intersection_event intersection_event(const Circle_handle & first,
-            const Circle_handle & second) const
+            const Circle_handle & second,
+            typename Intersection_event::Intersection_type type) const
         {
           Intersection_event ie;
           link_to_sphere(ie);
           ie.circles = Intersection_event::Circle_handle_pair(first, second);
+          ie.type = type;
           return ie;
         }
 
@@ -218,31 +197,36 @@ class Event_bundle
         Circle_event_builder(const Circle_handle & c, const Sphere_handle & s):
           Event_builder(s), _circle(c) {}
 
-        Critical_event critical_event(typename Critical_event::Tag_type tag) const
+        Critical_event critical_event(const Circular_arc_point_3 & point,
+            typename Critical_event::Tag_type tag) const
         {
           Critical_event ce;
           link_to_sphere(ce);
           link_to_circle(ce);
+          ce.point = point;
           ce.tag = tag;
           return ce;
         }
 
-        Polar_event polar_event(typename Polar_event::Pole_type pole,
+        Polar_event polar_event(const Circular_arc_point_3 & point,
+            typename Polar_event::Pole_type pole,
             typename Polar_event::Tag_type tag) const
         {
           Polar_event pe;
           link_to_sphere(pe);
           link_to_circle(pe);
+          pe.point = point;
           pe.pole = pole;
           pe.tag = tag;
           return pe;
         }
 
-        Bipolar_event bipolar_event() const
+        Bipolar_event bipolar_event(const Vector_3 & normal) const
         {
           Bipolar_event be;
-          link_to_sphere(be);
+          link_to_sphere(be);                               
           link_to_circle(be);
+          be.normal = normal;
           return be;
         }
 
@@ -283,6 +267,7 @@ class Event_bundle
         // Add a base normal event
         void add_event(const Critical_event & ev)
         {
+          CGAL_assertion(_point == ev.point);
           CGAL_assertion(_sphere == ev.sphere);
           if (ev.is_start()) { _start_events.insert(ev); }
           else { _end_events.insert(ev); }
@@ -291,17 +276,9 @@ class Event_bundle
         // Overload for adding an intersection event
         void add_event(const Intersection_event & ev)
         {
+          CGAL_assertion(_point == ev.point);
           CGAL_assertion(_sphere == ev.sphere);
           _intersection_events.push_back(ev);
-        }
-
-        // Range version of add_event taking any iterator
-        // verifying the STL InputIterator concept
-        template <typename InputIterator>
-        void add_event(InputIterator begin, InputIterator end)
-        {
-          for (; begin != end; begin++)
-          { add_event(*begin); }
         }
 
         // Done using lexicographic comparing. This introduces
@@ -309,7 +286,8 @@ class Event_bundle
         // placed in a frame local to the sphere (ie with its origin at the
         // center of the sphere), in cylindrical coordinates.
         bool occurs_before(const Normal_event_site & es) const
-        { return Compare_theta_z_3()(_point, es._point, *_sphere); }
+        { return CompareThetaZ_3()(_point,
+            es._point, *_sphere) == CGAL::SMALLER; }
 
         // Symmetric version of Polar_event_site::occurs_before
         bool occurs_before(const Polar_event_site & es) const
@@ -317,10 +295,6 @@ class Event_bundle
         // same for Bipolar_event_site
         bool occurs_before(const Bipolar_event_site & es) const
         { return es.occurs_before(*this) == false; }
-
-        // Getter for event point
-        Circular_arc_point_3 const & point() const
-        { return _point; }
 
         // Start events iterator range
         // TODO
@@ -347,7 +321,9 @@ class Event_bundle
             const Normal_event_site & _nes;
         };
 
-        // Get the corresponding sphere handle
+        // Accessors
+        const Circular_arc_point_3 & point() const
+        { return _point; }
         const Sphere_handle & sphere() const
         { return _sphere; }
 
@@ -423,10 +399,9 @@ class Event_bundle
         bool occurs_before(const Polar_event_site & es) const
         { return es.is_end() == false; }
 
-        bool occurs_before(const Bipolar_event_site &) const
-        {
-          // TODO
-        }
+        bool occurs_before(const Bipolar_event_site & es) const
+        { return CompareTheta_3()(_event.normal,
+            es._event.normal) == CGAL::SMALLER; }
 
         const Bipolar_event & event() const
         { return _event; }
@@ -454,127 +429,73 @@ class Event_queue
     };
 
     // Push normal events to the queue
-    void push(const Normal_event_site & es)
-    { _normal_event_sites.push(es); }
-    // ...push bipolar events
-    void push(const Bipolar_event_site & es)
-    { _bipolar_event_sites.push(es); }
+    void push(const Normal_event_site & nes)
+    { _queue.push(Queue_element(nes)); }
     // ...push polar events
-    void push(const Polar_event_site & es)
-    {
-      if (es.event().is_start())
-      { _polar_event_sites_pair.first.push(es); }
-      else
-      {
-        CGAL_assertion(es.event().is_end());
-        _polar_event_sites_pair.second.push(es);
-      }
-    }
+    void push(const Polar_event_site & pes)
+    { _queue.push(Queue_element(pes)); }
+    // ...push bipolar events
+    void push(const Bipolar_event_site & bpes)
+    { _queue.push(Queue_element(bpes)); }
 
-    // Helper for checking if event queue is empty
-    bool empty() const
-    { return next_event() == None; }
-
-    // Get the type of the next event to handle,
-    // order of event handling is as follows :
-    //  - polar "end" event sites
-    //  - bipolar event sites
-    //  - normal event sites
-    //  - polar "start" event sites
-    Event_site_type next_event() const
-    {
-      if (_polar_event_sites_pair.second.empty() == false)
-      { return Polar; }
-      else if (_bipolar_event_sites.empty() == false)
-      { return Bipolar; }
-      else if (_normal_event_sites.empty() == false)
-      { return Normal; }
-      else if (_polar_event_sites_pair.second.empty() == false)
-      { return Polar; }
-      else
-      { return None; }
-    }
-
-    // Pop a polar event from the queue
-    // Concept: there is at least one polar event
-    Polar_event_site pop_polar()
-    {
-      Polar_event_site pes;
-      if (_polar_event_sites_pair.first.empty() == false)
-      {
-        pes = _polar_event_sites_pair.first.top();
-        _polar_event_sites_pair.first.pop();
-      }
-      else
-      {
-        CGAL_assertion(_polar_event_sites_pair.second.empty() == false);
-        pes = _polar_event_sites_pair.second.top();
-        _polar_event_sites_pair.second.pop();
-      }
-      return pes;
-    }
-
-    // Get a polar event from the queue (without removing it)
-    // Concept: there is at least one polar event
-    const Polar_event_site & top_polar() const
-    {
-      if (_polar_event_sites_pair.first.empty() == false)
-      { return _polar_event_sites_pair.first.top(); }
-      else
-      { CGAL_assertion(_polar_event_sites_pair.second.empty() == false);
-        return _polar_event_sites_pair.second.top(); }
-    }
-
-    // Pop a normal event from the queue
-    // Concept: there is at least one normal event
-    Normal_event_site pop_normal()
-    {
-      Normal_event_site nes = _normal_event_sites.top();
-      _normal_event_sites.pop();
-      return nes;
-    }
-
-    // Get a normal event from the queue (without removing it)
-    // Concept: there is at least one normal event
-    const Normal_event_site & top_normal() const
-    { return _normal_event_sites.top(); }
+    // TODO top/pop
 
   private:
-    // Refactoring since events sites aren't polymorphic
-    // but at least define an "occurs_before" method
-    //
-    // Event sites are denoted as "less than" when they are of
-    // lower priority, that is if the other event site occurs
-    // before the one we are working with. This garantees that
-    // ordering event sites in a priority_queue this way will
-    // always give us the most prioritary event via the queue's
-    // "top" method.
-    template <typename Event_site>
-    class Event_site_queue
+    class Queue_element
     {
-      struct Comp_event_sites: std::unary_function<bool, Event_site>
-      {
-        bool operator()(const Event_site & left,
-            const Event_site & right) const
-        { return right.occurs_before(left); }
-      };
-
       public:
-        typedef std::priority_queue<Event_site,
-                std::vector<Event_site>, Comp_event_sites> Type;
+        ~Queue_element()
+        { delete _impl.first; }
+
+        // Get the underlying type
+        Event_site_type type() const
+        { CGAL_assertion(_impl.second != None);
+          return _impl.second; }
+
+        // Conversion methods, check assertions in debug mode
+        const Normal_event_site & as_normal() const
+        { CGAL_assertion(_impl.second == Normal);
+          return static_cast<const Normal_event_site &>(*_impl.first); }
+        const Polar_event_site & as_polar() const
+        { CGAL_assertion(_impl.second == Polar);
+          return static_cast<const Polar_event_site &>(*_impl.first); }
+        const Bipolar_event_site & as_bipolar() const
+        { CGAL_assertion(_impl.second == Bipolar);
+          return static_cast<const Bipolar_event_site &>(*_impl.first); }
+
+        // Assignment operators for event sites
+        Queue_element & operator=(const Normal_event_site & nes) const
+        { delete _impl.first; _impl.first = new Normal_event_site(nes);
+          return *this; }
+        Queue_element & operator=(const Polar_event_site & pes) const
+        { delete _impl.first; _impl.first = new Polar_event_site(pes);
+          return *this; }
+        Queue_element & operator=(const Bipolar_event_site & bpes) const
+        { delete _impl.first; _impl.first = new Bipolar_event_site(bpes);
+          return *this; }
+
+        bool operator<(const Queue_element & e) const
+        {
+          switch (e.type())
+          {
+            case Normal:  return (*this) < e.as_normal();
+            case Polar:   return (*this) < e.as_polar();
+            case Bipolar: return (*this) < e.as_bipolar();
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+        // TODO implement these
+        bool operator<(const Normal_event_site & nes) const;
+        bool operator<(const Polar_event_site & pes) const;
+        bool operator<(const Bipolar_event_site & bpes) const;
+        
+      private:
+        std::pair<void *, Event_site_type> _impl;
     };
 
-    // Normal event sites
-    typename Event_site_queue<Normal_event_site>::Type _normal_event_sites;
-
-    // Bipolar event sites
-    typename Event_site_queue<Bipolar_event_site>::Type _bipolar_event_sites;
-
-    // Polar event sites (first -> start, second -> end)
-    typedef typename Event_site_queue<Polar_event_site>::Type
-      Polar_event_sites_queue;
-    std::pair<Polar_event_sites_queue, Polar_event_sites_queue>
-      _polar_event_sites_pair;
+    typedef std::priority_queue<Queue_element> Event_sites_queue;
+    Event_sites_queue _queue;
 };
 
 #endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2
