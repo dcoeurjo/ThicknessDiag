@@ -42,8 +42,8 @@ class Event_bundle
   typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
 
   // Function objects
-  typedef typename SK::CompareTheta_3 CompareTheta_3;
-  typedef typename SK::CompareThetaZ_3 CompareThetaZ_3;
+  typedef typename SK::Compare_theta_3 Compare_theta_3;
+  typedef typename SK::Compare_theta_z_3 Compare_theta_z_3;
 
   public:
     // Base class for all events, holding a link to the source sphere
@@ -286,7 +286,7 @@ class Event_bundle
         // placed in a frame local to the sphere (ie with its origin at the
         // center of the sphere), in cylindrical coordinates.
         bool occurs_before(const Normal_event_site & es) const
-        { return CompareThetaZ_3()(_point,
+        { return Compare_theta_z_3()(_point,
             es._point, *_sphere) == CGAL::SMALLER; }
 
         // Symmetric version of Polar_event_site::occurs_before
@@ -400,7 +400,7 @@ class Event_bundle
         { return es.is_end() == false; }
 
         bool occurs_before(const Bipolar_event_site & es) const
-        { return CompareTheta_3()(_event.normal,
+        { return Compare_theta_3()(_event.normal,
             es._event.normal) == CGAL::SMALLER; }
 
         const Bipolar_event & event() const
@@ -444,8 +444,24 @@ class Event_queue
     class Queue_element
     {
       public:
+        Queue_element():
+          _impl(0, None) {}
+        Queue_element(const Normal_event_site & nes):
+          _impl(new Normal_event_site(nes), Normal) {}
+        Queue_element(const Polar_event_site & pes):
+          _impl(new Polar_event_site(pes), Polar) {}
+        Queue_element(const Bipolar_event_site & bpes):
+          _impl(new Bipolar_event_site(bpes), Bipolar) {}
+
         ~Queue_element()
-        { delete _impl.first; }
+        {
+          switch (type())
+          {
+            case Polar:   delete &(*this).as_polar(); break;
+            case Normal:  delete &(*this).as_normal(); break;
+            case Bipolar: delete &(*this).as_bipolar(); break;
+          }
+        }
 
         // Get the underlying type
         Event_site_type type() const
@@ -455,24 +471,13 @@ class Event_queue
         // Conversion methods, check assertions in debug mode
         const Normal_event_site & as_normal() const
         { CGAL_assertion(_impl.second == Normal);
-          return static_cast<const Normal_event_site &>(*_impl.first); }
+          return *static_cast<const Normal_event_site *>(_impl.first); }
         const Polar_event_site & as_polar() const
         { CGAL_assertion(_impl.second == Polar);
-          return static_cast<const Polar_event_site &>(*_impl.first); }
+          return *static_cast<const Polar_event_site *>(_impl.first); }
         const Bipolar_event_site & as_bipolar() const
         { CGAL_assertion(_impl.second == Bipolar);
-          return static_cast<const Bipolar_event_site &>(*_impl.first); }
-
-        // Assignment operators for event sites
-        Queue_element & operator=(const Normal_event_site & nes) const
-        { delete _impl.first; _impl.first = new Normal_event_site(nes);
-          return *this; }
-        Queue_element & operator=(const Polar_event_site & pes) const
-        { delete _impl.first; _impl.first = new Polar_event_site(pes);
-          return *this; }
-        Queue_element & operator=(const Bipolar_event_site & bpes) const
-        { delete _impl.first; _impl.first = new Bipolar_event_site(bpes);
-          return *this; }
+          return *static_cast<const Bipolar_event_site *>(_impl.first); }
 
         bool operator<(const Queue_element & e) const
         {
