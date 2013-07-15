@@ -47,9 +47,6 @@ class Event_bundle
     // Base class for all events, holding a link to the source sphere
     struct Sphere_event
     {
-      Sphere_event(const Sphere_handle & s):
-        sphere(s) {}
-
       Sphere_handle sphere;
 
       bool operator==(const Sphere_event & ev) const
@@ -371,6 +368,8 @@ class Event_bundle
     class Polar_event_site
     {
       public:
+        Polar_event_site() {}
+
         Polar_event_site(const Polar_event & ev):
           _event(ev) {}
 
@@ -403,6 +402,9 @@ class Event_bundle
         bool occurs_before(const Bipolar_event_site & es) const
         { return es.occurs_before(*this) == false; }
 
+        const Polar_event & event() const
+        { return _event; }
+
       private:
         Polar_event _event;
     };
@@ -410,6 +412,8 @@ class Event_bundle
     class Bipolar_event_site
     {
       public:
+        Bipolar_event_site() {}
+
         Bipolar_event_site(const Bipolar_event & ev):
           _event(ev) {}
 
@@ -423,6 +427,9 @@ class Event_bundle
         {
           // TODO
         }
+
+        const Bipolar_event & event() const
+        { return _event; }
 
       private:
         Bipolar_event _event;
@@ -455,11 +462,11 @@ class Event_queue
     // ...push polar events
     void push(const Polar_event_site & es)
     {
-      if (es.is_start())
+      if (es.event().is_start())
       { _polar_event_sites_pair.first.push(es); }
       else
       {
-        CGAL_assertion(es.is_end());
+        CGAL_assertion(es.event().is_end());
         _polar_event_sites_pair.second.push(es);
       }
     }
