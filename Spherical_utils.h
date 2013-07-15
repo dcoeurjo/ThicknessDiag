@@ -17,15 +17,4 @@ struct Comp_by_squared_radii:
   }
 };
 
-template <typename Kernel>
-struct Comp_theta_z_3
-{
-  typedef typename Kernel::Sphere_3 Sphere_3;
-  typedef typename Kernel::Circular_arc_point_3 Circular_arc_point_3;
-
-  bool operator()(const Circular_arc_point_3 & left,
-      const Circular_arc_point_3 & right, const Sphere_3 & sphere) const
-  { return CGAL::compare_theta_z(left, right, sphere) == CGAL::SMALLER; }
-};
-
 #endif // CIRCLE_UTILS_H // vim: sw=2 et ts=2 sts=2
