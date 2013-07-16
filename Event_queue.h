@@ -224,7 +224,7 @@ class Event_bundle
         Bipolar_event bipolar_event(const Vector_3 & normal) const
         {
           Bipolar_event be;
-          link_to_sphere(be);                               
+          link_to_sphere(be);
           link_to_circle(be);
           be.normal = normal;
           return be;
@@ -286,8 +286,7 @@ class Event_bundle
         // placed in a frame local to the sphere (ie with its origin at the
         // center of the sphere), in cylindrical coordinates.
         bool occurs_before(const Normal_event_site & es) const
-        { return Compare_theta_z_3()(_point,
-            es._point, *_sphere) == CGAL::SMALLER; }
+        { return Compare_theta_z_3(*_sphere)(_point, es._point) == CGAL::SMALLER; }
 
         // Symmetric version of Polar_event_site::occurs_before
         bool occurs_before(const Polar_event_site & es) const
@@ -397,11 +396,10 @@ class Event_bundle
         { return true; }
 
         bool occurs_before(const Polar_event_site & es) const
-        { return es.is_end() == false; }
+        { return es.event().is_end() == false; }
 
         bool occurs_before(const Bipolar_event_site & es) const
-        { return Compare_theta_3()(_event.normal,
-            es._event.normal) == CGAL::SMALLER; }
+        { return Compare_theta_3(*_event.sphere)(_event.normal, es._event.normal) == CGAL::SMALLER; }
 
         const Bipolar_event & event() const
         { return _event; }
@@ -438,7 +436,36 @@ class Event_queue
     void push(const Bipolar_event_site & bpes)
     { _queue.push(Queue_element(bpes)); }
 
-    // TODO top/pop
+    Event_site_type next_event() const
+    { return _queue.empty() == false ? _queue.top().type() : None; }
+
+    const Normal_event_site & top_normal() const
+    {
+      CGAL_assertion(_queue.top().type() == Normal);
+      return _queue.top().as_normal();
+    }
+
+    Normal_event_site pop_normal()
+    {
+      CGAL_assertion(_queue.top().type() == Normal);
+      Normal_event_site nes = _queue.top().as_normal();
+      _queue.pop();
+      return nes;
+    }
+
+    const Polar_event_site & top_polar() const
+    {
+      CGAL_assertion(_queue.top().type() == Polar);
+      return _queue.top().as_polar();
+    }
+
+    Polar_event_site pop_polar()
+    {
+      CGAL_assertion(_queue.top().type() == Polar);
+      Polar_event_site pes = _queue.top().as_polar();
+      _queue.pop();
+      return pes;
+    }
 
   private:
     class Queue_element
@@ -491,10 +518,39 @@ class Event_queue
         }
 
         // TODO implement these
-        bool operator<(const Normal_event_site & nes) const;
-        bool operator<(const Polar_event_site & pes) const;
-        bool operator<(const Bipolar_event_site & bpes) const;
-        
+        bool operator<(const Normal_event_site & nes) const
+        {
+          switch (type())
+          {
+            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(nes);
+            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(nes);
+            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(nes);
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+        bool operator<(const Polar_event_site & pes) const
+        {
+          switch (type())
+          {
+            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(pes);
+            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(pes);
+            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(pes);
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+        bool operator<(const Bipolar_event_site & bpes) const
+        {
+          switch (type())
+          {
+            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(bpes);
+            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(bpes);
+            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(bpes);
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
       private:
         std::pair<void *, Event_site_type> _impl;
     };
