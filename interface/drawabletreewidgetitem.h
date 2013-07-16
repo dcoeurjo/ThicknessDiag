@@ -2,15 +2,15 @@
 #define ESTREEWIDGETITEM_H
 
 #include <QTreeWidgetItem>
+#include "qgldrawable.h"
 
 class QGLViewer;
 
-class DrawableTreeWidgetItem : public QTreeWidgetItem
+class DrawableTreeWidgetItem : public QTreeWidgetItem, public QGLDrawable
 {
 public:
     DrawableTreeWidgetItem(QTreeWidget *parent=0);
     virtual ~DrawableTreeWidgetItem();
-    virtual void draw(QGLViewer *viewer) = 0;
 };
 
 #endif // ESTREEWIDGETITEM_H

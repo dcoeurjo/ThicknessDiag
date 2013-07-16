@@ -1,9 +1,6 @@
 #include <GL/glew.h>
-
 #include "sphereview.h"
-
 #include <sstream>
-
 #include <QGLViewer/qglviewer.h>
 
 QString SphereView::asString() const

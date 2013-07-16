@@ -6,6 +6,8 @@
 
 #include <CGAL/Random.h>
 
+#include "ietreewidgetitem.h"
+
 static CGAL::Random randgen;
 
 NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *parent):
@@ -33,9 +35,20 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
     pointSv.color.setRed(randgen.get_int(0, 255));
     pointSv.color.setGreen(randgen.get_int(0, 255));
     pointSv.color.setBlue(randgen.get_int(0, 255));
+
+    // Add intersection events
+    typedef NormalEventSite::Intersection_events_range IntersectionEventsRange;
+    typedef NormalEventSite::Intersection_events_iterator IntersectionEventsIterator;
+    IntersectionEventsRange intersection_events(nes);
+    for (IntersectionEventsIterator it = intersection_events.begin();
+         it != intersection_events.end(); it++)
+    { addChild(new IETreeWidgetItem(*it, parent)); }
+
+    // Add start events
+    // Add end events
 }
 
 NESTreeWidgetItem::~NESTreeWidgetItem() {}
 
-void NESTreeWidgetItem::draw(QGLViewer *viewer)
+void NESTreeWidgetItem::draw(QGLViewer *viewer) const
 { pointSv.draw(viewer); }

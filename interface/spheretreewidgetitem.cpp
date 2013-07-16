@@ -8,5 +8,5 @@ SphereTreeWidgetItem::SphereTreeWidgetItem(const SphereView &sv, QTreeWidget *pa
 
 SphereTreeWidgetItem::~SphereTreeWidgetItem() {}
 
-void SphereTreeWidgetItem::draw(QGLViewer *viewer)
+void SphereTreeWidgetItem::draw(QGLViewer *viewer) const
 { sv.draw(viewer); }

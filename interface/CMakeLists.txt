@@ -78,6 +78,8 @@ add_executable(${CMAKE_PROJECT_NAME}
     windowstatefactory.cpp
     windowstatewidget.cpp
     windowstatewithmenu.cpp
+    ietreewidgetitem.cpp
+    circleview.cpp
     ${MOC_SOURCES} ${FORM_SOURCES})
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${CMAKE_PROJECT_NAME})
 

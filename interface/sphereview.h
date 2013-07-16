@@ -2,14 +2,11 @@
 #define SPHEREVIEW_H
 
 #include <QColor>
-
 #include <QGLViewer/frame.h>
-
 #include "sphereintersecter.h"
+#include "qgldrawable.h"
 
-class QGLViewer;
-
-struct SphereView
+struct SphereView: QGLDrawable
 {
     // Get the string representation of a sphere view
     QString asString() const;

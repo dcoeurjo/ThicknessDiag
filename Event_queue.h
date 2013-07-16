@@ -301,10 +301,42 @@ class Event_bundle
         { return es.occurs_before(*this) == false; }
 
         // Start events iterator range
-        // TODO
+        typedef typename Start_events::const_iterator
+          Start_events_iterator;
+        class Start_events_range
+        {
+          public:
+            Start_events_range(const Normal_event_site & nes):
+              _nes(nes) {}
+
+            Start_events_iterator begin() const
+            { return _nes._start_events.begin(); }
+
+            Start_events_iterator end() const
+            { return _nes._start_events.end(); }
+
+          private:
+            const Normal_event_site & _nes;
+        };
 
         // End events iterator range
-        // TODO
+        typedef typename End_events::const_iterator
+          End_events_iterator;
+        class End_events_range
+        {
+          public:
+            End_events_range(const Normal_event_site & nes):
+              _nes(nes) {}
+
+            End_events_iterator begin() const
+            { return _nes._end_events.begin(); }
+
+            End_events_iterator end() const
+            { return _nes._end_events.end(); }
+
+          private:
+            const Normal_event_site & _nes;
+        };
 
         // Intersection events iterator range
         typedef typename Intersection_events::const_iterator
@@ -414,8 +446,6 @@ class Event_bundle
     };
 };
 
-// TODO this is completely broken, event sites should be ordered globally,
-// before ordering by type for events in conflict
 template <typename SK>
 class Event_queue
 {

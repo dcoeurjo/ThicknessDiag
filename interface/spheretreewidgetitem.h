@@ -10,7 +10,7 @@ public:
     SphereTreeWidgetItem(const SphereView &sv, QTreeWidget *parent = 0);
     ~SphereTreeWidgetItem();
 
-    void draw(QGLViewer *viewer);
+    void draw(QGLViewer *viewer) const;
 
     const SphereView& sphereView() const
     { return sv; }

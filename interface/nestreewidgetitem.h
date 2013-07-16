@@ -10,7 +10,7 @@ class NESTreeWidgetItem : public DrawableTreeWidgetItem
 public:
     NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *parent = 0);
     ~NESTreeWidgetItem();
-    void draw(QGLViewer *viewer);
+    void draw(QGLViewer *viewer) const;
 
 private:
     NormalEventSite nes;
