@@ -1,12 +1,9 @@
 #include "nestreewidgetitem.h"
-
 #include <sstream>
-
 #include <QGLViewer/qglviewer.h>
-
 #include <CGAL/Random.h>
-
 #include "ietreewidgetitem.h"
+#include "cetreewidgetitem.h"
 
 static CGAL::Random randgen;
 
@@ -45,7 +42,20 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
     { addChild(new IETreeWidgetItem(*it, parent)); }
 
     // Add start events
+    typedef NormalEventSite::Start_events_range StartEventsRange;
+    typedef NormalEventSite::Start_events_iterator StartEventsIterator;
+    StartEventsRange start_events(nes);
+    for (StartEventsIterator it = start_events.begin();
+         it != start_events.end(); it++)
+    { addChild(new CETreeWidgetItem(*it, parent)); }
+
     // Add end events
+    typedef NormalEventSite::End_events_range EndEventsRange;
+    typedef NormalEventSite::End_events_iterator EndEventsIterator;
+    EndEventsRange end_events(nes);
+    for (EndEventsIterator it = end_events.begin();
+         it != end_events.end(); it++)
+    { addChild(new CETreeWidgetItem(*it, parent)); }
 }
 
 NESTreeWidgetItem::~NESTreeWidgetItem() {}

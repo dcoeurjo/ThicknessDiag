@@ -66,15 +66,13 @@ class Event_queue_builder
 
       // Cleaner code helpers
       typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
+      typedef std::vector<Object_3> Intersection_list;
       const Sphere_3 & sphere = *sh;
 
       // Get the sphere's circles
       typedef std::vector<Circle_handle> Circle_list;
       Circle_list circle_list;
       si.circles_on_sphere(sh, std::back_inserter(circle_list));
-
-      // Store the line passing through the poles
-      Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
 
       // Normal event sites, mapped by corresponding point
       typedef std::map<Circular_arc_point_3,
@@ -116,7 +114,22 @@ class Event_queue_builder
           }
           else if (circle_type == CGAL::POLAR)
           {
-            // TODO
+            // Line passing through the poles
+            Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
+
+            // Compute intersection
+            Intersection_list pole_inters;
+            Intersect_3()(pole_axis, c1, std::back_inserter(pole_inters));
+            CGAL_assertion(pole_inters.size() == 1);
+            CAP cap;
+            Assign_3()(cap, pole_inters[0]);
+            typename Polar_event::Pole_type pole_type = Polar_event::North;
+            if (CGAL::compare_z(Circular_arc_point_3(sh->center()), cap.first) == CGAL::SMALLER)
+            { pole_type = Polar_event::South; }
+
+            // Add polar events
+            pe_sites.push_back(Polar_event_site(ceb.polar_event(cap.first, pole_type, Polar_event::Start)));
+            pe_sites.push_back(Polar_event_site(ceb.polar_event(cap.first, pole_type, Polar_event::End)));
           }
           else
           {
@@ -137,7 +150,6 @@ class Event_queue_builder
           CGAL_assertion(ch1 != ch2 && c1 != c2);
 
           // Do intersections
-          typedef std::vector<Object_3> Intersection_list;
           Intersection_list circle_intersections;
           Intersect_3()(c1, c2, std::back_inserter(circle_intersections));
 
