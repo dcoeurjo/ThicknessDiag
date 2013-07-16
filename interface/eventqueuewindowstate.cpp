@@ -130,11 +130,16 @@ void EventQueueWindowState::buildEventQueue()
             NormalEventSite event = eventQueue.pop_normal();
             eventItem = new NESTreeWidgetItem(event);
         }
+        else if (evsType == EventQueue::Bipolar)
+        {
+            BipolarEventSite event = eventQueue.pop_bipolar();
+            //eventItem = new BPESTreeWidgetItem(event);
+        }
         else
         {
             Q_ASSERT(evsType == EventQueue::Polar);
             PolarEventSite event = eventQueue.pop_polar();
-            //eventItem = new PolarEventSiteTreeWidget(event);
+            //eventItem = new PESTreeWidget(event);
         }
         sphereItem->addChild(eventItem);
         sphereItem->setExpanded(true);

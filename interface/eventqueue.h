@@ -10,9 +10,12 @@ typedef EventQueue::Events Events;
 
 typedef Events::Critical_event CriticalEvent;
 typedef Events::Intersection_event IntersectionEvent;
-typedef Events::Normal_event_site NormalEventSite;
+typedef EventQueue::Normal_event_site NormalEventSite;
 
 typedef Events::Polar_event PolarEvent;
-typedef Events::Polar_event_site PolarEventSite;
+typedef EventQueue::Polar_event_site PolarEventSite;
+
+typedef Events::Bipolar_event BipolarEvent;
+typedef EventQueue::Bipolar_event_site BipolarEventSite;
 
 #endif // EVENTQUEUE_H
