@@ -8,6 +8,8 @@
 
 #include <CGAL/assertions.h>
 #include <CGAL/Kernel/global_functions_3.h>
+#include <CGAL/Spherical_kernel_3.h>
+#include <CGAL/global_functions_spherical_kernel_3.h>
 
 #include <Event_queue.h>
 #include <Sphere_intersecter.h>
@@ -91,7 +93,7 @@ class Event_queue_builder
       Polar_event_sites pe_sites;
 
       // Event builder for this sphere
-      Event_builder ev_builder(*sh);
+      Event_builder eb(*sh);
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -102,7 +104,26 @@ class Event_queue_builder
 
         // Add circles events
         CGAL::Circle_type circle_type = CGAL::classify(c1, *sh);
-        // TODO
+        if (circle_type != CGAL::THREADED)
+        {
+          Circle_event_builder ceb = eb.prepare_circle_event(c1);
+          if (circle_type == CGAL::NORMAL)
+          {
+            Circular_arc_point_3 extremes[2];
+            CGAL::theta_extremal_points(c1, *sh, extremes);
+            ADD_TO_NE_SITE(extremes[0], ceb.critical_event(extremes[0], Critical_event::Start));
+            ADD_TO_NE_SITE(extremes[1], ceb.critical_event(extremes[1], Critical_event::End));
+          }
+          else if (circle_type == CGAL::POLAR)
+          {
+            // TODO
+          }
+          else
+          {
+            CGAL_assertion(circle_type == CGAL::BIPOLAR);
+            // TODO
+          }
+        }
 
         // Make crossing/tangency events
         for (typename Circle_list::const_iterator it2 = it + 1;
@@ -130,7 +151,7 @@ class Event_queue_builder
             if (Assign_3()(cap, circle_intersections[0]))
             {
               // Handle circle tangency
-              //ADD_TO_NE_SITE(cap.first, ev_builder.intersection_event(ch1, ch2, cap.first, Intersection_event::Tangency)); FIXME
+              ADD_TO_NE_SITE(cap.first, eb.intersection_event(ch1, ch2, cap.first, Intersection_event::Tangency));
               continue;
             }
 
@@ -151,11 +172,11 @@ class Event_queue_builder
 
             // Handle circle crossing
             // ...first point
-            //ADD_TO_NE_SITE(cap1.first, IE(ch1, ch2, IE::Largest_crossing));  FIXME
-            //ADD_TO_NE_SITE(cap1.first, IE(ch1, ch2, IE::Smallest_crossing)); FIXME
-            // ...second point                                                 FIXME
-            //ADD_TO_NE_SITE(cap2.first, IE(ch1, ch2, IE::Largest_crossing));  FIXME
-            //ADD_TO_NE_SITE(cap2.first, IE(ch1, ch2, IE::Smallest_crossing)); FIXME
+            ADD_TO_NE_SITE(cap1.first, eb.intersection_event(ch1, ch2, cap1.first, Intersection_event::Largest_crossing));
+            ADD_TO_NE_SITE(cap1.first, eb.intersection_event(ch1, ch2, cap1.first, Intersection_event::Smallest_crossing));
+            // ...second point
+            ADD_TO_NE_SITE(cap2.first, eb.intersection_event(ch1, ch2, cap2.first, Intersection_event::Largest_crossing));
+            ADD_TO_NE_SITE(cap2.first, eb.intersection_event(ch1, ch2, cap2.first, Intersection_event::Smallest_crossing));
           }
         }
       }

@@ -47,9 +47,6 @@ class Handle
     Type * operator->() const
     { return ptr(); }
 
-    Type * operator&() const
-    { return ptr(); }
-
     DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)
 
   private:

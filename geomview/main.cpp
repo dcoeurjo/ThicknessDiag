@@ -99,10 +99,10 @@ struct Display_circle_on_gv: Display_on_gv
     // Convert all points
     typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
     CAP cap_theta[2], cap_phi[2];
-    POSSIBLY_ASSERT(Assign_3()(cap_phi[0], c_phi_points[0]));
-    POSSIBLY_ASSERT(Assign_3()(cap_phi[1], c_phi_points[1]));
-    POSSIBLY_ASSERT(Assign_3()(cap_theta[0], c_theta_points[0]));
-    POSSIBLY_ASSERT(Assign_3()(cap_theta[1], c_theta_points[1]));
+    Assign_3()(cap_phi[0], c_phi_points[0]);
+    Assign_3()(cap_phi[1], c_phi_points[1]);
+    Assign_3()(cap_theta[0], c_theta_points[0]);
+    Assign_3()(cap_theta[1], c_theta_points[1]);
 
     return Display_on_gv::operator()()
       << Segment_3(to_point_3(cap_phi[0].first), to_point_3(cap_theta[0].first))
@@ -252,14 +252,14 @@ static void do_main(int argc, const char * argv[])
   {
     if (ev_type == EQ::Normal)
     {
-      typedef Normal_event_site<Kernel> NES;
+      typedef EQ::Normal_event_site NES;
       NES nes = ev_queue.pop_normal();
 #ifdef DISPLAY_ON_GEOMVIEW
       NES::Intersection_events_range ie_range(nes);
       for (NES::Intersection_events_iterator it = ie_range.begin();
           it != ie_range.end(); it++)
       {
-        typedef Intersection_event<Kernel> IE;
+        typedef EQ::Events::Intersection_event IE;
         const IE & ie = *it;
 
         // Intersection event circles

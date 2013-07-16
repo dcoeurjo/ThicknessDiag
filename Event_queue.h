@@ -171,14 +171,15 @@ class Event_bundle
 
         // Build an intersection event, passing the
         // two circles in intersection
-        Intersection_event intersection_event(const Circle_handle & first,
-            const Circle_handle & second,
-            typename Intersection_event::Intersection_type type) const
+        Intersection_event intersection_event(const Circle_handle & first, const Circle_handle & second,
+            const Circular_arc_point_3 & point, typename Intersection_event::Intersection_type type) const
         {
           Intersection_event ie;
           link_to_sphere(ie);
-          ie.circles = Intersection_event::Circle_handle_pair(first, second);
+          typedef typename Intersection_event::Circle_handle_pair Circle_handle_pair;
+          ie.circles = Circle_handle_pair(first, second);
           ie.type = type;
+          ie.point = point;
           return ie;
         }
 
@@ -201,7 +202,7 @@ class Event_bundle
             typename Critical_event::Tag_type tag) const
         {
           Critical_event ce;
-          link_to_sphere(ce);
+          Event_builder::link_to_sphere(ce);
           link_to_circle(ce);
           ce.point = point;
           ce.tag = tag;
@@ -213,7 +214,7 @@ class Event_bundle
             typename Polar_event::Tag_type tag) const
         {
           Polar_event pe;
-          link_to_sphere(pe);
+          Event_builder::link_to_sphere(pe);
           link_to_circle(pe);
           pe.point = point;
           pe.pole = pole;
@@ -224,14 +225,14 @@ class Event_bundle
         Bipolar_event bipolar_event(const Vector_3 & normal) const
         {
           Bipolar_event be;
-          link_to_sphere(be);
+          Event_builder::link_to_sphere(be);
           link_to_circle(be);
           be.normal = normal;
           return be;
         }
 
       protected:
-        void link_to_circle(const Circle_event & ev) const
+        void link_to_circle(Circle_event & ev) const
         { ev.circle = _circle; }
 
       private:
@@ -267,7 +268,9 @@ class Event_bundle
         // Add a base normal event
         void add_event(const Critical_event & ev)
         {
-          CGAL_assertion(_point == ev.point);
+          CGAL_assertion(_point.x() == ev.point.x()
+              && _point.y() == ev.point.y()
+              && _point.z() == ev.point.z());
           CGAL_assertion(_sphere == ev.sphere);
           if (ev.is_start()) { _start_events.insert(ev); }
           else { _end_events.insert(ev); }
@@ -276,7 +279,9 @@ class Event_bundle
         // Overload for adding an intersection event
         void add_event(const Intersection_event & ev)
         {
-          CGAL_assertion(_point == ev.point);
+          CGAL_assertion(_point.x() == ev.point.x()
+              && _point.y() == ev.point.y()
+              && _point.z() == ev.point.z());
           CGAL_assertion(_sphere == ev.sphere);
           _intersection_events.push_back(ev);
         }
@@ -436,17 +441,22 @@ class Event_queue
     void push(const Bipolar_event_site & bpes)
     { _queue.push(Queue_element(bpes)); }
 
+    bool empty() const
+    { return _queue.empty(); }
+
     Event_site_type next_event() const
-    { return _queue.empty() == false ? _queue.top().type() : None; }
+    { return empty() == false ? _queue.top().type() : None; }
 
     const Normal_event_site & top_normal() const
     {
+      CGAL_assertion(_queue.empty() == false);
       CGAL_assertion(_queue.top().type() == Normal);
       return _queue.top().as_normal();
     }
 
     Normal_event_site pop_normal()
     {
+      CGAL_assertion(_queue.empty() == false);
       CGAL_assertion(_queue.top().type() == Normal);
       Normal_event_site nes = _queue.top().as_normal();
       _queue.pop();
@@ -455,16 +465,34 @@ class Event_queue
 
     const Polar_event_site & top_polar() const
     {
+      CGAL_assertion(_queue.empty() == false);
       CGAL_assertion(_queue.top().type() == Polar);
       return _queue.top().as_polar();
     }
 
     Polar_event_site pop_polar()
     {
+      CGAL_assertion(_queue.empty() == false);
       CGAL_assertion(_queue.top().type() == Polar);
       Polar_event_site pes = _queue.top().as_polar();
       _queue.pop();
       return pes;
+    }
+
+    const Bipolar_event_site & top_bipolar() const
+    {
+      CGAL_assertion(_queue.empty() == false);
+      CGAL_assertion(_queue.top().type() == Bipolar);
+      return _queue.top().as_bipolar();
+    }
+
+    Bipolar_event_site pop_bipolar()
+    {
+      CGAL_assertion(_queue.empty() == false);
+      CGAL_assertion(_queue.top().type() == Bipolar);
+      Bipolar_event_site bpes = _queue.top().as_bipolar();
+      _queue.pop();
+      return bpes;
     }
 
   private:
@@ -480,14 +508,49 @@ class Event_queue
         Queue_element(const Bipolar_event_site & bpes):
           _impl(new Bipolar_event_site(bpes), Bipolar) {}
 
+        Queue_element(const Queue_element & qe):
+          _impl(0, qe._impl.second)
+        {
+          if (_impl.second == Polar)
+          { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
+          else if (_impl.second == Normal)
+          { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
+          else if (_impl.second == Bipolar)
+          { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
+        }
+
         ~Queue_element()
         {
-          switch (type())
+          if (_impl.second == Polar)
+          { delete static_cast<Polar_event_site *>(_impl.first); }
+          else if (_impl.second == Normal)
+          { delete static_cast<Normal_event_site *>(_impl.first); }
+          else if (_impl.second == Bipolar)
+          { delete static_cast<Bipolar_event_site *>(_impl.first); }
+        }
+
+        Queue_element & operator=(const Queue_element & qe)
+        {
+          if (&qe != this)
           {
-            case Polar:   delete &(*this).as_polar(); break;
-            case Normal:  delete &(*this).as_normal(); break;
-            case Bipolar: delete &(*this).as_bipolar(); break;
+            // Delete previous data
+            if (_impl.second == Polar)
+            { delete static_cast<Polar_event_site *>(_impl.first); }
+            else if (_impl.second == Normal)
+            { delete static_cast<Normal_event_site *>(_impl.first); }
+            else if (_impl.second == Bipolar)
+            { delete static_cast<Bipolar_event_site *>(_impl.first); }
+
+            // Copy new data
+            _impl.second = qe._impl.second;
+            if (_impl.second == Polar)
+            { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
+            else if (_impl.second == Normal)
+            { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
+            else if (_impl.second == Bipolar)
+            { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
           }
+          return *this;
         }
 
         // Get the underlying type
