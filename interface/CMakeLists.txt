@@ -36,7 +36,7 @@ include_directories(${QT_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Include directories for project
-include_directories(..)
+include_directories(${CMAKE_SOURCE_DIR}/..)
 
 # UI files (Qt Designer files)
 qt4_wrap_ui(FORM_SOURCES

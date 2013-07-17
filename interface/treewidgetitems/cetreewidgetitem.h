@@ -1,8 +1,8 @@
 #ifndef CETREEWIDGETITEM_H
 #define CETREEWIDGETITEM_H
 
-#include "eventqueue.h"
-#include "treewidgetitems/drawabletreewidgetitem.h"
+#include "../eventqueue.h"
+#include "drawabletreewidgetitem.h"
 
 class CETreeWidgetItem : public DrawableTreeWidgetItem
 {

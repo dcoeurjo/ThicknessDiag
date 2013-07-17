@@ -1,4 +1,4 @@
-#include "treewidgetitems/ietreewidgetitem.h"
+#include "ietreewidgetitem.h"
 
 IETreeWidgetItem::IETreeWidgetItem(const IntersectionEvent & ie, QTreeWidget *parent):
     DrawableTreeWidgetItem(parent), ie(ie)

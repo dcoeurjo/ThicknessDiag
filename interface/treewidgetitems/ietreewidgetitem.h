@@ -1,8 +1,8 @@
 #ifndef IETREEWIDGETITEM_H
 #define IETREEWIDGETITEM_H
 
-#include "eventqueue.h"
-#include "treewidgetitems/drawabletreewidgetitem.h"
+#include "../eventqueue.h"
+#include "drawabletreewidgetitem.h"
 
 class IETreeWidgetItem : public DrawableTreeWidgetItem
 {

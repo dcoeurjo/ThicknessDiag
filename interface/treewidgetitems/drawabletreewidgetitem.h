@@ -2,7 +2,7 @@
 #define ESTREEWIDGETITEM_H
 
 #include <QTreeWidgetItem>
-#include "qgldrawable.h"
+#include "../qgldrawable.h"
 
 class QGLViewer;
 

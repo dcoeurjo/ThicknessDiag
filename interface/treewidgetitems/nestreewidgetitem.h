@@ -1,9 +1,9 @@
 #ifndef NESTREEWIDGETITEM_H
 #define NESTREEWIDGETITEM_H
 
-#include "treewidgetitems/drawabletreewidgetitem.h"
-#include "eventqueue.h"
-#include "sphereview.h"
+#include "../eventqueue.h"
+#include "../sphereview.h"
+#include "drawabletreewidgetitem.h"
 
 class NESTreeWidgetItem : public DrawableTreeWidgetItem
 {
