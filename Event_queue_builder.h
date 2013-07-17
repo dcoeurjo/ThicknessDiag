@@ -139,6 +139,7 @@ class Event_queue_builder
             Vector_3 circle_normal = c1.supporting_plane().orthogonal_vector();
             Vector_3 meridian_normals[2] = { circle_normal, -circle_normal };
             std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(*sh));
+            // TODO
           }
         }
 

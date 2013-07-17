@@ -52,6 +52,8 @@ void EventQueueWindowState::setup()
     treeWidget->setHeaderLabel(tr("Event queue display"));
     QObject::connect(treeWidget, SIGNAL(itemSelectionChanged()),
                      this, SLOT(updateDrawables()));
+    QObject::connect(treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
+                     this, SLOT(treeWidgetItemDoubleClicked(QTreeWidgetItem*,int)));
     horizontalLayout->addWidget(treeWidget);
 }
 
@@ -81,7 +83,7 @@ void EventQueueWindowState::onLeaveState()
 
 void EventQueueWindowState::draw()
 {
-    foreach(DrawableTreeWidgetItem *drawableItem, drawableItems)
+    foreach(const DrawableTreeWidgetItem *drawableItem, drawableItems)
     { drawableItem->draw(wsw.viewer()); }
 }
 
@@ -169,4 +171,24 @@ void EventQueueWindowState::updateDrawables()
         }
     }
     updateUI();
+}
+
+void EventQueueWindowState::treeWidgetItemDoubleClicked(QTreeWidgetItem *item, int column)
+{
+    typedef SphereTreeWidgetItem STWI;
+    STWI *sphereItem = dynamic_cast<STWI*>(item);
+    if (sphereItem != 0)
+    {
+        // Prevent double click from folding/unfolding
+        sphereItem->setExpanded(!sphereItem->isExpanded());
+
+        // Look/Center at sphere
+        const SphereView &sv = sphereItem->sphereView();
+        qglviewer::Vec c(sv.x, sv.y, sv.z);
+        wsw.viewer()->setSceneCenter(c);
+        wsw.viewer()->camera()->lookAt(c);
+
+        // Finally, update the UI
+        updateUI();
+    }
 }

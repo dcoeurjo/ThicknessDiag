@@ -99,6 +99,7 @@ void SpheresWindowState::onEnterState()
     horizontalLayout->addWidget(wsw.viewer());
     horizontalLayout->addWidget(sideBarWidget);
     sideBarWidget->show();
+    wsw.viewer()->setSceneCenter(qglviewer::Vec(0, 0, 0));
 }
 
 void SpheresWindowState::onLeaveState()

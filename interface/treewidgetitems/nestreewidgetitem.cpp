@@ -24,8 +24,7 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
     setText(0, QString(oss.str().c_str()));
 
     // Construct sphere representation
-    pointSv = SphereView::fromSphere(nes.sphere());
-    pointSv.radius = std::sqrt(to_double(nes.sphere()->squared_radius() / 100));
+    pointSv.radius = 0.05;
     pointSv.x = x;
     pointSv.y = y;
     pointSv.z = z;

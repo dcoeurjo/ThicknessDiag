@@ -6,6 +6,7 @@
 #include "../eventqueue.h"
 
 class QTreeWidget;
+class QTreeWidgetItem;
 class DrawableTreeWidgetItem;
 
 class EventQueueWindowState : public WindowStateWithMenu
@@ -26,6 +27,7 @@ protected:
 private slots:
     void buildEventQueue();
     void updateDrawables();
+    void treeWidgetItemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
     // Helper for updating the UI

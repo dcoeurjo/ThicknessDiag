@@ -15,13 +15,26 @@ CircleView::CircleView()
 
 CircleView CircleView::fromCircle(const CircleHandle &ch)
 {
-    using CGAL::to_double;
     CircleView cv;
     cv.handle = ch;
+
+    // Compute approximate data
+    using CGAL::to_double;
     cv.radius = std::sqrt(to_double(ch->squared_radius()));
     cv.x = to_double(ch->center().x());
     cv.y = to_double(ch->center().y());
     cv.z = to_double(ch->center().z());
+
+    // Compute approximate angles with x/y axes
+    Vector_3 v = ch->supporting_plane().orthogonal_vector();
+    Vector_3 v_xz(v.x(), 0, v.z()), v_yz(0, v.y(), v.z());
+    cv.alpha = std::acos(to_double(Vector_3(0, 0, 1)*v_yz) / std::sqrt(to_double(v_yz.squared_length())));
+    cv.beta = std::acos(to_double(Vector_3(0, 0, 1)*v_xz) / std::sqrt(to_double(v_xz.squared_length())));
+    // ...transformed to be correct rotation angles
+    cv.beta *= -1.;
+    // ...these are needed in degrees
+    cv.alpha *= 180. / M_PI;
+    cv.beta *= 180. / M_PI;
     return cv;
 }
 
@@ -31,8 +44,6 @@ QString CircleView::asString() const
     std::ostringstream oss;
     oss << "[" << x << ", " << y
         << ", " << z << "], " << radius;
-
-    // TODO add plane display
 
     return QString(oss.str().c_str());
 }
@@ -44,7 +55,9 @@ void CircleView::draw(QGLViewer *viewer) const
 {
     viewer->qglColor(color);
     glPushMatrix();
-        glTranslatef(x, y, z);
+        glTranslated(x, y, z);
+        glRotated(alpha, 1, 0, 0);
+        glRotated(beta, 0, 1, 0);
         glutSolidTorus(0.01, radius, 15, 30);
     glPopMatrix();
 }
