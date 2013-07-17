@@ -2,40 +2,35 @@
 #include "ui_selectspheredialog.h"
 #include <QMessageBox>
 
-typedef SphereIntersecter SI;
-
 SelectSphereDialog::SelectSphereDialog(QWidget *parent) :
-    QDialog(parent), selectedSphere(0),
-    ui(new Ui::SelectSphereDialog)
-{
-    ui->setupUi(this);
-}
+    QDialog(parent), ui(new Ui::SelectSphereDialog())
+{ ui->setupUi(this); }
 
 SelectSphereDialog::~SelectSphereDialog()
+{ delete ui; }
+
+void SelectSphereDialog::addSphere(const SphereView &sv)
 {
-    delete ui;
+    QListWidgetItem *item = new QListWidgetItem(sv.asString(), ui->listWidget);
+    item->setCheckState(Qt::Unchecked);
+    ui->listWidget->addItem(item);
+    sphereViews.push_back(&sv);
+}
+
+QList<const SphereView*> SelectSphereDialog::selectedSpheres() const
+{
+    QList<const SphereView*> spheres;
+    foreach(QListWidgetItem *item, ui->listWidget->findItems("*", Qt::MatchWildcard))
+    { if (item->checkState() == Qt::Checked)
+      { spheres.push_back(sphereViews[ui->listWidget->row(item)]); } }
+    return spheres;
 }
 
 void SelectSphereDialog::accept()
 {
-    if (selectedSphere == 0)
-    { QMessageBox::warning(this, "No sphere selected",
-          "You must select a sphere"); }
-    else
-    { QDialog::accept();  }
-}
-
-void SelectSphereDialog::addSphere(const SphereView &sv)
-{
-    QRadioButton *radio = new QRadioButton(sv.asString(), ui->listWidget);
-    sphereViewMap[radio] = &sv;
-    QListWidgetItem *item = new QListWidgetItem(ui->listWidget);
-    ui->listWidget->setItemWidget(item, radio);
-    QObject::connect(radio, SIGNAL(clicked(bool)), this, SLOT(radioChanged(bool)));
-}
-
-void SelectSphereDialog::radioChanged(bool selected)
-{
-    if (selected)
-    { selectedSphere = sphereViewMap[qobject_cast<QRadioButton*>(sender())]; }
+    foreach(QListWidgetItem *item, ui->listWidget->findItems("*", Qt::MatchWildcard))
+    { if (item->checkState() == Qt::Checked)
+      { QDialog::accept(); return; } }
+    QMessageBox::warning(this, tr("No sphere selected"),
+                         tr("You must select at least one sphere"));
 }

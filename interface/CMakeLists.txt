@@ -73,6 +73,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     treewidgetitems/drawabletreewidgetitem.cpp
     treewidgetitems/ietreewidgetitem.cpp
     treewidgetitems/nestreewidgetitem.cpp
+    treewidgetitems/pestreewidgetitem.cpp
     treewidgetitems/spheretreewidgetitem.cpp
     window.cpp
     windowstates/eventqueuewindowstate.cpp

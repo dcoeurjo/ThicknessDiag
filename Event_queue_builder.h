@@ -4,7 +4,7 @@
 #include <vector>
 #include <utility>
 #include <iterator>
-#include <iostream>
+#include <algorithm>
 
 #include <CGAL/assertions.h>
 #include <CGAL/Kernel/global_functions_3.h>
@@ -23,6 +23,7 @@ class Event_queue_builder
   typedef typename SK::Plane_3 Plane_3;
   typedef typename SK::Circle_3 Circle_3;
   typedef typename SK::Sphere_3 Sphere_3;
+  typedef typename SK::Vector_3 Vector_3;
   typedef typename SK::Segment_3 Segment_3;
   typedef typename SK::Direction_3 Direction_3;
   typedef typename SK::Circular_arc_3 Circular_arc_3;
@@ -32,6 +33,7 @@ class Event_queue_builder
   typedef typename SK::Object_3 Object_3;
   typedef typename SK::Assign_3 Assign_3;
   typedef typename SK::Intersect_3 Intersect_3;
+  typedef typename SK::Compare_theta_3 Compare_theta_3;
   typedef typename SK::Compare_theta_z_3 Compare_theta_z_3;
 
   // Sphere intersecter and related
@@ -134,7 +136,9 @@ class Event_queue_builder
           else
           {
             CGAL_assertion(circle_type == CGAL::BIPOLAR);
-            // TODO
+            Vector_3 circle_normal = c1.supporting_plane().orthogonal_vector();
+            Vector_3 meridian_normals[2] = { circle_normal, -circle_normal };
+            std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(*sh));
           }
         }
 

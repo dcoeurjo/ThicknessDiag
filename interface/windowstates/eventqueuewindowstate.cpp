@@ -12,6 +12,7 @@
 #include "../dialogs/selectspheredialog.h"
 #include "../treewidgetitems/spheretreewidgetitem.h"
 #include "../treewidgetitems/nestreewidgetitem.h"
+#include "../treewidgetitems/pestreewidgetitem.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
     WindowStateWithMenu(wsw, tr("Event Queue")) {}
@@ -97,51 +98,53 @@ void EventQueueWindowState::buildEventQueue()
     { setStatus(tr("No sphere selected"));
       return; }
 
-    // Remove last build of this sphere
-    for (int i = 0; i < treeWidget->topLevelItemCount(); i++)
+    // Apply for all selected spheres
+    foreach (const SphereView *currentSelectedSphere, ssd.selectedSpheres())
     {
-        typedef SphereTreeWidgetItem STWI;
-        STWI* sphereItem = reinterpret_cast<STWI*>(treeWidget->topLevelItem(i));
-        if (ssd.selectedSphere == &sphereItem->sphereView())
-        { delete sphereItem;
-          break; }
+        // Remove last build of this sphere
+        for (int i = 0; i < treeWidget->topLevelItemCount(); i++)
+        {
+            typedef SphereTreeWidgetItem STWI;
+            STWI* sphereItem = reinterpret_cast<STWI*>(treeWidget->topLevelItem(i));
+            if (currentSelectedSphere == &sphereItem->sphereView())
+            { delete sphereItem;
+              break; }
+        }
+
+        // Setup top level tree item (sphere selected)
+        const SphereView &selectedSphere = *currentSelectedSphere;
+        QTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere,
+                                                               treeWidget);
+        treeWidget->addTopLevelItem(sphereItem);
+
+        // Build event queue
+        eventQueue = EventQueueBuilder()(siProxy.directAccess(),
+                selectedSphere.handle);
+
+        // Add its new children
+        for (EventSiteType evsType = eventQueue.next_event();
+             evsType != EventQueue::None; evsType = eventQueue.next_event())
+        {
+            QTreeWidgetItem *eventItem = 0;
+            if (evsType == EventQueue::Normal)
+            {
+                NormalEventSite event = eventQueue.pop_normal();
+                eventItem = new NESTreeWidgetItem(event);
+            }
+            else if (evsType == EventQueue::Bipolar)
+            {
+                BipolarEventSite event = eventQueue.pop_bipolar();
+                //eventItem = new BPESTreeWidgetItem(event);
+            }
+            else
+            {
+                Q_ASSERT(evsType == EventQueue::Polar);
+                PolarEventSite event = eventQueue.pop_polar();
+                eventItem = new PESTreeWidgetItem(event);
+            }
+            sphereItem->addChild(eventItem);
+        }
     }
-
-    // Setup top level tree item (sphere selected)
-    const SphereView &selectedSphere = *ssd.selectedSphere;
-    QTreeWidgetItem *sphereItem = new SphereTreeWidgetItem(selectedSphere,
-                                                           treeWidget);
-    treeWidget->addTopLevelItem(sphereItem);
-
-    // Build event queue
-    eventQueue = EventQueueBuilder()(siProxy.directAccess(),
-            selectedSphere.handle);
-
-    // Add its new children
-    for (EventSiteType evsType = eventQueue.next_event();
-         evsType != EventQueue::None; evsType = eventQueue.next_event())
-    {
-        QTreeWidgetItem *eventItem = 0;
-        if (evsType == EventQueue::Normal)
-        {
-            NormalEventSite event = eventQueue.pop_normal();
-            eventItem = new NESTreeWidgetItem(event);
-        }
-        else if (evsType == EventQueue::Bipolar)
-        {
-            BipolarEventSite event = eventQueue.pop_bipolar();
-            //eventItem = new BPESTreeWidgetItem(event);
-        }
-        else
-        {
-            Q_ASSERT(evsType == EventQueue::Polar);
-            PolarEventSite event = eventQueue.pop_polar();
-            //eventItem = new PESTreeWidget(event);
-        }
-        sphereItem->addChild(eventItem);
-        sphereItem->setExpanded(true);
-    }
-    treeWidget->setCurrentItem(sphereItem);
 }
 
 void EventQueueWindowState::updateUI()
