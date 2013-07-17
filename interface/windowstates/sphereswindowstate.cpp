@@ -1,8 +1,6 @@
 #include "sphereswindowstate.h"
-
 #include <fstream>
 #include <limits>
-
 #include <QMenu>
 #include <QMenuBar>
 #include <QSplitter>
@@ -13,17 +11,13 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QProgressDialog>
-
 #include <QGLViewer/qglviewer.h>
-
 #include <CGAL/Random.h>
-
-#include "dialogs/sphereformdialog.h"
-#include "dialogs/generatespheresdialog.h"
-#include "dialogs/selectspheredialog.h"
-#include "sphereintersecterproxy.h"
-
-#include "spherelistwidgetitem.h"
+#include "../dialogs/sphereformdialog.h"
+#include "../dialogs/generatespheresdialog.h"
+#include "../dialogs/selectspheredialog.h"
+#include "../sphereintersecterproxy.h"
+#include "../spherelistwidgetitem.h"
 
 static CGAL::Random randgen;
 

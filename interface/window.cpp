@@ -1,10 +1,8 @@
 #include "window.h"
-
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QGridLayout>
-
-#include "windowstatewidget.h"
+#include "windowstates/windowstatewidget.h"
 
 Window::Window(QWidget *parent) :
     QMainWindow(parent)

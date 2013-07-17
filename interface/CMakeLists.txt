@@ -49,12 +49,12 @@ qt4_wrap_cpp(MOC_SOURCES
     dialogs/generatespheresdialog.h
     dialogs/selectspheredialog.h
     dialogs/sphereformdialog.h
-    eventqueuewindowstate.h
     sphereintersecterproxy.h
-    sphereswindowstate.h
     window.h
-    windowstate.h
-    windowstatewidget.h)
+    windowstates/eventqueuewindowstate.h
+    windowstates/sphereswindowstate.h
+    windowstates/windowstate.h
+    windowstates/windowstatewidget.h)
 
 # QRC files (resources files, that contain icons, at least)
 
@@ -65,11 +65,9 @@ add_executable(${CMAKE_PROJECT_NAME}
     dialogs/generatespheresdialog.cpp
     dialogs/selectspheredialog.cpp
     dialogs/sphereformdialog.cpp
-    eventqueuewindowstate.cpp
     main.cpp
     sphereintersecterproxy.cpp
     spherelistwidgetitem.cpp
-    sphereswindowstate.cpp
     sphereview.cpp
     treewidgetitems/cetreewidgetitem.cpp
     treewidgetitems/drawabletreewidgetitem.cpp
@@ -77,10 +75,12 @@ add_executable(${CMAKE_PROJECT_NAME}
     treewidgetitems/nestreewidgetitem.cpp
     treewidgetitems/spheretreewidgetitem.cpp
     window.cpp
-    windowstate.cpp
-    windowstatefactory.cpp
-    windowstatewidget.cpp
-    windowstatewithmenu.cpp
+    windowstates/eventqueuewindowstate.cpp
+    windowstates/sphereswindowstate.cpp
+    windowstates/windowstate.cpp
+    windowstates/windowstatefactory.cpp
+    windowstates/windowstatewidget.cpp
+    windowstates/windowstatewithmenu.cpp
     ${MOC_SOURCES} ${FORM_SOURCES})
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${CMAKE_PROJECT_NAME})
 

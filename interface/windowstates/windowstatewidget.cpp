@@ -1,21 +1,16 @@
 #include "windowstatewidget.h"
-
 #include <iostream>
-
 #include <QMenu>
 #include <QColor>
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QGridLayout>
 #include <QMainWindow>
-
 #include <QGLViewer/frame.h>
-#include "customviewer.h"
-
 #include <CGAL/Random.h>
-
-#include "window.h"
 #include "windowstate.h"
+#include "../window.h"
+#include "../customviewer.h"
 
 static CGAL::Random randgen;
 

@@ -4,10 +4,9 @@
 #include <set>
 #include <QWidget>
 #include <QString>
-
-#include "sphereview.h"
-#include "sphereintersecterproxy.h"
 #include "windowstatefactory.h"
+#include "../sphereview.h"
+#include "../sphereintersecterproxy.h"
 
 class QMenu;
 class QGLViewer;

@@ -1,5 +1,4 @@
 #include "eventqueuewindowstate.h"
-
 #include <QAction>
 #include <QGroupBox>
 #include <QMessageBox>
@@ -8,13 +7,11 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QButtonGroup>
-
 #include <QGLViewer/qglviewer.h>
-
-#include "eventqueuebuilder.h"
-#include "dialogs/selectspheredialog.h"
-#include "treewidgetitems/spheretreewidgetitem.h"
-#include "treewidgetitems/nestreewidgetitem.h"
+#include "../eventqueuebuilder.h"
+#include "../dialogs/selectspheredialog.h"
+#include "../treewidgetitems/spheretreewidgetitem.h"
+#include "../treewidgetitems/nestreewidgetitem.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
     WindowStateWithMenu(wsw, tr("Event Queue")) {}

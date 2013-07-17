@@ -1,10 +1,9 @@
 #ifndef SPHERESSTATEWIDGET_H
 #define SPHERESSTATEWIDGET_H
 
-#include <QListWidget>
-
-#include "windowstatewithmenu.h"
 #include <QGLWidget>
+#include <QListWidget>
+#include "windowstatewithmenu.h"
 
 class SpheresWindowState : public WindowStateWithMenu
 {

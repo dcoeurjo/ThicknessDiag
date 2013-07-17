@@ -1,5 +1,4 @@
 #include "windowstate.h"
-
 #include <QAction>
 
 WindowState::WindowState(WindowStateWidget & wsw, const QString &n):

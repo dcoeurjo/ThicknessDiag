@@ -1,7 +1,5 @@
 #include "windowstatefactory.h"
-
 #include <QAction>
-
 #include "allwindowstates.h"
 
 WindowStateFactory::WindowStateFactory(WindowStateWidget &wsw):

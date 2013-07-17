@@ -1,5 +1,4 @@
 #include "windowstatewithmenu.h"
-
 #include <QMenu>
 #include <QAction>
 #include <QMenuBar>

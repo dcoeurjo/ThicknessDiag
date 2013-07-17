@@ -3,7 +3,7 @@
 
 #include <QSet>
 #include "windowstatewithmenu.h"
-#include "eventqueue.h"
+#include "../eventqueue.h"
 
 class QTreeWidget;
 class DrawableTreeWidgetItem;
