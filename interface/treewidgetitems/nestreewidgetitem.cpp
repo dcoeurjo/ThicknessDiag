@@ -1,9 +1,9 @@
-#include "nestreewidgetitem.h"
+#include "treewidgetitems/nestreewidgetitem.h"
 #include <sstream>
 #include <QGLViewer/qglviewer.h>
 #include <CGAL/Random.h>
-#include "ietreewidgetitem.h"
-#include "cetreewidgetitem.h"
+#include "treewidgetitems/ietreewidgetitem.h"
+#include "treewidgetitems/cetreewidgetitem.h"
 
 static CGAL::Random randgen;
 

@@ -1,7 +1,7 @@
 #ifndef SPHERETREEWIDGETITEM_H
 #define SPHERETREEWIDGETITEM_H
 
-#include "drawabletreewidgetitem.h"
+#include "treewidgetitems/drawabletreewidgetitem.h"
 #include "sphereview.h"
 
 class SphereTreeWidgetItem : public DrawableTreeWidgetItem

@@ -1,7 +1,7 @@
 #ifndef NESTREEWIDGETITEM_H
 #define NESTREEWIDGETITEM_H
 
-#include "drawabletreewidgetitem.h"
+#include "treewidgetitems/drawabletreewidgetitem.h"
 #include "eventqueue.h"
 #include "sphereview.h"
 

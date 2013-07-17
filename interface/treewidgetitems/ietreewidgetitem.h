@@ -2,7 +2,7 @@
 #define IETREEWIDGETITEM_H
 
 #include "eventqueue.h"
-#include "drawabletreewidgetitem.h"
+#include "treewidgetitems/drawabletreewidgetitem.h"
 
 class IETreeWidgetItem : public DrawableTreeWidgetItem
 {

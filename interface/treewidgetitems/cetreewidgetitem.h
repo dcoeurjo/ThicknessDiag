@@ -2,7 +2,7 @@
 #define CETREEWIDGETITEM_H
 
 #include "eventqueue.h"
-#include "drawabletreewidgetitem.h"
+#include "treewidgetitems/drawabletreewidgetitem.h"
 
 class CETreeWidgetItem : public DrawableTreeWidgetItem
 {

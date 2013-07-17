@@ -1,4 +1,4 @@
-#include "cetreewidgetitem.h"
+#include "treewidgetitems/cetreewidgetitem.h"
 
 CETreeWidgetItem::CETreeWidgetItem(const CriticalEvent & ce, QTreeWidget *parent):
     DrawableTreeWidgetItem(parent)

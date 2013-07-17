@@ -13,8 +13,8 @@
 
 #include "eventqueuebuilder.h"
 #include "selectspheredialog.h"
-#include "spheretreewidgetitem.h"
-#include "nestreewidgetitem.h"
+#include "treewidgetitems/spheretreewidgetitem.h"
+#include "treewidgetitems/nestreewidgetitem.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
     WindowStateWithMenu(wsw, tr("Event Queue")) {}

@@ -60,27 +60,27 @@ qt4_wrap_cpp(MOC_SOURCES
 
 # All sources
 add_executable(${CMAKE_PROJECT_NAME}
+    treewidgetitems/cetreewidgetitem.cpp
+    circleview.cpp
     customviewer.cpp
-    drawabletreewidgetitem.cpp
+    treewidgetitems/drawabletreewidgetitem.cpp
     eventqueuewindowstate.cpp
     generatespheresdialog.cpp
+    treewidgetitems/ietreewidgetitem.cpp
     main.cpp
-    nestreewidgetitem.cpp
+    treewidgetitems/nestreewidgetitem.cpp
     selectspheredialog.cpp
     sphereformdialog.cpp
     sphereintersecterproxy.cpp
     spherelistwidgetitem.cpp
     sphereswindowstate.cpp
-    spheretreewidgetitem.cpp
+    treewidgetitems/spheretreewidgetitem.cpp
     sphereview.cpp
     window.cpp
     windowstate.cpp
     windowstatefactory.cpp
     windowstatewidget.cpp
     windowstatewithmenu.cpp
-    ietreewidgetitem.cpp
-    cetreewidgetitem.cpp
-    circleview.cpp
     ${MOC_SOURCES} ${FORM_SOURCES})
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${CMAKE_PROJECT_NAME})
 

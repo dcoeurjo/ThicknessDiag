@@ -1,4 +1,4 @@
-#include "spheretreewidgetitem.h"
+#include "treewidgetitems/spheretreewidgetitem.h"
 
 SphereTreeWidgetItem::SphereTreeWidgetItem(const SphereView &sv, QTreeWidget *parent) :
     DrawableTreeWidgetItem(parent), sv(sv)
