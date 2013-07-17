@@ -1,3 +1,4 @@
+#include <GL/glut.h>
 #include "customviewer.h"
 
 CustomViewer::CustomViewer(QWidget *parent):
@@ -25,4 +26,11 @@ void CustomViewer::init()
     setShortcut(INCREASE_FLYSPEED, 0);
     setShortcut(DECREASE_FLYSPEED, 0);
     setShortcut(SNAPSHOT_TO_CLIPBOARD, 0);
+}
+
+void CustomViewer::initializeGL()
+{
+    int argc = 1;
+    char *argv[1] = { "Dummy" };
+    glutInit(&argc, argv);
 }

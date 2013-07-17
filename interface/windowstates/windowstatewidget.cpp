@@ -6,7 +6,6 @@
 #include <QStatusBar>
 #include <QGridLayout>
 #include <QMainWindow>
-#include <QGLViewer/frame.h>
 #include <CGAL/Random.h>
 #include "windowstate.h"
 #include "../window.h"
@@ -70,7 +69,9 @@ void WindowStateWidget::onSphereAdded(const Sphere_3 &s)
     SphereView sv;
     sv.handle = sh;
     sv.color = color;
-    sv.frame.setPosition(x, y, z);
+    sv.x = x;
+    sv.y = y;
+    sv.z = z;
     sv.radius = radius;
 
     // Add list to sphere handle vector

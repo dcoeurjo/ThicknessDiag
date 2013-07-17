@@ -2,7 +2,6 @@
 #define SPHEREVIEW_H
 
 #include <QColor>
-#include <QGLViewer/frame.h>
 #include "sphereintersecter.h"
 #include "qgldrawable.h"
 
@@ -24,8 +23,7 @@ struct SphereView: QGLDrawable
     QColor color;
 
     // Sphere approx' descriptors (x, y, z), radius
-    qglviewer::Frame frame;
-    double radius;
+    float x, y, z, radius;
 };
 
 #endif // SPHEREVIEW_H

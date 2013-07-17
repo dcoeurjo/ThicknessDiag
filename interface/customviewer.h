@@ -10,6 +10,7 @@ public:
 
 protected:
     void init();
+    void initializeGL();
 };
 
 #endif // CUSTOMVIEWER_H

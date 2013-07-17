@@ -27,7 +27,9 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
         << ", theta = " << theta;
     setText(0, QString(oss.str().c_str()));
 
-    pointSv.frame.setPosition(x, y, z);
+    pointSv.x = x;
+    pointSv.y = y;
+    pointSv.z = z;
     pointSv.radius = sphere_radius / 100.;
     pointSv.color.setRed(randgen.get_int(0, 255));
     pointSv.color.setGreen(randgen.get_int(0, 255));
