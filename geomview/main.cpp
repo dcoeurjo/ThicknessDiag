@@ -163,34 +163,8 @@ class usage_error: public std::runtime_error
       std::runtime_error(what_arg) {}
 };
 
-static const std::size_t NB_SPHERES_DEFAULT = 200;
-static const Kernel::FT RAND_AMP_DEFAULT = 100;
-
-static void do_main(int argc, const char * argv[])
+static void do_main(const std::size_t & nb_spheres, const FT & rand_amp)
 {
-  // Amount of spheres to intersect
-  std::size_t nb_spheres = NB_SPHERES_DEFAULT;
-
-  // Convert nb_spheres
-  if (argc > 1)
-  { std::istringstream iss(argv[1]);
-    if ( (iss >> nb_spheres).fail() )
-    { throw usage_error("Bad number format (positive integer)"); } }
-
-  // Random amplitude for sphere generation
-  FT rand_amp = RAND_AMP_DEFAULT;
-  if (argc > 2)
-  {
-    // Too many arguments
-    if (argc != 3)
-    { throw usage_error("Too many arguments specified"); }
-
-    // Convert rand_amp
-    std::istringstream iss(argv[2]);
-    if ( (iss >> rand_amp).fail() )
-    { throw usage_error("Bad number format (real number)"); }
-  }
-
 #ifdef DISPLAY_ON_GEOMVIEW // Setup gv
   Geomview_stream gv;
   gv.set_wired(false);
@@ -288,18 +262,50 @@ static void do_main(int argc, const char * argv[])
     }
     else if (ev_type == EQ::Polar)
     {
+      typedef EQ::Polar_event_site PES;
+      PES pes = ev_queue.pop_polar();
       // TODO
     }
     else
-    { CGAL_assertion(ev_type == EQ::None); }
+    {
+      CGAL_assertion(ev_type == EQ::Bipolar);
+      typedef EQ::Bipolar_event_site BPES;
+      BPES bpes = ev_queue.pop_bipolar();
+      // TODO
+    }
   }
 }
+
+static const std::size_t NB_SPHERES_DEFAULT = 200;
+static const FT RAND_AMP_DEFAULT = 100;
 
 int main(int argc, const char * argv[])
 {
   try
   {
-    do_main(argc, argv);
+    // Amount of spheres to intersect
+    std::size_t nb_spheres = NB_SPHERES_DEFAULT;
+
+    // Convert nb_spheres
+    if (argc > 1)
+    { std::istringstream iss(argv[1]);
+      if ( (iss >> nb_spheres).fail() )
+      { throw usage_error("Bad number format (positive integer)"); } }
+
+    // Random amplitude for sphere generation
+    FT rand_amp = RAND_AMP_DEFAULT;
+    if (argc > 2)
+    {
+      // Too many arguments
+      if (argc != 3)
+      { throw usage_error("Too many arguments specified"); }
+
+      // Convert rand_amp
+      std::istringstream iss(argv[2]);
+      if ( (iss >> rand_amp).fail() )
+      { throw usage_error("Bad number format (real number)"); }
+    }
+    do_main(nb_spheres, rand_amp);
     return EXIT_SUCCESS;
   }
   catch (usage_error e)
