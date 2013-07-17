@@ -20,6 +20,6 @@ void SphereView::draw(QGLViewer *viewer) const
     viewer->qglColor(color);
     glPushMatrix();
         glTranslatef(x, y, z);
-        glutSolidSphere(radius, 20, 20);
+        glutWireSphere(radius, 20, 20);
     glPopMatrix();
 }

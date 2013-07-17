@@ -30,7 +30,7 @@ void CustomViewer::init()
 
 void CustomViewer::initializeGL()
 {
-    int argc = 1;
-    char *argv[1] = { "Dummy" };
+    int argc = 0;
+    char **argv = 0;
     glutInit(&argc, argv);
 }
