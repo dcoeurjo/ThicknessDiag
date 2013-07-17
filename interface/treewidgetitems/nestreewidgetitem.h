@@ -13,7 +13,6 @@ public:
     void draw(QGLViewer *viewer) const;
 
 private:
-    NormalEventSite nes;
     SphereView pointSv;
 };
 

@@ -1,8 +1,9 @@
 #ifndef IETREEWIDGETITEM_H
 #define IETREEWIDGETITEM_H
 
-#include "../eventqueue.h"
 #include "drawabletreewidgetitem.h"
+#include "../eventqueue.h"
+#include "../circleview.h"
 
 class IETreeWidgetItem : public DrawableTreeWidgetItem
 {
@@ -12,7 +13,7 @@ public:
     void draw(QGLViewer *viewer) const;
 
 private:
-    const IntersectionEvent & ie;
+    std::pair<CircleView, CircleView> cvPair;
 };
 
 #endif // IETREEWIDGETITEM_H

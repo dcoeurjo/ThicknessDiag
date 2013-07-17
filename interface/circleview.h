@@ -8,6 +8,12 @@
 
 struct CircleView : public QGLDrawable
 {
+    // Default constructor, generate random color
+    CircleView();
+
+    // Builder static method
+    static CircleView fromCircle(const CircleHandle &ch);
+
     // Get the string representation of a circle view
     QString asString() const;
 
@@ -24,8 +30,7 @@ struct CircleView : public QGLDrawable
     QColor color;
 
     // Circle approx' descriptors (x, y, z), radius
-    qglviewer::Frame frame;
-    double radius;
+    double x, y, z, radius;
     // TODO
 };
 

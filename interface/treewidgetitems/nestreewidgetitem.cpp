@@ -1,18 +1,14 @@
 #include "nestreewidgetitem.h"
 #include <sstream>
 #include <QGLViewer/qglviewer.h>
-#include <CGAL/Random.h>
 #include "ietreewidgetitem.h"
 #include "cetreewidgetitem.h"
 
-static CGAL::Random randgen;
-
 NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *parent):
-    DrawableTreeWidgetItem(parent), nes(nes)
+    DrawableTreeWidgetItem(parent)
 {
     // Convert (x, y, z) coordinates and compute theta angle
     using CGAL::to_double;
-    double sphere_radius = std::sqrt(to_double(nes.sphere()->squared_radius()));
     double x = to_double(nes.point().x());
     double y = to_double(nes.point().y());
     double z = to_double(nes.point().z());
@@ -27,13 +23,12 @@ NESTreeWidgetItem::NESTreeWidgetItem(const NormalEventSite &nes, QTreeWidget *pa
         << ", theta = " << theta;
     setText(0, QString(oss.str().c_str()));
 
+    // Construct sphere representation
+    pointSv = SphereView::fromSphere(nes.sphere());
+    pointSv.radius = std::sqrt(to_double(nes.sphere()->squared_radius() / 100));
     pointSv.x = x;
     pointSv.y = y;
     pointSv.z = z;
-    pointSv.radius = sphere_radius / 100.;
-    pointSv.color.setRed(randgen.get_int(0, 255));
-    pointSv.color.setGreen(randgen.get_int(0, 255));
-    pointSv.color.setBlue(randgen.get_int(0, 255));
 
     // Add intersection events
     typedef NormalEventSite::Intersection_events_range IntersectionEventsRange;

@@ -7,6 +7,12 @@
 
 struct SphereView: QGLDrawable
 {
+    // Define default constructor mainly for random color
+    SphereView();
+
+    // Builder static method
+    static SphereView fromSphere(const SphereHandle &sh);
+
     // Get the string representation of a sphere view
     QString asString() const;
 

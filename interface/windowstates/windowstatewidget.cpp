@@ -6,12 +6,9 @@
 #include <QStatusBar>
 #include <QGridLayout>
 #include <QMainWindow>
-#include <CGAL/Random.h>
 #include "windowstate.h"
 #include "../window.h"
 #include "../customviewer.h"
-
-static CGAL::Random randgen;
 
 WindowStateWidget::WindowStateWidget(SphereIntersecterProxy &siProxy, QMainWindow *window) :
     QWidget(window), siProxyInstance(siProxy),
@@ -50,32 +47,8 @@ void WindowStateWidget::onSphereAdded(const Sphere_3 &s)
     // Construct SphereHandle directly (SphereIntersecterProxy concept)
     SphereHandle sh(s);
 
-    // Compute approximate data
-    using CGAL::to_double;
-    const Point_3 &c = sh->center(); // FIXME invalid reference ???
-
-    double radius = std::sqrt(to_double(sh->squared_radius()));
-    double x = to_double(c.x());
-    double y = to_double(c.y());
-    double z = to_double(c.z());
-
-    // Make sphere color
-    QColor color;
-    color.setRed(randgen.get_int(0, 255));
-    color.setGreen(randgen.get_int(0, 255));
-    color.setBlue(randgen.get_int(0, 255));
-
-    // Finally, make sphere
-    SphereView sv;
-    sv.handle = sh;
-    sv.color = color;
-    sv.x = x;
-    sv.y = y;
-    sv.z = z;
-    sv.radius = radius;
-
     // Add list to sphere handle vector
-    sphereViews.insert(sv);
+    sphereViews.insert(SphereView::fromSphere(sh));
 
     // Update the scene so that it includes the sphere
     BoundingBox sceneBbox = siProxy().directAccess().bbox();

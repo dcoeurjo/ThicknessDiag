@@ -33,4 +33,5 @@ void CustomViewer::initializeGL()
     int argc = 0;
     char **argv = 0;
     glutInit(&argc, argv);
+    QGLViewer::initializeGL();
 }
