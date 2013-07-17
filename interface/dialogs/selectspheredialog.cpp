@@ -1,6 +1,5 @@
 #include "selectspheredialog.h"
 #include "ui_selectspheredialog.h"
-
 #include <QMessageBox>
 
 typedef SphereIntersecter SI;

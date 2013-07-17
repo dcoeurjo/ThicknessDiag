@@ -12,7 +12,7 @@
 #include <QGLViewer/qglviewer.h>
 
 #include "eventqueuebuilder.h"
-#include "selectspheredialog.h"
+#include "dialogs/selectspheredialog.h"
 #include "treewidgetitems/spheretreewidgetitem.h"
 #include "treewidgetitems/nestreewidgetitem.h"
 

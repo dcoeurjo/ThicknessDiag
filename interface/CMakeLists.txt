@@ -40,16 +40,16 @@ include_directories(${CMAKE_SOURCE_DIR}/..)
 
 # UI files (Qt Designer files)
 qt4_wrap_ui(FORM_SOURCES
-    generatespheresdialog.ui
-    selectspheredialog.ui
-    sphereformdialog.ui)
+    dialogs/generatespheresdialog.ui
+    dialogs/selectspheredialog.ui
+    dialogs/sphereformdialog.ui)
 
 # Use the Qt MOC preprocessor on classes that derives from QObject
 qt4_wrap_cpp(MOC_SOURCES
+    dialogs/generatespheresdialog.h
+    dialogs/selectspheredialog.h
+    dialogs/sphereformdialog.h
     eventqueuewindowstate.h
-    generatespheresdialog.h
-    selectspheredialog.h
-    sphereformdialog.h
     sphereintersecterproxy.h
     sphereswindowstate.h
     window.h
@@ -60,22 +60,22 @@ qt4_wrap_cpp(MOC_SOURCES
 
 # All sources
 add_executable(${CMAKE_PROJECT_NAME}
-    treewidgetitems/cetreewidgetitem.cpp
     circleview.cpp
     customviewer.cpp
-    treewidgetitems/drawabletreewidgetitem.cpp
+    dialogs/generatespheresdialog.cpp
+    dialogs/selectspheredialog.cpp
+    dialogs/sphereformdialog.cpp
     eventqueuewindowstate.cpp
-    generatespheresdialog.cpp
-    treewidgetitems/ietreewidgetitem.cpp
     main.cpp
-    treewidgetitems/nestreewidgetitem.cpp
-    selectspheredialog.cpp
-    sphereformdialog.cpp
     sphereintersecterproxy.cpp
     spherelistwidgetitem.cpp
     sphereswindowstate.cpp
-    treewidgetitems/spheretreewidgetitem.cpp
     sphereview.cpp
+    treewidgetitems/cetreewidgetitem.cpp
+    treewidgetitems/drawabletreewidgetitem.cpp
+    treewidgetitems/ietreewidgetitem.cpp
+    treewidgetitems/nestreewidgetitem.cpp
+    treewidgetitems/spheretreewidgetitem.cpp
     window.cpp
     windowstate.cpp
     windowstatefactory.cpp

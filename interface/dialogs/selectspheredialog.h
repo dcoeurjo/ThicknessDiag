@@ -5,8 +5,7 @@
 #include <QList>
 #include <QDialog>
 #include <QRadioButton>
-
-#include "sphereview.h"
+#include "../sphereview.h"
 
 namespace Ui {
 class SelectSphereDialog;

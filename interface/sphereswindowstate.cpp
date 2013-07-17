@@ -18,9 +18,9 @@
 
 #include <CGAL/Random.h>
 
-#include "sphereformdialog.h"
-#include "generatespheresdialog.h"
-#include "selectspheredialog.h"
+#include "dialogs/sphereformdialog.h"
+#include "dialogs/generatespheresdialog.h"
+#include "dialogs/selectspheredialog.h"
 #include "sphereintersecterproxy.h"
 
 #include "spherelistwidgetitem.h"
