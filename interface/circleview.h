@@ -31,8 +31,8 @@ struct CircleView : public QGLDrawable
 
     // Circle approx' descriptors (x, y, z), radius
     double x, y, z, radius;
-    // ...angles with x, y axes
-    double alpha, beta;
+    // ...angles with x, y, z axes
+    double alpha, beta, gamma;
 };
 
 #endif // CIRCLEVIEW_H
