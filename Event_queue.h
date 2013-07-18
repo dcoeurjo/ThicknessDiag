@@ -222,12 +222,14 @@ class Event_bundle
           return pe;
         }
 
-        Bipolar_event bipolar_event(const Vector_3 & normal) const
+        Bipolar_event bipolar_event(const Vector_3 & normal,
+            typename Bipolar_event::Tag_type tag) const
         {
           Bipolar_event be;
           Event_builder::link_to_sphere(be);
           link_to_circle(be);
           be.normal = normal;
+          be.tag = tag;
           return be;
         }
 

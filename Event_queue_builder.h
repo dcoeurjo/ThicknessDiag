@@ -92,6 +92,10 @@ class Event_queue_builder
       typedef std::vector<Polar_event_site> Polar_event_sites;
       Polar_event_sites pe_sites;
 
+      // Bipolar event sites
+      typedef std::vector<Bipolar_event_site> Bipolar_event_sites;
+      Bipolar_event_sites bpe_sites;
+
       // Event builder for this sphere
       Event_builder eb(*sh);
 
@@ -139,7 +143,8 @@ class Event_queue_builder
             Vector_3 circle_normal = c1.supporting_plane().orthogonal_vector();
             Vector_3 meridian_normals[2] = { circle_normal, -circle_normal };
             std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(*sh));
-            // TODO
+            bpe_sites.push_back(Bipolar_event_site(ceb.bipolar_event(meridian_normals[0], Bipolar_event::Start)));
+            bpe_sites.push_back(Bipolar_event_site(ceb.bipolar_event(meridian_normals[1], Bipolar_event::End)));
           }
         }
 
@@ -209,6 +214,10 @@ class Event_queue_builder
       // ...same for polar events sites
       for (typename Polar_event_sites::const_iterator it = pe_sites.begin();
           it != pe_sites.end(); it++)
+      { ev_queue.push(*it); }
+      // ...same for bipolar event sites
+      for (typename Bipolar_event_sites::const_iterator it = bpe_sites.begin();
+          it != bpe_sites.end(); it++)
       { ev_queue.push(*it); }
 
       return ev_queue;
