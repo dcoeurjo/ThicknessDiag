@@ -17,8 +17,9 @@ static double signedAngle(const Vector_3 & a, const Vector_3 & b,
     using CGAL::to_double;
     Q_ASSERT(a*normal == 0 && b*normal == 0);
     Vector_3 a_b = CGAL::cross_product(a, b);
-    double angle = std::atan2(std::sqrt(to_double(a_b.squared_length())),
-        to_double(a*b) / std::sqrt(to_double(a.squared_length()*b.squared_length())));
+    double sin = std::sqrt(to_double(a_b.squared_length()));
+    double cos = to_double(a*b) / std::sqrt(to_double(a.squared_length()*b.squared_length()));
+    double angle = std::atan2(sin, cos);
     return normal*a_b >= 0 ? angle : -angle;
 }
 
@@ -43,19 +44,24 @@ CircleView CircleView::fromCircle(const CircleHandle &ch)
 
     // Compute approximate angles with x/y axes
     Vector_3 v = ch->supporting_plane().orthogonal_vector();
-    std::cout << "Normal vector : " << "coords = (" << to_double(v.x())
-              << ", " << to_double(v.y()) << "," << to_double(v.z())
-              << "), length = " << to_double(v.squared_length()) << std::endl;
     cv.alpha = signedAngle(Vector_3(0, v.y(), v.z()), Vector_3(0, 0, 1), Vector_3(1, 0, 0));
     cv.beta = signedAngle(Vector_3(0, 0, 1), Vector_3(v.x(), 0, v.z()), Vector_3(0, 1, 0));
     cv.gamma = signedAngle(Vector_3(1, 0, 0), Vector_3(v.x(), v.y(), 0), Vector_3(0, 0, 1));
-    // ...these are needed in degrees
+    std::cout
+        << cv.alpha << " "
+        << cv.beta << " "
+        << cv.gamma << " "
+        << to_double(v.x()) << " "
+        << to_double(v.y()) << " "
+        << to_double(v.z()) << std::endl;
+    // ...these angles are needed in degrees
     cv.alpha *= 180. / M_PI;
     cv.beta *= 180. / M_PI;
     cv.gamma *= 180. / M_PI;
-    std::cout << "alpha = " << cv.alpha << std::endl;
-    std::cout << "beta = " << cv.beta << std::endl;
-    std::cout << "gamma = " << cv.gamma << std::endl;
+    // ...rotation is opposite to camera
+    cv.alpha *= -1.;
+    cv.beta *= -1.;
+    cv.gamma *= -1.;
     return cv;
 }
 
