@@ -25,10 +25,6 @@ static double signedAngle(const Vector_3 & a, const Vector_3 & b,
     double len_ab = std::sqrt(to_double(a.squared_length()*b.squared_length())),
            sin = std::sqrt(to_double(a_cross_b.squared_length())) / len_ab,
            cos = to_double(a*b) / len_ab, angle = std::atan2(sin, cos);
-    std::cout
-        << to_double(a.x()) << " " << to_double(a.y()) << " " << to_double(a.z()) << ";"
-        << to_double(b.x()) << " " << to_double(b.y()) << " " << to_double(b.z()) << ";"
-        << angle << std::endl;
     return normal*a_cross_b >= 0 ? angle : -angle;
 }
 
@@ -56,13 +52,6 @@ CircleView CircleView::fromCircle(const CircleHandle &ch)
     cv.alpha = signedAngle(Vector_3(0, v.y(), v.z()), Vector_3(0, 0, 1), Vector_3(1, 0, 0));
     cv.beta = signedAngle(Vector_3(0, 0, 1), Vector_3(v.x(), 0, v.z()), Vector_3(0, 1, 0));
     cv.gamma = signedAngle(Vector_3(1, 0, 0), Vector_3(v.x(), v.y(), 0), Vector_3(0, 0, 1));
-    std::cout
-        << cv.alpha << " "
-        << cv.beta << " "
-        << cv.gamma << " "
-        << to_double(v.x()) << " "
-        << to_double(v.y()) << " "
-        << to_double(v.z()) << std::endl;
     // ...these angles are needed in degrees
     cv.alpha *= 180. / M_PI;
     cv.beta *= 180. / M_PI;
