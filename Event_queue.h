@@ -612,7 +612,6 @@ class Event_queue
           }
         }
 
-        // TODO implement these
         bool operator<(const Normal_event_site & nes) const
         {
           switch (type())
