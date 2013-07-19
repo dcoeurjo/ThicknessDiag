@@ -7,20 +7,29 @@
 static CGAL::Random randgen;
 
 // Helper function computing the approximate signed angle
-// between two vectors -> (a, b)
+// between two vectors -> (a, b).
+//
+// Computation:
+//   > s = length(cross_product(a, b))
+//   > c = dot_product(a, b)
+//   > angle = atan2(s, c)
 //
 // Concept: vectors "a" and "b" are already projected along
 // the plane defined by "normal"
 static double signedAngle(const Vector_3 & a, const Vector_3 & b,
                           const Vector_3 & normal)
 {
-    using CGAL::to_double;
     Q_ASSERT(a*normal == 0 && b*normal == 0);
-    Vector_3 a_b = CGAL::cross_product(a, b);
-    double sin = std::sqrt(to_double(a_b.squared_length()));
-    double cos = to_double(a*b) / std::sqrt(to_double(a.squared_length()*b.squared_length()));
-    double angle = std::atan2(sin, cos);
-    return normal*a_b >= 0 ? angle : -angle;
+    using CGAL::to_double;
+    Vector_3 a_cross_b = CGAL::cross_product(a, b);
+    double len_ab = std::sqrt(to_double(a.squared_length()*b.squared_length())),
+           sin = std::sqrt(to_double(a_cross_b.squared_length())) / len_ab,
+           cos = to_double(a*b) / len_ab, angle = std::atan2(sin, cos);
+    std::cout
+        << to_double(a.x()) << " " << to_double(a.y()) << " " << to_double(a.z()) << ";"
+        << to_double(b.x()) << " " << to_double(b.y()) << " " << to_double(b.z()) << ";"
+        << angle << std::endl;
+    return normal*a_cross_b >= 0 ? angle : -angle;
 }
 
 CircleView::CircleView()

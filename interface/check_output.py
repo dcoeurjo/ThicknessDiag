@@ -45,9 +45,9 @@ def rotate_around_z(vec, angle):
 def rotate(vec, angles):
     # Combined version of all the previous
     return reduce(lambda v, r: r(v), (
-        functools.partial(rotate_around_z, angle=angles[2]),
-        functools.partial(rotate_around_y, angle=angles[1]),
         functools.partial(rotate_around_x, angle=angles[0]),
+        functools.partial(rotate_around_y, angle=angles[1]),
+        functools.partial(rotate_around_z, angle=angles[2]),
         ), vec)
 
 def read_data(fp):
@@ -61,9 +61,9 @@ def read_data(fp):
 
 # Data format: [x-rot, y-rot, z-rot, vx, vy, vz]
 for d in read_data(sys.stdin):
-    angles = map(lambda x: -x*math.pi/180., d[:3])
+    angles = map(lambda x: -x, d[:3])
     vec = d[3:]
     rotated_vec = rotate((0, 0, 1), angles)
     epsilon = 0.01
     valid = all(abs(x - y) < epsilon for x, y in zip(vec, rotated_vec))
-    print ' '.join(map(str, map(lambda x: -x*180./math.pi, angles) + vec)), '->', valid
+    print ' '.join(map(str, map(lambda x: -x, angles) + vec)), '->', valid
