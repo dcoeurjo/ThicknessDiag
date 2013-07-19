@@ -13,6 +13,7 @@
 #include "../treewidgetitems/spheretreewidgetitem.h"
 #include "../treewidgetitems/nestreewidgetitem.h"
 #include "../treewidgetitems/pestreewidgetitem.h"
+#include "../treewidgetitems/bpestreewidgetitem.h"
 
 EventQueueWindowState::EventQueueWindowState(WindowStateWidget &wsw):
     WindowStateWithMenu(wsw, tr("Event Queue")) {}
@@ -136,7 +137,7 @@ void EventQueueWindowState::buildEventQueue()
             else if (evsType == EventQueue::Bipolar)
             {
                 BipolarEventSite event = eventQueue.pop_bipolar();
-                //eventItem = new BPESTreeWidgetItem(event);
+                eventItem = new BPESTreeWidgetItem(event);
             }
             else
             {

@@ -72,6 +72,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     sphereintersecterproxy.cpp
     spherelistwidgetitem.cpp
     sphereview.cpp
+    treewidgetitems/bpestreewidgetitem.cpp
     treewidgetitems/cetreewidgetitem.cpp
     treewidgetitems/drawabletreewidgetitem.cpp
     treewidgetitems/ietreewidgetitem.cpp
