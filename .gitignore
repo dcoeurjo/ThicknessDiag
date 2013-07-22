@@ -15,5 +15,8 @@
 # Tags files
 tags
 
-# Qt build directories
+# Build directories
 *build*
+
+# Extra docs
+doc/*
