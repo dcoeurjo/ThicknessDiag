@@ -1,4 +1,4 @@
-project(ThicknessDiagTests)
+project(ThicknessDiag-Python)
 
 cmake_minimum_required(VERSION 2.6.2)
 if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 2.6)
@@ -20,16 +20,19 @@ find_package(CGAL QUIET REQUIRED)
 include(${CGAL_USE_FILE})
 
 # Boost and its components
-find_package(Boost QUIET COMPONENTS system unit_test_framework REQUIRED)
+find_package(Boost QUIET COMPONENTS python REQUIRED)
+find_package(PythonLibs)
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS})
 
 # Include directories for project
 include_directories(${CMAKE_SOURCE_DIR}/..)
 
-# All sources
-add_executable(${CMAKE_PROJECT_NAME} main.cpp)
-add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${CMAKE_PROJECT_NAME})
+# Extra compile flag for template instanciations
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-implicit-templates")
 
-# Link the executable to CGAL and third-party libraries
+# Shared library
+add_library(${CMAKE_PROJECT_NAME} SHARED python_export.cpp)
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    ${Boost_LIBRARIES} ${PYTHON_LIBRARIES}
     ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
