@@ -463,18 +463,154 @@ class Event_queue
       None, Normal, Polar, Bipolar
     };
 
-    // Push normal events to the queue
-    void push(const Normal_event_site & nes)
-    { _queue.push(Queue_element(nes)); }
-    // ...push polar events
-    void push(const Polar_event_site & pes)
-    { _queue.push(Queue_element(pes)); }
-    // ...push bipolar events
-    void push(const Bipolar_event_site & bpes)
-    { _queue.push(Queue_element(bpes)); }
+    // Wrapper for any event site in the queue
+    class Any_event_site
+    {
+      public:
+        Any_event_site():
+          _impl(0, None) {}
+        Any_event_site(const Normal_event_site & nes):
+          _impl(new Normal_event_site(nes), Normal) {}
+        Any_event_site(const Polar_event_site & pes):
+          _impl(new Polar_event_site(pes), Polar) {}
+        Any_event_site(const Bipolar_event_site & bpes):
+          _impl(new Bipolar_event_site(bpes), Bipolar) {}
+
+        Any_event_site(const Any_event_site & qe):
+          _impl(0, qe._impl.second)
+        {
+          if (_impl.second == Polar)
+          { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
+          else if (_impl.second == Normal)
+          { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
+          else if (_impl.second == Bipolar)
+          { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
+        }
+
+        ~Any_event_site()
+        {
+          if (_impl.second == Polar)
+          { delete static_cast<Polar_event_site *>(_impl.first); }
+          else if (_impl.second == Normal)
+          { delete static_cast<Normal_event_site *>(_impl.first); }
+          else if (_impl.second == Bipolar)
+          { delete static_cast<Bipolar_event_site *>(_impl.first); }
+        }
+
+        Any_event_site & operator=(const Any_event_site & qe)
+        {
+          if (&qe != this)
+          {
+            // Delete previous data
+            if (_impl.second == Polar)
+            { delete static_cast<Polar_event_site *>(_impl.first); }
+            else if (_impl.second == Normal)
+            { delete static_cast<Normal_event_site *>(_impl.first); }
+            else if (_impl.second == Bipolar)
+            { delete static_cast<Bipolar_event_site *>(_impl.first); }
+
+            // Copy new data
+            _impl.second = qe._impl.second;
+            if (_impl.second == Polar)
+            { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
+            else if (_impl.second == Normal)
+            { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
+            else if (_impl.second == Bipolar)
+            { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
+          }
+          return *this;
+        }
+
+        // Get the underlying type
+        Event_site_type type() const
+        { CGAL_assertion(_impl.second != None);
+          return _impl.second; }
+
+        // Conversion methods, check assertions in debug mode
+        const Normal_event_site & as_normal() const
+        { CGAL_assertion(_impl.second == Normal);
+          return *static_cast<const Normal_event_site *>(_impl.first); }
+        const Polar_event_site & as_polar() const
+        { CGAL_assertion(_impl.second == Polar);
+          return *static_cast<const Polar_event_site *>(_impl.first); }
+        const Bipolar_event_site & as_bipolar() const
+        { CGAL_assertion(_impl.second == Bipolar);
+          return *static_cast<const Bipolar_event_site *>(_impl.first); }
+
+        bool operator<(const Any_event_site & e) const
+        {
+          switch (e.type())
+          {
+            case Normal:  return (*this) < e.as_normal();
+            case Polar:   return (*this) < e.as_polar();
+            case Bipolar: return (*this) < e.as_bipolar();
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+        bool operator<(const Normal_event_site & nes) const
+        {
+          switch (type())
+          {
+            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(nes);
+            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(nes);
+            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(nes);
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+        bool operator<(const Polar_event_site & pes) const
+        {
+          switch (type())
+          {
+            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(pes);
+            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(pes);
+            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(pes);
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+        bool operator<(const Bipolar_event_site & bpes) const
+        {
+          switch (type())
+          {
+            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(bpes);
+            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(bpes);
+            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(bpes);
+            default: throw std::runtime_error("Invalid type 'None'");
+          }
+        }
+
+      private:
+        std::pair<void *, Event_site_type> _impl;
+    };
+
+  private:
+    // Actual queue implementation
+    typedef std::priority_queue<Any_event_site> Event_site_queue;
+
+  public:
+    // STL container concept requirements (delegation)
+    typedef typename Event_site_queue::value_type value_type;
+    typedef typename Event_site_queue::reference reference;
+    typedef typename Event_site_queue::const_reference const_reference;
+    typedef typename Event_site_queue::size_type size_type;
 
     bool empty() const
     { return _queue.empty(); }
+
+    size_type size() const
+    { return _queue.size(); }
+
+    // Push normal events to the queue
+    void push(const Normal_event_site & nes)
+    { _queue.push(nes); }
+    // ...push polar events
+    void push(const Polar_event_site & pes)
+    { _queue.push(pes); }
+    // ...push bipolar events
+    void push(const Bipolar_event_site & bpes)
+    { _queue.push(bpes); }
 
     Event_site_type next_event() const
     { return empty() == false ? _queue.top().type() : None; }
@@ -528,129 +664,7 @@ class Event_queue
     }
 
   private:
-    class Queue_element
-    {
-      public:
-        Queue_element():
-          _impl(0, None) {}
-        Queue_element(const Normal_event_site & nes):
-          _impl(new Normal_event_site(nes), Normal) {}
-        Queue_element(const Polar_event_site & pes):
-          _impl(new Polar_event_site(pes), Polar) {}
-        Queue_element(const Bipolar_event_site & bpes):
-          _impl(new Bipolar_event_site(bpes), Bipolar) {}
-
-        Queue_element(const Queue_element & qe):
-          _impl(0, qe._impl.second)
-        {
-          if (_impl.second == Polar)
-          { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
-          else if (_impl.second == Normal)
-          { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
-          else if (_impl.second == Bipolar)
-          { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
-        }
-
-        ~Queue_element()
-        {
-          if (_impl.second == Polar)
-          { delete static_cast<Polar_event_site *>(_impl.first); }
-          else if (_impl.second == Normal)
-          { delete static_cast<Normal_event_site *>(_impl.first); }
-          else if (_impl.second == Bipolar)
-          { delete static_cast<Bipolar_event_site *>(_impl.first); }
-        }
-
-        Queue_element & operator=(const Queue_element & qe)
-        {
-          if (&qe != this)
-          {
-            // Delete previous data
-            if (_impl.second == Polar)
-            { delete static_cast<Polar_event_site *>(_impl.first); }
-            else if (_impl.second == Normal)
-            { delete static_cast<Normal_event_site *>(_impl.first); }
-            else if (_impl.second == Bipolar)
-            { delete static_cast<Bipolar_event_site *>(_impl.first); }
-
-            // Copy new data
-            _impl.second = qe._impl.second;
-            if (_impl.second == Polar)
-            { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
-            else if (_impl.second == Normal)
-            { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
-            else if (_impl.second == Bipolar)
-            { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
-          }
-          return *this;
-        }
-
-        // Get the underlying type
-        Event_site_type type() const
-        { CGAL_assertion(_impl.second != None);
-          return _impl.second; }
-
-        // Conversion methods, check assertions in debug mode
-        const Normal_event_site & as_normal() const
-        { CGAL_assertion(_impl.second == Normal);
-          return *static_cast<const Normal_event_site *>(_impl.first); }
-        const Polar_event_site & as_polar() const
-        { CGAL_assertion(_impl.second == Polar);
-          return *static_cast<const Polar_event_site *>(_impl.first); }
-        const Bipolar_event_site & as_bipolar() const
-        { CGAL_assertion(_impl.second == Bipolar);
-          return *static_cast<const Bipolar_event_site *>(_impl.first); }
-
-        bool operator<(const Queue_element & e) const
-        {
-          switch (e.type())
-          {
-            case Normal:  return (*this) < e.as_normal();
-            case Polar:   return (*this) < e.as_polar();
-            case Bipolar: return (*this) < e.as_bipolar();
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-        bool operator<(const Normal_event_site & nes) const
-        {
-          switch (type())
-          {
-            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(nes);
-            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(nes);
-            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(nes);
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-        bool operator<(const Polar_event_site & pes) const
-        {
-          switch (type())
-          {
-            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(pes);
-            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(pes);
-            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(pes);
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-        bool operator<(const Bipolar_event_site & bpes) const
-        {
-          switch (type())
-          {
-            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(bpes);
-            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(bpes);
-            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(bpes);
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-      private:
-        std::pair<void *, Event_site_type> _impl;
-    };
-
-    typedef std::priority_queue<Queue_element> Event_sites_queue;
-    Event_sites_queue _queue;
+    Event_site_queue _queue;
 };
 
 #endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2
