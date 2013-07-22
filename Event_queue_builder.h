@@ -18,39 +18,34 @@ template <typename SK>
 class Event_queue_builder
 {
   // Geometrical objects
-  typedef typename SK::Line_3 Line_3;
-  typedef typename SK::Point_3 Point_3;
-  typedef typename SK::Plane_3 Plane_3;
   typedef typename SK::Circle_3 Circle_3;
+  typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
+  typedef typename SK::Direction_3 Direction_3;
+  typedef typename SK::Line_3 Line_3;
   typedef typename SK::Sphere_3 Sphere_3;
   typedef typename SK::Vector_3 Vector_3;
-  typedef typename SK::Segment_3 Segment_3;
-  typedef typename SK::Direction_3 Direction_3;
-  typedef typename SK::Circular_arc_3 Circular_arc_3;
-  typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
 
   // Function objects
-  typedef typename SK::Object_3 Object_3;
   typedef typename SK::Assign_3 Assign_3;
-  typedef typename SK::Intersect_3 Intersect_3;
   typedef typename SK::Compare_theta_3 Compare_theta_3;
-  typedef typename SK::Compare_theta_z_3 Compare_theta_z_3;
+  typedef typename SK::Intersect_3 Intersect_3;
+  typedef typename SK::Object_3 Object_3;
 
   // Sphere intersecter and related
   typedef Sphere_intersecter<SK> SI;
-  typedef typename SI::Sphere_handle Sphere_handle;
   typedef typename SI::Circle_handle Circle_handle;
+  typedef typename SI::Sphere_handle Sphere_handle;
 
   // Event queue, events and event sites
   typedef Event_queue<SK> EQ;
   typedef typename EQ::Events Events;
-  typedef typename Events::Polar_event Polar_event;
-  typedef typename Events::Critical_event Critical_event;
   typedef typename Events::Bipolar_event Bipolar_event;
-  typedef typename Events::Intersection_event Intersection_event;
-  typedef typename Events::Polar_event_site Polar_event_site;
-  typedef typename Events::Normal_event_site Normal_event_site;
   typedef typename Events::Bipolar_event_site Bipolar_event_site;
+  typedef typename Events::Critical_event Critical_event;
+  typedef typename Events::Intersection_event Intersection_event;
+  typedef typename Events::Normal_event_site Normal_event_site;
+  typedef typename Events::Polar_event Polar_event;
+  typedef typename Events::Polar_event_site Polar_event_site;
   // ...event builders
   typedef typename Events::Event_builder Event_builder;
   typedef typename Events::Circle_event_builder Circle_event_builder;
@@ -97,7 +92,7 @@ class Event_queue_builder
       Bipolar_event_sites bpe_sites;
 
       // Event builder for this sphere
-      Event_builder eb(*sh);
+      Event_builder eb(sphere);
 
       for (typename Circle_list::const_iterator it = circle_list.begin();
           it != circle_list.end(); it++)
@@ -107,21 +102,21 @@ class Event_queue_builder
         const Circle_3 & c1 = *ch1;
 
         // Add circles events
-        CGAL::Circle_type circle_type = CGAL::classify(c1, *sh);
+        CGAL::Circle_type circle_type = CGAL::classify(c1, sphere);
         if (circle_type != CGAL::THREADED)
         {
           Circle_event_builder ceb = eb.prepare_circle_event(c1);
           if (circle_type == CGAL::NORMAL)
           {
             Circular_arc_point_3 extremes[2];
-            CGAL::theta_extremal_points(c1, *sh, extremes);
+            CGAL::theta_extremal_points(c1, sphere, extremes);
             ADD_TO_NE_SITE(extremes[0], ceb.critical_event(extremes[0], Critical_event::Start));
             ADD_TO_NE_SITE(extremes[1], ceb.critical_event(extremes[1], Critical_event::End));
           }
           else if (circle_type == CGAL::POLAR)
           {
             // Line passing through the poles
-            Line_3 pole_axis(sh->center(), Direction_3(0, 0, 1));
+            Line_3 pole_axis(sphere.center(), Direction_3(0, 0, 1));
 
             // Compute intersection
             Intersection_list pole_inters;
@@ -130,21 +125,21 @@ class Event_queue_builder
             CAP cap;
             Assign_3()(cap, pole_inters[0]);
             typename Polar_event::Pole_type pole_type = Polar_event::North;
-            if (CGAL::compare_z(Circular_arc_point_3(sh->center()), cap.first) == CGAL::SMALLER)
+            if (CGAL::compare_z(Circular_arc_point_3(sphere.center()), cap.first) == CGAL::SMALLER)
             { pole_type = Polar_event::South; }
 
             // Add polar events
-            pe_sites.push_back(Polar_event_site(ceb.polar_event(cap.first, pole_type, Polar_event::Start)));
-            pe_sites.push_back(Polar_event_site(ceb.polar_event(cap.first, pole_type, Polar_event::End)));
+            pe_sites.push_back(ceb.polar_event(cap.first, pole_type, Polar_event::Start));
+            pe_sites.push_back(ceb.polar_event(cap.first, pole_type, Polar_event::End));
           }
           else
           {
             CGAL_assertion(circle_type == CGAL::BIPOLAR);
-            Vector_3 circle_normal = c1.supporting_plane().orthogonal_vector();
-            Vector_3 meridian_normals[2] = { circle_normal, -circle_normal };
-            std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(*sh));
-            bpe_sites.push_back(Bipolar_event_site(ceb.bipolar_event(meridian_normals[0], Bipolar_event::Start)));
-            bpe_sites.push_back(Bipolar_event_site(ceb.bipolar_event(meridian_normals[1], Bipolar_event::End)));
+            Vector_3 meridian_normals[2] = { c1.supporting_plane().orthogonal_vector() };
+            meridian_normals[1] = -meridian_normals[0];
+            std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(sphere));
+            bpe_sites.push_back(ceb.bipolar_event(meridian_normals[0], Bipolar_event::Start));
+            bpe_sites.push_back(ceb.bipolar_event(meridian_normals[1], Bipolar_event::End));
           }
         }
 
