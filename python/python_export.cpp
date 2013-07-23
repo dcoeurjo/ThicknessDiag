@@ -12,6 +12,8 @@ namespace impl {
 
     // Sphere_intersecter
     typedef Sphere_intersecter<SK> SI;
+    typedef typename SI::Circle_handle Circle_handle;
+    typedef typename SI::Sphere_handle Sphere_handle;
 }
 
 // Explicit template instanciations
@@ -42,7 +44,7 @@ class Point
         { return _z; }
 
         // Convert to impl
-        const impl::Point_3 & to_impl() const
+        const impl::Point_3 & get_impl() const
         { return _point; }
 
     private:
@@ -55,7 +57,7 @@ class Sphere
 {
     public:
         Sphere(const Point & p, double radius):
-            _sphere(p.to_impl(), radius*radius),
+            _sphere(p.get_impl(), radius*radius),
             _center(p), _radius(radius) {}
 
         Sphere(const impl::Sphere_3 & s):
@@ -63,13 +65,13 @@ class Sphere
         { _radius = std::sqrt(CGAL::to_double(s.squared_radius())); }
 
         // Getters
-        const Point & center() const
+        Point center() const
         { return _center; }
         double radius() const
         { return _radius; }
 
         // Convert to impl
-        const impl::Sphere_3 & to_impl() const
+        const impl::Sphere_3 & get_impl() const
         { return _sphere; }
 
     private:
@@ -83,10 +85,24 @@ class SphereIntersecter
 {
     public:
         bool add_sphere(const Sphere & s)
-        { return _si.add_sphere(s.to_impl()).is_null() == false; }
+        { return _si.add_sphere(s.get_impl()).is_null() == false; }
 
     private:
         impl::SI _si;
+};
+
+// Wrapper for impl::Sphere_handle
+class SphereHandle
+{
+    public:
+        SphereHandle(const impl::Sphere_handle & sh):
+            _handle(sh) {}
+
+        Sphere to_sphere() const
+        { return Sphere(*_handle); }
+
+    private:
+        impl::Sphere_handle _handle;
 };
 
 BOOST_PYTHON_MODULE(thickness_diag)
@@ -100,9 +116,12 @@ BOOST_PYTHON_MODULE(thickness_diag)
     ;
 
     class_<Sphere>("Sphere", init<Point, double>())
-        .def("center", &Sphere::center,
-                return_value_policy<copy_const_reference>())
-        .def("radius", &Sphere::radius)
+        .add_property("center", &Sphere::center)
+        .add_property("radius", &Sphere::radius)
+    ;
+
+    class_<SphereHandle>("SphereHandle", no_init)
+        .add_property("sphere", &SphereHandle::to_sphere)
     ;
 
     class_<SphereIntersecter, boost::noncopyable>("SphereIntersecter")
