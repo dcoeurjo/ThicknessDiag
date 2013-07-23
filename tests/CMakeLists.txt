@@ -14,25 +14,25 @@ if (COMMAND cmake_policy)
 endif()
 
 # CGAL and its components
-find_package(CGAL QUIET REQUIRED)
+find_package(CGAL REQUIRED)
 
 # Include helper file
 include(${CGAL_USE_FILE})
 
 # Boost and its components
-find_package(Boost QUIET COMPONENTS python REQUIRED)
-find_package(PythonLibs)
+find_package(Boost REQUIRED COMPONENTS python)
+find_package(PythonLibs 2.7 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 # Include directories for project
 include_directories(${CMAKE_SOURCE_DIR}/..)
 
-# Extra compile flag for template instanciations
+# Setup library configuration
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-implicit-templates")
-
-# Shared library
-add_library(${CMAKE_PROJECT_NAME} SHARED python_export.cpp)
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    ${Boost_LIBRARIES} ${PYTHON_LIBRARIES}
+set(ThicknessDiag-Python "thickness_diag")
+add_library(${ThicknessDiag-Python} SHARED python_export.cpp)
+set_target_properties(${ThicknessDiag-Python} PROPERTIES PREFIX "")
+target_link_libraries(${ThicknessDiag-Python}
+    ${PYTHON_LIBRARIES} ${Boost_LIBRARIES}
     ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})

@@ -12,7 +12,7 @@ typedef CGAL::Exact_spherical_kernel_3 SK;
 template class Sphere_intersecter<SK>;
 typedef Sphere_intersecter<SK> SI;
 
-BOOST_PYTHON_MODULE(thickness_diagram)
+BOOST_PYTHON_MODULE(thickness_diag)
 {
     using namespace boost::python;
 
