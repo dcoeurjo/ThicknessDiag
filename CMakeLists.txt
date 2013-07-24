@@ -25,7 +25,8 @@ find_package(Boost REQUIRED system)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Add project library
-# TODO
+set(ThicknessDiag_LIB ${PROJECT_NAME})
+add_subdirectory("lib")
 
 # Subdirectories
 add_subdirectory("qt")
