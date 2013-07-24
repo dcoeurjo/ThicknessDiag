@@ -105,8 +105,7 @@ class Event_bundle
       Circular_arc_point_3 point;
 
       bool operator==(const Intersection_event & ev) const
-      { return type == ev.type && circles == ev.circles;
-        && intersection_point == ev.intersection_point; }
+      { return type == ev.type && circles == ev.circles && point == ev.point; }
     };
 
     // Polar events are defined by:
