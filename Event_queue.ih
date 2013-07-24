@@ -1,0 +1,175 @@
+#include <Event_queue.h>
+
+#include <stdexcept>
+#include <functional>
+
+// Normal event site implementation
+
+template <typename SK>
+void Event_bundle<SK>::Normal_event_site::add_event(
+    typename Event_bundle<SK>::Critical_event const & ev)
+{
+  CGAL_assertion(_point.x() == ev.point.x()
+      && _point.y() == ev.point.y()
+      && _point.z() == ev.point.z());
+  CGAL_assertion(_sphere == ev.sphere);
+  if (ev.is_start()) { _start_events.insert(ev); }
+  else { _end_events.insert(ev); }
+}
+
+template <typename SK>
+void Event_bundle<SK>::Normal_event_site::add_event(
+    typename Event_bundle<SK>::Intersection_event const & ev)
+{
+  CGAL_assertion(_point.x() == ev.point.x()
+      && _point.y() == ev.point.y()
+      && _point.z() == ev.point.z());
+  CGAL_assertion(_sphere == ev.sphere);
+  _intersection_events.push_back(ev);
+}
+
+template <typename SK>
+bool Event_bundle<SK>::Normal_event_site::occurs_before(
+    typename Event_bundle<SK>::Normal_event_site const & es) const
+{
+  return typename SK::Compare_theta_z_3(*_sphere)
+    (_point, es._point) == CGAL::SMALLER;
+}
+
+// Polar event site implementation
+
+template <typename SK>
+bool Event_bundle<SK>::Polar_event_site::occurs_before(
+    typename Event_bundle<SK>::Polar_event_site const & es) const
+{
+  if (_event.tag != es._event.tag)
+  { return _event.is_end(); } // End before start
+  else if (_event.pole != es._event.pole)
+  { return _event.is_north(); } // North pole before south
+  else
+  {
+    // Store the polar event site having the biggest
+    // associated circle radius
+    const Polar_event_site * es_biggest_circle = this;
+    if (Comp_by_squared_radii<Circle_3>()(*es._event.circle, *_event.circle))
+    { es_biggest_circle = &es; }
+
+    // Start -> biggest occurs first, end -> smallest occurs first
+    if (_event.is_start())
+    { return es_biggest_circle == this; }
+    else
+    { return !(es_biggest_circle == this); }
+  }
+}
+
+// Bipolar event site implementation
+
+template <typename SK>
+bool Event_bundle<SK>::Bipolar_event_site::occurs_before(
+    typename Event_bundle<SK>::Bipolar_event_site const & es) const
+{
+  return typename SK::Compare_theta_3(*_event.sphere)
+    (_event.normal, es._event.normal) == CGAL::SMALLER;
+}
+
+// Event queue implementation
+
+// Any event site implementation
+
+template <typename SK>
+Event_queue<SK>::Any_event_site::Any_event_site(typename Event_queue<SK>::Any_event_site const & aes):
+  _impl(0, aes._impl.second)
+{
+  if (_impl.second == Polar)
+  { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(aes._impl.first)); }
+  else if (_impl.second == Normal)
+  { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(aes._impl.first)); }
+  else if (_impl.second == Bipolar)
+  { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(aes._impl.first)); }
+}
+
+template <typename SK>
+Event_queue<SK>::Any_event_site::~Any_event_site()
+{
+  if (_impl.second == Polar)
+  { delete static_cast<Polar_event_site *>(_impl.first); }
+  else if (_impl.second == Normal)
+  { delete static_cast<Normal_event_site *>(_impl.first); }
+  else if (_impl.second == Bipolar)
+  { delete static_cast<Bipolar_event_site *>(_impl.first); }
+}
+
+template <typename SK>
+typename Event_queue<SK>::Any_event_site & Event_queue<SK>::Any_event_site::operator=(typename Event_queue<SK>::Any_event_site const & aes)
+{
+  if (&aes != this)
+  {
+    // Delete previous data
+    if (_impl.second == Polar)
+    { delete static_cast<Polar_event_site *>(_impl.first); }
+    else if (_impl.second == Normal)
+    { delete static_cast<Normal_event_site *>(_impl.first); }
+    else if (_impl.second == Bipolar)
+    { delete static_cast<Bipolar_event_site *>(_impl.first); }
+
+    // Copy new data
+    _impl.second = aes._impl.second;
+    if (_impl.second == Polar)
+    { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(aes._impl.first)); }
+    else if (_impl.second == Normal)
+    { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(aes._impl.first)); }
+    else if (_impl.second == Bipolar)
+    { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(aes._impl.first)); }
+  }
+  return *this;
+}
+
+template <typename SK>
+bool Event_queue<SK>::Any_event_site::operator<(const Event_queue<SK>::Any_event_site & e) const
+{
+  switch (e.type())
+  {
+    case Normal:  return (*this) < e.as_normal();
+    case Polar:   return (*this) < e.as_polar();
+    case Bipolar: return (*this) < e.as_bipolar();
+    default: throw std::runtime_error("Invalid type 'None'");
+  }
+}
+
+template <typename SK>
+bool Event_queue<SK>::Any_event_site::operator<(typename Event_bundle<SK>::Normal_event_site const & nes) const
+{
+  switch (type())
+  {
+    case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(nes);
+    case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(nes);
+    case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(nes);
+    default: throw std::runtime_error("Invalid type 'None'");
+  }
+}
+
+template <typename SK>
+bool Event_queue<SK>::Any_event_site::operator<(typename Event_bundle<SK>::Polar_event_site const & pes) const
+{
+  switch (type())
+  {
+    case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(pes);
+    case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(pes);
+    case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(pes);
+    default: throw std::runtime_error("Invalid type 'None'");
+  }
+}
+
+template <typename SK>
+bool Event_queue<SK>::Any_event_site::operator<(typename Event_bundle<SK>::Bipolar_event_site const & bpes) const
+{
+  switch (type())
+  {
+    case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(bpes);
+    case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(bpes);
+    case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(bpes);
+    default: throw std::runtime_error("Invalid type 'None'");
+  }
+}
+
+// vim: sw=2 et ts=2 sts=2

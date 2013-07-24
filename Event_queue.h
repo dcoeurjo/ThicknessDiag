@@ -5,8 +5,6 @@
 #include <queue>
 #include <vector>
 #include <utility>
-#include <stdexcept>
-#include <functional>
 
 #include <CGAL/assertions.h>
 
@@ -267,32 +265,16 @@ class Event_bundle
           _intersection_events() {}
 
         // Add a base normal event
-        void add_event(const Critical_event & ev)
-        {
-          CGAL_assertion(_point.x() == ev.point.x()
-              && _point.y() == ev.point.y()
-              && _point.z() == ev.point.z());
-          CGAL_assertion(_sphere == ev.sphere);
-          if (ev.is_start()) { _start_events.insert(ev); }
-          else { _end_events.insert(ev); }
-        }
+        void add_event(const Critical_event &);
 
         // Overload for adding an intersection event
-        void add_event(const Intersection_event & ev)
-        {
-          CGAL_assertion(_point.x() == ev.point.x()
-              && _point.y() == ev.point.y()
-              && _point.z() == ev.point.z());
-          CGAL_assertion(_sphere == ev.sphere);
-          _intersection_events.push_back(ev);
-        }
+        void add_event(const Intersection_event &);
 
         // Done using lexicographic comparing. This introduces
         // the concepts that points are compared lexicographically and are
         // placed in a frame local to the sphere (ie with its origin at the
         // center of the sphere), in cylindrical coordinates.
-        bool occurs_before(const Normal_event_site & es) const
-        { return Compare_theta_z_3(*_sphere)(_point, es._point) == CGAL::SMALLER; }
+        bool occurs_before(const Normal_event_site &) const;
 
         // Symmetric version of Polar_event_site::occurs_before
         bool occurs_before(const Polar_event_site & es) const
@@ -389,28 +371,7 @@ class Event_bundle
         bool occurs_before(const Normal_event_site &) const
         { return _event.is_end(); }
 
-        bool occurs_before(const Polar_event_site & es) const
-        {
-          if (_event.tag != es._event.tag)
-          { return _event.is_end(); } // End before start
-          else if (_event.pole != es._event.pole)
-          { return _event.is_north(); } // North pole before south
-          else
-          {
-            // Store the polar event site having the biggest
-            // associated circle radius
-            const Polar_event_site * es_biggest_circle = this;
-            typedef Comp_by_squared_radii<Circle_3> Comp_circle_radii;
-            if (Comp_circle_radii()(*es._event.circle, *_event.circle))
-            { es_biggest_circle = &es; }
-
-            // Start -> biggest occurs first, end -> smallest occurs first
-            if (_event.is_start())
-            { return es_biggest_circle == this; }
-            else
-            { return !(es_biggest_circle == this); }
-          }
-        }
+        bool occurs_before(const Polar_event_site &) const;
 
         bool occurs_before(const Bipolar_event_site & es) const
         { return es.occurs_before(*this) == false; }
@@ -436,8 +397,7 @@ class Event_bundle
         bool occurs_before(const Polar_event_site & es) const
         { return es.event().is_end() == false; }
 
-        bool occurs_before(const Bipolar_event_site & es) const
-        { return Compare_theta_3(*_event.sphere)(_event.normal, es._event.normal) == CGAL::SMALLER; }
+        bool occurs_before(const Bipolar_event_site &) const;
 
         const Bipolar_event & event() const
         { return _event; }
@@ -475,50 +435,10 @@ class Event_queue
         Any_event_site(const Bipolar_event_site & bpes):
           _impl(new Bipolar_event_site(bpes), Bipolar) {}
 
-        Any_event_site(const Any_event_site & qe):
-          _impl(0, qe._impl.second)
-        {
-          if (_impl.second == Polar)
-          { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
-          else if (_impl.second == Normal)
-          { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
-          else if (_impl.second == Bipolar)
-          { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
-        }
+        Any_event_site(const Any_event_site & aes);
 
-        ~Any_event_site()
-        {
-          if (_impl.second == Polar)
-          { delete static_cast<Polar_event_site *>(_impl.first); }
-          else if (_impl.second == Normal)
-          { delete static_cast<Normal_event_site *>(_impl.first); }
-          else if (_impl.second == Bipolar)
-          { delete static_cast<Bipolar_event_site *>(_impl.first); }
-        }
-
-        Any_event_site & operator=(const Any_event_site & qe)
-        {
-          if (&qe != this)
-          {
-            // Delete previous data
-            if (_impl.second == Polar)
-            { delete static_cast<Polar_event_site *>(_impl.first); }
-            else if (_impl.second == Normal)
-            { delete static_cast<Normal_event_site *>(_impl.first); }
-            else if (_impl.second == Bipolar)
-            { delete static_cast<Bipolar_event_site *>(_impl.first); }
-
-            // Copy new data
-            _impl.second = qe._impl.second;
-            if (_impl.second == Polar)
-            { _impl.first = new Polar_event_site(*static_cast<const Polar_event_site *>(qe._impl.first)); }
-            else if (_impl.second == Normal)
-            { _impl.first = new Normal_event_site(*static_cast<const Normal_event_site *>(qe._impl.first)); }
-            else if (_impl.second == Bipolar)
-            { _impl.first = new Bipolar_event_site(*static_cast<const Bipolar_event_site *>(qe._impl.first)); }
-          }
-          return *this;
-        }
+        ~Any_event_site();
+        Any_event_site & operator=(const Any_event_site &);
 
         // Get the underlying type
         Event_site_type type() const
@@ -536,49 +456,10 @@ class Event_queue
         { CGAL_assertion(_impl.second == Bipolar);
           return *static_cast<const Bipolar_event_site *>(_impl.first); }
 
-        bool operator<(const Any_event_site & e) const
-        {
-          switch (e.type())
-          {
-            case Normal:  return (*this) < e.as_normal();
-            case Polar:   return (*this) < e.as_polar();
-            case Bipolar: return (*this) < e.as_bipolar();
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-        bool operator<(const Normal_event_site & nes) const
-        {
-          switch (type())
-          {
-            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(nes);
-            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(nes);
-            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(nes);
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-        bool operator<(const Polar_event_site & pes) const
-        {
-          switch (type())
-          {
-            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(pes);
-            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(pes);
-            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(pes);
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
-
-        bool operator<(const Bipolar_event_site & bpes) const
-        {
-          switch (type())
-          {
-            case Normal:  return static_cast<const Normal_event_site *>(_impl.first)->occurs_before(bpes);
-            case Polar:   return static_cast<const Polar_event_site *>(_impl.first)->occurs_before(bpes);
-            case Bipolar: return static_cast<const Bipolar_event_site *>(_impl.first)->occurs_before(bpes);
-            default: throw std::runtime_error("Invalid type 'None'");
-          }
-        }
+        bool operator<(const Any_event_site & e) const;
+        bool operator<(const Normal_event_site & nes) const;
+        bool operator<(const Polar_event_site & pes) const;
+        bool operator<(const Bipolar_event_site & bpes) const;
 
       private:
         std::pair<void *, Event_site_type> _impl;
