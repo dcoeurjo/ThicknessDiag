@@ -44,7 +44,6 @@ add_executable(${PROJECT_NAME}
     dialogs/generatespheresdialog.cpp
     dialogs/selectspheredialog.cpp
     dialogs/sphereformdialog.cpp
-    eventqueuebuilder.cpp
     main.cpp
     sphereintersecterproxy.cpp
     spherelistwidgetitem.cpp
