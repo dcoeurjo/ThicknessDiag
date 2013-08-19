@@ -12,12 +12,16 @@ typedef SK::Sphere_3 Sphere_3;
 typedef Sphere_intersecter<SK>::Circle_handle Circle_handle;
 typedef Sphere_intersecter<SK>::Sphere_handle Sphere_handle;
 
-// Test circles (ugly, but more reliable than a .txt file)
-static const double test_spheres[][4] = {
-#  include "test_spheres.h"
-};
+// Test circles (ugly, but more reliable than a .txt file).
+//
+// either include files generated under test_spheres/*
+// or write directly the content. Note that none of the files
+// generated have a trailing comma (for separation between
+// array elements) and it must therefore be appended after each
+// include if there is extra content needed.
+static const double test_spheres[][4] = { /* TODO */ };
 // and the size of this array
-static const std::size_t test_circles_size = sizeof(test_spheres) / sizeof(double[4]);
+static const std::size_t test_spheres_size = sizeof(test_spheres) / sizeof(double[4]);
 
 // Main sphere to work with
 static const double test_sphere[4] = { 0, 0, 0, 2 };
@@ -27,7 +31,7 @@ int main(int argc, const char * argv[])
   // 1) Setup initial spheres
   Sphere_intersecter<SK> si;
   // add spheres to SI
-  for (std::size_t i = 0; i < test_circles_size; i++)
+  for (std::size_t i = 0; i < test_spheres_size; i++)
   {
     si.add_sphere(Sphere_3(
           Point_3(test_spheres[i][0], test_spheres[i][1],
