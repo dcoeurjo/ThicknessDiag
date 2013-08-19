@@ -1,58 +1,50 @@
 #ifndef HANDLE_H
 #define HANDLE_H
 
-#include <iterator>
-
-#define DELEGATE_COMPARAISON_OPERATORS(cl, mem) \
-  bool operator<(const cl & o) const            \
-  { return mem < o.mem; }                       \
-  bool operator>(const cl & o) const            \
-  { return mem > o.mem; }                       \
-  bool operator<=(const cl & o) const           \
-  { return mem <= o.mem; }                      \
-  bool operator>=(const cl & o) const           \
-  { return mem >= o.mem; }                      \
-  bool operator==(const cl & o) const           \
-  { return mem == o.mem; }                      \
-  bool operator!=(const cl & o) const           \
-  { return mem != o.mem; }
-
 // Handle class, emulating pointer functionality
 // while hiding ownership (a handle doesn't own the
 // pointed member object)
+//
+// Note: the addressing operator isn't overloaded
+// to leave functionalities needing the actual
+// object's address available (ex: Qt signals/slots)
 template <typename T>
 class Handle
 {
   public:
     typedef T Type;
 
-    Handle():
-      _t(0) {}
+    Handle();
+    Handle(Type &);
 
-    Handle(Type & t):
-      _t(&t) {}
+    // Check if the handle is a "null" handle,
+    // that is pointing to no underlying value
+    bool is_null() const;
 
-    bool is_null() const
-    { return _t == 0; }
+    // Accessors (pointer, reference)
+    Type * ptr() const;
+    Type & ref() const;
 
-    Type * ptr() const
-    { return _t; }
-
-    Type & ref() const
-    { return *_t; }
-
-    Type & operator*() const
-    { return ref(); }
-
-    Type * operator->() const
-    { return ptr(); }
-
-    DELEGATE_COMPARAISON_OPERATORS(Handle<T>, _t)
+    // Operators all delegated to members
+    Type & operator*() const;
+    Type * operator->() const;
+    bool operator<(const Handle<T> &) const;
+    bool operator>(const Handle<T> &) const;
+    bool operator<=(const Handle<T> &) const;
+    bool operator>=(const Handle<T> &) const;
+    bool operator==(const Handle<T> &) const;
+    bool operator!=(const Handle<T> &) const;
 
   private:
       Type * _t;
 };
 
+#include <iterator>
+
+// Handle iterator, an iterator wrapping any other InputIterator
+// but yielding a Handle for the actual underlying value.
+//
+// Also follows the STL's InputIterator concept.
 template <typename Iterator>
 class Handle_iterator:
   public std::iterator<std::input_iterator_tag,
@@ -86,7 +78,5 @@ class Handle_iterator:
   private:
     It _it;
 };
-
-#undef DELEGATE_COMPARAISON_OPERATORS // FIXME
 
 #endif // HANDLE_H // vim: sw=2 et ts=2 sts=2

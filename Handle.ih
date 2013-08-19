@@ -1,0 +1,54 @@
+#include <Handle.h>
+
+template <typename T>
+Handle<T>::Handle():
+  _t(0) {}
+
+template <typename T>
+Handle<T>::Handle(T & t):
+  _t(&t) {}
+
+template <typename T> bool Handle<T>::is_null() const
+{ return _t == 0; }
+
+template <typename T>
+T * Handle<T>::ptr() const
+{ return _t; }
+
+template <typename T>
+T & Handle<T>::ref() const
+{ return *_t; }
+
+template <typename T>
+T & Handle<T>::operator*() const
+{ return ref(); }
+
+template <typename T>
+T * Handle<T>::operator->() const
+{ return ptr(); }
+
+template <typename T>
+bool Handle<T>::operator<(const Handle<T> & handle) const
+{ return _t < handle._t; }
+
+template <typename T>
+bool Handle<T>::operator>(const Handle<T> & handle) const
+{ return _t > handle._t; }
+
+template <typename T>
+bool Handle<T>::operator<=(const Handle<T> & handle) const
+{ return _t <= handle._t; }
+
+template <typename T>
+bool Handle<T>::operator>=(const Handle<T> & handle) const
+{ return _t >= handle._t; }
+
+template <typename T>
+bool Handle<T>::operator==(const Handle<T> & handle) const
+{ return _t == handle._t; }
+
+template <typename T>
+bool Handle<T>::operator!=(const Handle<T> & handle) const
+{ return _t != handle._t; }
+
+// vim: sw=2 et ts=2 sts=2
