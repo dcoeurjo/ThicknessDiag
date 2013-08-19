@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 from functools import partial
@@ -12,6 +13,7 @@ def string_format(fmt):
     return fmt
 
 def positive_float(flt):
+    """Validate user input positive float."""
     try:
         flt = float(flt)
         if flt <= 0:
@@ -21,6 +23,7 @@ def positive_float(flt):
         raise argparse.ArgumentError('Must be floating point number')
 
 def positive_int(nb):
+    """Validate user input positive integer."""
     try:
         nb = int(nb)
         if nb <= 0:
@@ -29,13 +32,15 @@ def positive_int(nb):
     except ValueError:
         raise argparse.ArgumentError('Must be an integer')
 
+# argument defaults
 defaults = {
         'format': '{ %s, %s, %s, %s }',
         'separator': ',\n',
         'number': 100,
-        'file': 'test_spheres.h'
+        'dir': 'test_spheres',
         }
 
+# argument parser
 description = 'Generate spheres in a given format (default=%s)' % defaults['format']
 parser = argparse.ArgumentParser(description=description)
 parser.add_argument('coord_amp', metavar='COORD_AMPLITUDE', type=positive_float)
@@ -56,6 +61,7 @@ def generate_sphere(coord_amp, radius_amp):
     return map(str, [random()*coord_amp, random()*coord_amp,
         random()*coord_amp, random()*radius_amp])
 
+# main program
 if __name__ == '__main__':
     parsed_args = parser.parse_args()
     gen = partial(generate_sphere, coord_amp=parsed_args.coord_amp,
@@ -65,5 +71,13 @@ if __name__ == '__main__':
     if parsed_args.stdout:
         sys.stdout.write(spheres_data)
     else:
-        with open(defaults['file'], 'w') as file_:
-                file_.write(spheres_data)
+        this_dir = os.path.dirname(os.path.realpath(__file__))
+        files_dir = os.path.join(this_dir, defaults['dir'])
+        files = os.listdir(files_dir)
+        files_range = sorted(map(lambda x: int(x.split('.')[0]), files))
+        if not files_range:
+            file_index = '0'
+        else:
+            file_index = files_range[-1] + 1
+        with open(os.path.join(files_dir, str(file_index) + '.h'), 'w') as file_:
+            file_.write(spheres_data)

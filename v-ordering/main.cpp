@@ -12,7 +12,7 @@ typedef SK::Sphere_3 Sphere_3;
 typedef Sphere_intersecter<SK>::Circle_handle Circle_handle;
 typedef Sphere_intersecter<SK>::Sphere_handle Sphere_handle;
 
-// Test circles (ugly, but more reliable than a txt file)
+// Test circles (ugly, but more reliable than a .txt file)
 static const double test_spheres[][4] = {
 #  include "test_spheres.h"
 };
@@ -24,7 +24,7 @@ static const double test_sphere[4] = { 0, 0, 0, 2 };
 
 int main(int argc, const char * argv[])
 {
-  // Setup sphere intersecter with our initial data (spheres)
+  // 1) Setup initial spheres
   Sphere_intersecter<SK> si;
   // add spheres to SI
   for (std::size_t i = 0; i < test_circles_size; i++)
@@ -47,7 +47,9 @@ int main(int argc, const char * argv[])
     << "Circles:" << std::endl;
   for (Circle_handle_list::const_iterator it = circles_on_s.begin();
       it != circles_on_s.end(); it++)
-  { std::cout << "- " << **it << std::endl; }
+  { std::cout << **it << std::endl; }
+
+  // 2) Position the (virtual) meridian at an appropriate angle
 
   return 0;
 }
