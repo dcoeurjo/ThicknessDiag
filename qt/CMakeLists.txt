@@ -67,7 +67,6 @@ add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${PROJECT_NAME})
 
 # Link the executable to CGAL and third-party libraries
 target_link_libraries(${PROJECT_NAME}
-    ${ThicknessDiag_LIB}
+    ${ThicknessDiag_LIBRARIES}
     ${QT_LIBRARIES} ${QGLVIEWER_LIBRARIES}
-    ${OPENGL_LIBRARIES} ${GLUT_LIBRARY}
-    ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
+    ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})

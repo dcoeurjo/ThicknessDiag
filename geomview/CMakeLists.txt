@@ -27,5 +27,4 @@ endif()
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 add_to_cached_list(CGAL_EXECUTABLE_TARGETS ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
-    ${ThicknessDiag_LIB}
-    ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
+    ${ThicknessDiag_LIBRARIES})
