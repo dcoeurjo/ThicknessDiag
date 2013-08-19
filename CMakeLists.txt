@@ -32,5 +32,4 @@ add_subdirectory("lib")
 
 # Subdirectories
 add_subdirectory("qt")
-add_subdirectory("geomview")
 add_subdirectory("v-ordering")
