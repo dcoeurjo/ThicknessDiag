@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import glob
 from functools import partial
 from random import random
 
@@ -73,11 +74,11 @@ if __name__ == '__main__':
     else:
         this_dir = os.path.dirname(os.path.realpath(__file__))
         files_dir = os.path.join(this_dir, defaults['dir'])
-        files = os.listdir(files_dir)
-        files_range = sorted(map(lambda x: int(x.split('.')[0]), files))
-        if not files_range:
+        files = map(os.path.basename, glob.glob(os.path.join(files_dir, '*.h')))
+        if not files:
             file_index = '0'
         else:
+            files_range = sorted(map(lambda x: int(x.split('.')[0]), files))
             file_index = files_range[-1] + 1
         with open(os.path.join(files_dir, str(file_index) + '.h'), 'w') as file_:
             file_.write(spheres_data)
