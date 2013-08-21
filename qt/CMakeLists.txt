@@ -6,7 +6,7 @@ set(QT_USE_QTMAIN    true)
 set(QT_USE_QTSCRIPT  true)
 set(QT_USE_QTOPENGL  true)
 find_package(Qt4 QUIET)
-if (NOT(Qt4_FOUND))
+if (NOT(QT4_FOUND))
     message(STATUS "Target ${PROJECT_NAME} requires Qt4")
 else()
     include(${QT_USE_FILE})
@@ -16,13 +16,13 @@ endif()
 
 # QGLViewer
 find_package(QGLViewer QUIET)
-if (NOT(QGLViewer_FOUND))
+if (NOT(QGLVIEWER_FOUND))
     message(STATUS "Target ${PROJECT_NAME} requires QGLViewer")
 endif()
 
 # OpenGL
 find_package(OpenGL QUIET)
-if (NOT(OpenGL_FOUND))
+if (NOT(OPENGL_FOUND))
     message(STATUS "Target ${PROJECT_NAME} requires OpenGL")
 else()
     include_directories(${OPENGL_INCLUDE_DIRS})
@@ -37,7 +37,7 @@ else()
 endif()
 
 # Check that all is ok before continuing
-if (Qt4_FOUND AND QGLViewer_FOUND AND OpenGL_FOUND AND GLUT_FOUND)
+if (QT4_FOUND AND QGLVIEWER_FOUND AND OPENGL_FOUND AND GLUT_FOUND)
     # UI files (Qt Designer files)
     qt4_wrap_ui(FORM_SOURCES
         dialogs/generatespheresdialog.ui
