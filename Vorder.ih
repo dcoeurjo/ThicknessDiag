@@ -1,0 +1,20 @@
+#include <Vorder.h>
+
+template <typename SK>
+Vorder<SK>::Vorder()
+{
+}
+
+template <typename SK>
+bool Vorder<SK>::insert(typename SK::Circular_arc_3 const & arc)
+{ return _arcs.insert(arc).second; }
+
+template <typename SK>
+bool Vorder<SK>::contains(typename SK::Circular_arc_3 const & arc) const
+{ return _arcs.find(arc) != _arcs.end(); }
+
+template <typename SK>
+bool Vorder<SK>::erase(typename SK::Circular_arc_3 const & arc)
+{ return _arcs.erase(arc) > 0; }
+
+// vim: sw=2 et ts=2 sts=2
