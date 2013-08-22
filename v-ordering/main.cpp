@@ -136,18 +136,15 @@ inline Sphere_3 build_sphere(const double coords_and_radius[4])
         coords_and_radius[2]), coords_and_radius[3]*coords_and_radius[3]);
 }
 
-typedef bool TOPO;
-
-void handle_event_site(TOPO & topo, Event_queue<SK> & E, Vorder<SK> & V,
+void handle_event_site(Event_queue<SK> & E, Vorder<SK> & V,
     const Event_queue<SK>::Normal_event_site & nes)
 {
-  std::cout << "Normal" << std::endl;
 }
 // overload without specifying the event site (pops from E)
-void handle_event_site(TOPO & topo, Event_queue<SK> & E, Vorder<SK> & V)
+void handle_event_site(Event_queue<SK> & E, Vorder<SK> & V)
 {
   CGAL_assertion(E.next_event() == Event_queue<SK>::Normal);
-  handle_event_site(topo, E, V, E.pop_normal());
+  handle_event_site(E, V, E.pop_normal());
 }
 
 int main(int argc, const char * argv[])
@@ -163,15 +160,17 @@ int main(int argc, const char * argv[])
   // add the sphere to work with
   Sphere_handle sh = si.add_sphere(build_sphere(test_sphere));
 
-  // Topology structure
-  TOPO topo;
-
   // Event queue
   std::cout << "Building event queue" << std::endl;
   Event_queue<SK> E = Event_queue_builder<SK>()(si, sh);
 
+  if (E.empty())
+  {
+    // TODO
+  }
+
   // V-ordering
-  Vorder<SK> V(/* TODO */);
+  Vorder<SK> V(meridian);
 
   // Iterate over the event queue and get corresponding arcs
   std::cout << "Handling events" << std::endl;
@@ -182,18 +181,19 @@ int main(int argc, const char * argv[])
     {
       std::cout << "polar" << std::endl;
       Event_queue<SK>::Polar_event_site pes = E.pop_polar();
-      //handle_polar_event_site(topo, E, V, pes);
+      //handle_polar_event_site(E, V, pes);
     }
     else if (ev_type == Event_queue<SK>::Bipolar)
     {
       std::cout << "bipolar" << std::endl;
       Event_queue<SK>::Bipolar_event_site bpes = E.pop_bipolar();
-      //handle_bipolar_event_site(topo, E, V, bpes);
+      //handle_bipolar_event_site(E, V, bpes);
     }
     else
     {
       CGAL_assertion(ev_type == Event_queue<SK>::Normal);
-      handle_event_site(topo, E, V, E.pop_normal());
+      std::cout << "normal" << std::endl;
+      handle_event_site(E, V, E.pop_normal());
     }
   }
   return 0;
