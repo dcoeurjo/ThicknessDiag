@@ -171,7 +171,7 @@ int main(int argc, const char * argv[])
   Event_queue<SK> E = Event_queue_builder<SK>()(si, sh);
 
   // V-ordering
-  Vorder<SK> V;
+  Vorder<SK> V(/* TODO */);
 
   // Iterate over the event queue and get corresponding arcs
   std::cout << "Handling events" << std::endl;
@@ -193,7 +193,7 @@ int main(int argc, const char * argv[])
     else
     {
       CGAL_assertion(ev_type == Event_queue<SK>::Normal);
-      handle_event_site(topo, E, V, E.pop_normal());
+      //handle_event_site(topo, E, V, E.pop_normal());
     }
   }
   return 0;

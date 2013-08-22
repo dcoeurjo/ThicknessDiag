@@ -1,20 +1,34 @@
 #include <Vorder.h>
+#include <algorithm>
 
 template <typename SK>
-Vorder<SK>::Vorder()
-{
-}
+Vorder<SK>::Vorder(typename SK::Vector_3 const & meridian):
+  _mer(meridian) {}
 
 template <typename SK>
 bool Vorder<SK>::insert(typename SK::Circular_arc_3 const & arc)
-{ return _arcs.insert(arc).second; }
+{
+  typename Arc_list::iterator it;
+  it = std::lower_bound(_arcs.begin(), _arcs.end(), arc,
+      Compare_arcs_at_theta(_mer));
+  _arcs.insert(it, arc);
+}
 
 template <typename SK>
 bool Vorder<SK>::contains(typename SK::Circular_arc_3 const & arc) const
-{ return _arcs.find(arc) != _arcs.end(); }
+{
+  return std::upper_bound(_arcs.begin(), _arcs.end(), arc,
+      Compare_arcs_at_theta(_mer)) == _arcs.end();
+}
 
 template <typename SK>
 bool Vorder<SK>::erase(typename SK::Circular_arc_3 const & arc)
-{ return _arcs.erase(arc) > 0; }
+{
+  std::size_t old_size = _arcs.size();
+  _arcs.erase(std::lower_bound(_arcs.begin(), _arcs.end(), arc,
+        Compare_arcs_at_theta(_mer)), std::upper_bound(_arcs.begin(),
+        _arcs.end(), arc, Compare_arcs_at_theta(_mer)));
+  return old_size > _arcs.size();
+}
 
 // vim: sw=2 et ts=2 sts=2
