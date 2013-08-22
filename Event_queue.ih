@@ -172,4 +172,72 @@ bool Event_queue<SK>::Any_event_site::operator<(typename Event_bundle<SK>::Bipol
   }
 }
 
+template <typename SK>
+typename Event_queue<SK>::Normal_event_site const & Event_queue<SK>::top_normal() const
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() == Normal);
+  return _queue.top().as_normal();
+}
+
+template <typename SK>
+typename Event_queue<SK>::Normal_event_site Event_queue<SK>::pop_normal()
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() == Normal);
+  Normal_event_site nes = _queue.top().as_normal();
+  _queue.pop();
+  return nes;
+}
+
+template <typename SK>
+typename Event_queue<SK>::Polar_event_site const & Event_queue<SK>::top_polar() const
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() == Polar);
+  return _queue.top().as_polar();
+}
+
+template <typename SK>
+typename Event_queue<SK>::Polar_event_site Event_queue<SK>::pop_polar()
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() == Polar);
+  Polar_event_site pes = _queue.top().as_polar();
+  _queue.pop();
+  return pes;
+}
+
+template <typename SK>
+typename Event_queue<SK>::Bipolar_event_site const & Event_queue<SK>::top_bipolar() const
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() == Bipolar);
+  return _queue.top().as_bipolar();
+}
+
+template <typename SK>
+typename Event_queue<SK>::Bipolar_event_site Event_queue<SK>::pop_bipolar()
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() == Bipolar);
+  Bipolar_event_site bpes = _queue.top().as_bipolar();
+  _queue.pop();
+  return bpes;
+}
+
+template <typename SK>
+typename SK::Circular_arc_point_3 Event_queue<SK>::current_point() const
+{
+  CGAL_assertion(_queue.empty() == false);
+  CGAL_assertion(_queue.top().type() != Bipolar);
+  if (_queue.top().type() == Normal)
+  { return top_normal().point(); }
+  else
+  {
+    CGAL_assertion(_queue.top().type() == Polar);
+    // TODO
+  }
+}
+
 // vim: sw=2 et ts=2 sts=2

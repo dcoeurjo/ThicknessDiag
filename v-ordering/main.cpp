@@ -11,6 +11,8 @@ typedef CGAL::Exact_spherical_kernel_3 SK;
 typedef SK::Point_3 Point_3;
 typedef SK::Circle_3 Circle_3;
 typedef SK::Sphere_3 Sphere_3;
+typedef SK::Vector_3 Vector_3;
+typedef SK::Circular_arc_point_3 Circular_arc_point_3;
 
 typedef Sphere_intersecter<SK>::Circle_handle Circle_handle;
 typedef Sphere_intersecter<SK>::Sphere_handle Sphere_handle;
@@ -21,8 +23,8 @@ static const double test_sphere[4] = { 0, 0, 0, 3 };
 // Test circles
 static const double test_spheres[][4] = {
   // polar circles
-  //{ 3, 0, 3, 3 },
-  //{ 0, 3, 3, 3 },
+  { 3, 0, 3, 3 },
+  { 0, 3, 3, 3 },
   // bipolar circles
   // TODO
   // normal circles
@@ -136,6 +138,10 @@ inline Sphere_3 build_sphere(const double coords_and_radius[4])
         coords_and_radius[2]), coords_and_radius[3]*coords_and_radius[3]);
 }
 
+inline Vector_3 build_meridian(const Circular_arc_point_3 & p)
+{
+}
+
 void handle_event_site(Event_queue<SK> & E, Vorder<SK> & V,
     const Event_queue<SK>::Normal_event_site & nes)
 {
@@ -166,11 +172,12 @@ int main(int argc, const char * argv[])
 
   if (E.empty())
   {
-    // TODO
+    std::cerr << "Empty event queue" << std::endl;
+    return 1;
   }
 
   // V-ordering
-  Vorder<SK> V(meridian);
+  Vorder<SK> V(build_meridian(E.current_point()));
 
   // Iterate over the event queue and get corresponding arcs
   std::cout << "Handling events" << std::endl;
