@@ -84,44 +84,40 @@ Event_queue<SK> Event_queue_builder<SK>::operator()(const Sphere_intersecter<SK>
 
     // Add circles events
     CGAL::Circle_type circle_type = CGAL::classify(c1, sphere);
-    if (circle_type != CGAL::THREADED)
+    Circle_event_builder ceb = eb.prepare_circle_event(c1);
+    if (circle_type == CGAL::NORMAL)
     {
-      Circle_event_builder ceb = eb.prepare_circle_event(c1);
-      if (circle_type == CGAL::NORMAL)
-      {
-        Circular_arc_point_3 extremes[2];
-        CGAL::theta_extremal_points(c1, sphere, extremes);
-        ADD_TO_NE_SITE(extremes[0], ceb.critical_event(extremes[0], Critical_event::Start));
-        ADD_TO_NE_SITE(extremes[1], ceb.critical_event(extremes[1], Critical_event::End));
-      }
-      else if (circle_type == CGAL::POLAR)
-      {
-        // Line passing through the poles
-        Line_3 pole_axis(sphere.center(), Direction_3(0, 0, 1));
+      Circular_arc_point_3 extremes[2];
+      CGAL::theta_extremal_points(c1, sphere, extremes);
+      ADD_TO_NE_SITE(extremes[0], ceb.critical_event(extremes[0], Critical_event::Start));
+      ADD_TO_NE_SITE(extremes[1], ceb.critical_event(extremes[1], Critical_event::End));
+    }
+    else if (circle_type == CGAL::POLAR)
+    {
+      // Line passing through the poles
+      Line_3 pole_axis(sphere.center(), Direction_3(0, 0, 1));
 
-        // Compute intersection
-        Intersection_list pole_inters;
-        Intersect_3()(pole_axis, c1, std::back_inserter(pole_inters));
-        CGAL_assertion(pole_inters.size() == 1);
-        CAP cap;
-        Assign_3()(cap, pole_inters[0]);
-        typename Polar_event::Pole_type pole_type = Polar_event::North;
-        if (CGAL::compare_z(Circular_arc_point_3(sphere.center()), cap.first) == CGAL::SMALLER)
-        { pole_type = Polar_event::South; }
+      // Compute intersection
+      Intersection_list pole_inters;
+      Intersect_3()(pole_axis, c1, std::back_inserter(pole_inters));
+      CGAL_assertion(pole_inters.size() == 1);
+      CAP cap;
+      Assign_3()(cap, pole_inters[0]);
+      typename Polar_event::Pole_type pole_type = Polar_event::North;
+      if (CGAL::compare_z(Circular_arc_point_3(sphere.center()), cap.first) == CGAL::SMALLER)
+      { pole_type = Polar_event::South; }
 
-        // Add polar events
-        pe_sites.push_back(ceb.polar_event(cap.first, pole_type, Polar_event::Start));
-        pe_sites.push_back(ceb.polar_event(cap.first, pole_type, Polar_event::End));
-      }
-      else
-      {
-        CGAL_assertion(circle_type == CGAL::BIPOLAR);
-        Vector_3 meridian_normals[2] = { c1.supporting_plane().orthogonal_vector() };
-        meridian_normals[1] = -meridian_normals[0];
-        std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(sphere));
-        bpe_sites.push_back(ceb.bipolar_event(meridian_normals[0], Bipolar_event::Start));
-        bpe_sites.push_back(ceb.bipolar_event(meridian_normals[1], Bipolar_event::End));
-      }
+      // Add polar events
+      pe_sites.push_back(ceb.polar_event(cap.first, pole_type, Polar_event::Start));
+      pe_sites.push_back(ceb.polar_event(cap.first, pole_type, Polar_event::End));
+    }
+    else if (circle_type == CGAL::BIPOLAR)
+    {
+      Vector_3 meridian_normals[2] = { c1.supporting_plane().orthogonal_vector() };
+      meridian_normals[1] = -meridian_normals[0];
+      std::sort(meridian_normals, meridian_normals + 2, Compare_theta_3(sphere));
+      bpe_sites.push_back(ceb.bipolar_event(meridian_normals[0], Bipolar_event::Start));
+      bpe_sites.push_back(ceb.bipolar_event(meridian_normals[1], Bipolar_event::End));
     }
 
     // Make crossing/tangency events
@@ -198,3 +194,5 @@ Event_queue<SK> Event_queue_builder<SK>::operator()(const Sphere_intersecter<SK>
 
   return ev_queue;
 }
+
+// vim: sw=2 et ts=2 sts=2

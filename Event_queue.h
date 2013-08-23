@@ -410,6 +410,8 @@ class Event_bundle
 template <typename SK>
 class Event_queue
 {
+  typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
+
   public:
     typedef Event_bundle<SK> Events;
     typedef typename Events::Normal_event_site Normal_event_site;
@@ -492,56 +494,21 @@ class Event_queue
     void push(const Bipolar_event_site & bpes)
     { _queue.push(bpes); }
 
+    // Type of the next event in the queue
     Event_site_type next_event() const
     { return empty() == false ? _queue.top().type() : None; }
 
-    const Normal_event_site & top_normal() const
-    {
-      CGAL_assertion(_queue.empty() == false);
-      CGAL_assertion(_queue.top().type() == Normal);
-      return _queue.top().as_normal();
-    }
+    // Top/Pop normal
+    const Normal_event_site & top_normal() const;
+    Normal_event_site pop_normal();
 
-    Normal_event_site pop_normal()
-    {
-      CGAL_assertion(_queue.empty() == false);
-      CGAL_assertion(_queue.top().type() == Normal);
-      Normal_event_site nes = _queue.top().as_normal();
-      _queue.pop();
-      return nes;
-    }
+    // Top/Pop polar
+    const Polar_event_site & top_polar() const;
+    Polar_event_site pop_polar();
 
-    const Polar_event_site & top_polar() const
-    {
-      CGAL_assertion(_queue.empty() == false);
-      CGAL_assertion(_queue.top().type() == Polar);
-      return _queue.top().as_polar();
-    }
-
-    Polar_event_site pop_polar()
-    {
-      CGAL_assertion(_queue.empty() == false);
-      CGAL_assertion(_queue.top().type() == Polar);
-      Polar_event_site pes = _queue.top().as_polar();
-      _queue.pop();
-      return pes;
-    }
-
-    const Bipolar_event_site & top_bipolar() const
-    {
-      CGAL_assertion(_queue.empty() == false);
-      CGAL_assertion(_queue.top().type() == Bipolar);
-      return _queue.top().as_bipolar();
-    }
-
-    Bipolar_event_site pop_bipolar()
-    {
-      CGAL_assertion(_queue.empty() == false);
-      CGAL_assertion(_queue.top().type() == Bipolar);
-      Bipolar_event_site bpes = _queue.top().as_bipolar();
-      _queue.pop();
-      return bpes;
-    }
+    // Top/Pop bipolar
+    const Bipolar_event_site & top_bipolar() const;
+    Bipolar_event_site pop_bipolar();
 
   private:
     Event_site_queue _queue;
