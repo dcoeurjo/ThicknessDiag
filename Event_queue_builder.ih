@@ -57,7 +57,7 @@ Event_queue<SK> Event_queue_builder<SK>::operator()(const Sphere_intersecter<SK>
           Normal_event_site> Normal_event_sites;
   Normal_event_sites normal_sites;
   // ...helper macro for redundant code
-#define ADD_TO_NE_SITE(POINT, EVENT)                                         \
+#define ADD_TO_NE_SITE(POINT, EVENT)                                     \
   { typename Normal_event_sites::iterator it = normal_sites.find(POINT); \
     if (it == normal_sites.end())                                        \
     { it = normal_sites.insert(std::make_pair(POINT,                     \
