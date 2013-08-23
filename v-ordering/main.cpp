@@ -24,7 +24,6 @@ static const double test_sphere[4] = { 0, 0, 0, 3 };
 static const double test_spheres[][4] = {
   // polar circles
   { 3, 0, 3, 3 },
-  { 0, 3, 3, 3 },
   // bipolar circles
   // TODO
   // normal circles
@@ -156,7 +155,7 @@ void handle_event_site(Event_queue<SK> & E, Vorder<SK> & V)
 int main(int argc, const char * argv[])
 {
   // 1) Setup initial spheres
-  std::cout << "Setting up sphere intersecter" << std::endl;
+  //std::cout << "Setting up sphere intersecter" << std::endl;
   Sphere_intersecter<SK> si;
 
   // Add spheres to SI
@@ -176,8 +175,32 @@ int main(int argc, const char * argv[])
     return 1;
   }
 
+  // Initial meridian
+  Vector_3 meridian;
+  if (E.next_event() == Event_queue<SK>::Normal)
+  {
+    const Event_queue<SK>::Normal_event_site & nes = E.top_normal();
+    // TODO
+  }
+  else if (E.next_event() == Event_queue<SK>::Polar)
+  {
+    const Event_queue<SK>::Polar_event_site & pes = E.top_polar();
+    // TODO
+  }
+  else
+  {
+    CGAL_assertion(E.next_event() == Event_queue<SK>::Bipolar);
+    meridian = E.top_bipolar().event().normal;
+  }
+
   // V-ordering
-  Vorder<SK> V(build_meridian(E.current_point()));
+  Vorder<SK> V(meridian);
+
+  // Initialize V-ordering
+  // TODO
+
+  // Initialize arrangement
+  // TODO
 
   // Iterate over the event queue and get corresponding arcs
   std::cout << "Handling events" << std::endl;
@@ -186,23 +209,27 @@ int main(int argc, const char * argv[])
   {
     if (ev_type == Event_queue<SK>::Polar)
     {
-      std::cout << "polar" << std::endl;
       Event_queue<SK>::Polar_event_site pes = E.pop_polar();
+      //break_adjacencies(pes);
       //handle_polar_event_site(E, V, pes);
     }
     else if (ev_type == Event_queue<SK>::Bipolar)
     {
-      std::cout << "bipolar" << std::endl;
       Event_queue<SK>::Bipolar_event_site bpes = E.pop_bipolar();
+      //break_adjacencies(bpes);
       //handle_bipolar_event_site(E, V, bpes);
     }
     else
     {
       CGAL_assertion(ev_type == Event_queue<SK>::Normal);
-      std::cout << "normal" << std::endl;
-      handle_event_site(E, V, E.pop_normal());
+      //break_adjacencies(nes);
+      //handle_event_site(E, V, E.pop_normal());
     }
   }
+
+  // Merge virtual faces
+  // TODO
+
   return 0;
 }
 

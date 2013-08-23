@@ -510,10 +510,6 @@ class Event_queue
     const Bipolar_event_site & top_bipolar() const;
     Bipolar_event_site pop_bipolar();
 
-    // Current point (status) of the event queue
-    // Precondition: next_event() != Bipolar
-    Circular_arc_point_3 current_point() const;
-
   private:
     Event_site_queue _queue;
 };
