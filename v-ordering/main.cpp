@@ -1,5 +1,6 @@
 #include <vector>
 #include <iterator>
+#include <algorithm>
 #include <CGAL/Exact_spherical_kernel_3.h>
 #include <Sphere_intersecter.h>
 #include <Event_queue.h>
