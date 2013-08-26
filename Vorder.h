@@ -12,15 +12,14 @@ class Vorder
   struct Compare_arcs_at_theta
   {
     Compare_arcs_at_theta(const Vector_3 & meridian):
-      meridian(meridian) {}
+      mer(meridian) {}
 
     bool operator()(const Circular_arc_3 & x,
         const Circular_arc_3 & y) const
-    {
-      // TODO
-    }
+    { return comp(x, y, mer); }
 
-    const Vector_3 & meridian;
+    const Vector_3 & mer;
+    typename SK::CompareZAtTheta_3 comp;
   };
 
   typedef std::vector<Circular_arc_3> Arc_list;
@@ -32,7 +31,7 @@ class Vorder
     Vorder(const Vector_3 & meridian,
         InputIterator begin,
         InputIterator end):
-      _mer(meridian)
+      _mer(meridian), _comp(_mer)
     { insert(begin, end); }
 
 
@@ -54,6 +53,7 @@ class Vorder
   private:
     Vector_3 _mer;
     Arc_list _arcs;
+    Compare_arcs_at_theta _comp;
 };
 
 #endif // VORDER_H // vim: sw=2 et ts=2 sts=2
