@@ -22,4 +22,11 @@ bool Vorder<SK>::erase(typename SK::Circular_arc_3 const & arc)
   return old_size > _arcs.size();
 }
 
+template <typename SK>
+void Vorder<SK>::set_meridian(const Vector_3 & meridian)
+{
+  _comp.mer = _mer = meridian;
+  std::sort(_arcs.begin(), _arcs.end(), _comp);
+}
+
 // vim: sw=2 et ts=2 sts=2

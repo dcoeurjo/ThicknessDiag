@@ -50,6 +50,9 @@ class Vorder
 
     bool erase(const Circular_arc_3 &);
 
+    // Set a new meridian, re-sorting the Vorder
+    void set_meridian(const Vector_3 & meridian);
+
   private:
     Vector_3 _mer;
     Arc_list _arcs;
