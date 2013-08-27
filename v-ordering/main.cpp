@@ -9,6 +9,7 @@
 typedef CGAL::Exact_spherical_kernel_3 SK;
 
 typedef SK::Point_3 Point_3;
+typedef SK::Plane_3 Plane_3;
 typedef SK::Circle_3 Circle_3;
 typedef SK::Sphere_3 Sphere_3;
 typedef SK::Direction_3 Direction_3;
@@ -168,24 +169,26 @@ int main(int argc, const char * argv[])
   std::list<Circular_arc_3> V;
 
   // Initialize V-ordering
-  typedef std::vector<Object_3> Intersection_list;
-  std::vector<Circle_handle> circles;
-  si.circles_on_sphere(sh, std::back_inserter(circles));
   Vector_3 meridian(0, 1, 0);
   Line_3 pole_axis(s.center(), Direction_3(0, 0, 1));
+  Circular_arc_3 meridian_arc;
+  typedef std::vector<Object_3> Intersection_list;
+  typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
   Intersection_list poles;
   Intersect_3()(pole_axis, s, std::back_inserter(poles));
   CGAL_assertion(poles.size() == 2);
-  typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
-  CAP north, south;
-  Assign_3()(north, poles[0]);
-  Assign_3()(south, poles[1]);
+  CAP north_cap, south_cap;
+  Assign_3()(north_cap, poles[0]);
+  Assign_3()(south_cap, poles[1]);
+  meridian_arc = Circular_arc_3(Circle_3(s, Plane_3(s.center(), meridian)), north_cap.first, south_cap.first);
+  std::vector<Circle_handle> circles;
+  si.circles_on_sphere(sh, std::back_inserter(circles));
   for (std::vector<Circle_handle>::const_iterator it = circles.begin();
       it != circles.end(); it++)
   {
     const Circle_3 & c = **it;
     Intersection_list ini_intersected_arcs;
-    //Intersect_3()(meridian, c, std::back_inserter(ini_intersected_arcs)); // FIXME intersect with great circle
+    Intersect_3()(meridian_arc, c, std::back_inserter(ini_intersected_arcs));
     if (ini_intersected_arcs.empty())
     { continue; }
     else if (ini_intersected_arcs.size() == 2)
@@ -205,8 +208,9 @@ int main(int argc, const char * argv[])
       // but a point (end point).
       if (pole_inters.empty())
       {
-        Circular_arc_point_3 point;
-        Assign_3()(point, ini_intersected_arcs[0]);
+        CAP cap;
+        Assign_3()(cap, ini_intersected_arcs[0]);
+        V.push_back(Circular_arc_3(c, cap.first));
       }
     }
   }
