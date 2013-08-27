@@ -5,14 +5,19 @@
 #include <Sphere_intersecter.h>
 #include <Event_queue.h>
 #include <Event_queue_builder.h>
-#include <Vorder.h>
 
 typedef CGAL::Exact_spherical_kernel_3 SK;
 
 typedef SK::Point_3 Point_3;
 typedef SK::Circle_3 Circle_3;
 typedef SK::Sphere_3 Sphere_3;
+typedef SK::Direction_3 Direction_3;
 typedef SK::Vector_3 Vector_3;
+typedef SK::Line_3 Line_3;
+typedef SK::Assign_3 Assign_3;
+typedef SK::Object_3 Object_3;
+typedef SK::Intersect_3 Intersect_3;
+typedef SK::Circular_arc_3 Circular_arc_3;
 typedef SK::Circular_arc_point_3 Circular_arc_point_3;
 
 typedef Sphere_intersecter<SK>::Circle_handle Circle_handle;
@@ -147,6 +152,7 @@ int main(int argc, const char * argv[])
       si.insert_iterator());
   // add the sphere to work with
   Sphere_handle sh = si.add_sphere(test_sphere);
+  Sphere_3 s = *sh;
 
   // Event queue
   std::cout << "Building event queue" << std::endl;
@@ -158,33 +164,52 @@ int main(int argc, const char * argv[])
     return 1;
   }
 
-  // Initial meridian
-  Vector_3 meridian;
-  if (E.next_event() == Event_queue<SK>::Normal)
-  {
-    const Event_queue<SK>::Normal_event_site & nes = E.top_normal();
-    // TODO
-  }
-  else if (E.next_event() == Event_queue<SK>::Polar)
-  {
-    const Event_queue<SK>::Polar_event_site & pes = E.top_polar();
-    // TODO
-  }
-  else
-  {
-    CGAL_assertion(E.next_event() == Event_queue<SK>::Bipolar);
-    meridian = E.top_bipolar().event().normal;
-  }
-
   // V-ordering
-  Vorder<SK> V(meridian);
+  std::list<Circular_arc_3> V;
 
   // Initialize V-ordering
+  typedef std::vector<Object_3> Intersection_list;
   std::vector<Circle_handle> circles;
   si.circles_on_sphere(sh, std::back_inserter(circles));
-  // TODO intersect "meridian" circular arc with all the
-  // circles, and insert the corresponding arcs in V,
-  // only if the intersection does not reduce to a pole.
+  Vector_3 meridian(0, 1, 0);
+  Line_3 pole_axis(s.center(), Direction_3(0, 0, 1));
+  Intersection_list poles;
+  Intersect_3()(pole_axis, s, std::back_inserter(poles));
+  CGAL_assertion(poles.size() == 2);
+  typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
+  CAP north, south;
+  Assign_3()(north, poles[0]);
+  Assign_3()(south, poles[1]);
+  for (std::vector<Circle_handle>::const_iterator it = circles.begin();
+      it != circles.end(); it++)
+  {
+    const Circle_3 & c = **it;
+    Intersection_list ini_intersected_arcs;
+    //Intersect_3()(meridian, c, std::back_inserter(ini_intersected_arcs)); // FIXME intersect with great circle
+    if (ini_intersected_arcs.empty())
+    { continue; }
+    else if (ini_intersected_arcs.size() == 2)
+    {
+      CAP cap1, cap2;
+      Assign_3()(cap1, ini_intersected_arcs[0]);
+      Assign_3()(cap2, ini_intersected_arcs[1]);
+      V.push_back(Circular_arc_3(c, cap1.first, cap2.first));
+      V.push_back(Circular_arc_3(c, cap2.first, cap1.first));
+    }
+    else
+    {
+      Intersection_list pole_inters;
+      Intersect_3()(pole_axis, c, std::back_inserter(pole_inters));
+
+      // If the intersection does not reduce to a pole,
+      // but a point (end point).
+      if (pole_inters.empty())
+      {
+        Circular_arc_point_3 point;
+        Assign_3()(point, ini_intersected_arcs[0]);
+      }
+    }
+  }
 
   // Initialize arrangement
   // TODO
