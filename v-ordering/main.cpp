@@ -145,20 +145,22 @@ static const Sphere_3 test_spheres[] = {
 // and the size of this array
 static const std::size_t test_spheres_size = sizeof(test_spheres) / sizeof(double[4]);
 
-class Compare_z_at_theta
+struct Intersected_arc
 {
-  typedef SK::CompareZAtTheta_3 CompareZAtTheta_3;
+  Intersected_arc(const Sphere_3 & s,
+      const Circular_arc_point_3 & p,
+      const Circular_arc_3 & arc):
+    sphere(s), point(p), arc(arc) {}
 
-  public:
-    Compare_z_at_theta(const Vector_3 & mer):
-      _mer(mer) {}
+  bool operator<(const Intersected_arc & c) const
+  {
+    CGAL_assertion(&sphere == &c.sphere && sphere == c.sphere);
+    return SK::Compare_theta_z_3(*sphere)(point, c.point) == CGAL::SMALLER;
+  }
 
-    // FIXME
-    bool operator()(const Circular_arc_3 & x, const Circular_arc_3 & y) const
-    { return CompareZAtTheta_3(_mer, x, y) == CGAL::SMALLER; }
-
-  private:
-    Vector_3 _mer;
+  Sphere_3 & sphere;
+  Circular_arc_point_3 point;
+  Circular_arc_3 arc;
 };
 
 static void break_adjacencies(Normal_event_site & nes) {}
@@ -191,6 +193,7 @@ int main(int argc, const char * argv[])
 
   // V-ordering
   std::list<Circular_arc_3> V;
+  std::set<Intersected_arc> ini_V;
 
   // Initialize V-ordering
   Vector_3 meridian(0, 1, 0);
@@ -217,30 +220,27 @@ int main(int argc, const char * argv[])
     { continue; }
     else if (ini_intersected_arcs.size() == 2)
     {
-      CAP cap1, cap2;
-      Assign_3()(cap1, ini_intersected_arcs[0]);
-      Assign_3()(cap2, ini_intersected_arcs[1]);
-      V.push_back(Circular_arc_3(c, cap1.first, cap2.first));
-      V.push_back(Circular_arc_3(c, cap2.first, cap1.first));
+      CAP cap[2];
+      Assign_3()(cap[0], ini_intersected_arcs[0]);
+      Assign_3()(cap[1], ini_intersected_arcs[1]);
+      Circular_arc_3 arcs[2];
+      // TODO find corresponding arcs
+      ini_V.push_back(s, cap[0].first, arcs[0]);
+      ini_V.push_back(s, cap[1].first, arcs[1]);
     }
     else
     {
-      Intersection_list pole_inters;
-      Intersect_3()(pole_axis, c, std::back_inserter(pole_inters));
+      CAP cap;
+      Assign_3()(cap, ini_intersected_arcs[0]);
 
-      // If the intersection does not reduce to a pole,
-      // but a point (end point).
-      if (pole_inters.empty())
+      // true/false flag meaning if end point is at smallest/largest
+      // theta value on sphere
+      if (CGAL::theta_extremal_point(c, s, true) == cap.first)
       {
-        CAP cap;
-        Assign_3()(cap, ini_intersected_arcs[0]);
-        V.push_back(Circular_arc_3(c, cap.first));
+        // TODO insert start/end arcs
       }
     }
   }
-
-  // Sort arcs at initial meridian
-  std::sort(V.begin(), V.end(), Compare_z_at_theta(meridian))
 
   // Initialize arrangement
   // TODO

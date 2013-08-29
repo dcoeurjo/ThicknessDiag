@@ -29,8 +29,6 @@ class Sphere_intersecter
   typedef typename SK::Sphere_3 Sphere_3;
   typedef typename SK::Circle_3 Circle_3;
   typedef typename SK::Line_3 Line_3;
-  typedef typename SK::Circular_arc_3 Circular_arc_3;
-  typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
 
   // Intersection bundle
   typedef typename SK::Object_3 Object_3;
