@@ -24,6 +24,10 @@ typedef SK::Circular_arc_point_3 Circular_arc_point_3;
 typedef Sphere_intersecter<SK>::Circle_handle Circle_handle;
 typedef Sphere_intersecter<SK>::Sphere_handle Sphere_handle;
 
+typedef Event_queue<SK>::Normal_event_site Normal_event_site;
+typedef Event_queue<SK>::Polar_event_site Polar_event_site;
+typedef Event_queue<SK>::Bipolar_event_site Bipolar_event_site;
+
 // Main sphere to work with
 static const Sphere_3 test_sphere = Sphere_3(Point_3( 0, 0, 0), 3);
 
@@ -140,6 +144,26 @@ static const Sphere_3 test_spheres[] = {
 };
 // and the size of this array
 static const std::size_t test_spheres_size = sizeof(test_spheres) / sizeof(double[4]);
+
+class Compare_z_at_theta
+{
+  typedef SK::CompareZAtTheta_3 CompareZAtTheta_3;
+
+  public:
+    Compare_z_at_theta(const Vector_3 & mer):
+      _mer(mer) {}
+
+    // FIXME
+    bool operator()(const Circular_arc_3 & x, const Circular_arc_3 & y) const
+    { return CompareZAtTheta_3(_mer, x, y) == CGAL::SMALLER; }
+
+  private:
+    Vector_3 _mer;
+};
+
+static void break_adjacencies(Normal_event_site & nes) {}
+static void break_adjacencies(Polar_event_site & pes) {}
+static void break_adjacencies(Bipolar_event_site & bpes) {}
 
 int main(int argc, const char * argv[])
 {
