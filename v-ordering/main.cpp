@@ -215,6 +215,9 @@ int main(int argc, const char * argv[])
     }
   }
 
+  // Sort arcs at initial meridian
+  std::sort(V.begin(), V.end(), Compare_z_at_theta(meridian))
+
   // Initialize arrangement
   // TODO
 
