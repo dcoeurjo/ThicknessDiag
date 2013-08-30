@@ -484,6 +484,9 @@ class Event_queue
     size_type size() const
     { return _queue.size(); }
 
+    void clear()
+    { _queue = Event_site_queue(); }
+
     // Push normal events to the queue
     void push(const Normal_event_site & nes)
     { _queue.push(nes); }

@@ -25,11 +25,15 @@ find_package(Boost REQUIRED system)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Add project library
-set(ThicknessDiag_LIB ${PROJECT_NAME})
+set(ThicknessDiag_LIB ${PROJECT_NAME}-lib)
 set(ThicknessDiag_LIBRARIES ${ThicknessDiag_LIB}
     ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
 add_subdirectory("lib")
 
 # Subdirectories
 add_subdirectory("qt")
-add_subdirectory("v-ordering")
+
+# Final executable
+set(ThicknessDiag_EXE ${PROJECT_NAME})
+add_executable(${ThicknessDiag_EXE} main.cpp)
+target_link_libraries(${ThicknessDiag_EXE} ${ThicknessDiag_LIBRARIES})
