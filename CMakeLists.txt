@@ -30,10 +30,22 @@ set(ThicknessDiag_LIBRARIES ${ThicknessDiag_LIB}
     ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
 add_subdirectory("lib")
 
-# Subdirectories
-add_subdirectory("qt")
-
 # Final executable
 set(ThicknessDiag_EXE ${PROJECT_NAME})
 add_executable(${ThicknessDiag_EXE} main.cpp)
 target_link_libraries(${ThicknessDiag_EXE} ${ThicknessDiag_LIBRARIES})
+
+# C++0x/11 mode
+set(WITH_CPP0X_MODE_DESCRIPTION "Set this option to compile in C++0x mode")
+option(WITH_CPP0X_MODE ${WITH_CPP0X_MODE_DESCRIPTION} FALSE)
+if(WITH_CPP0X_MODE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+endif()
+
+# Qt interface extension
+set(WITH_QT_DESCRIPTION "Set this option to display output of insertion on Geomview and prompt before passing")
+set(QT_DISPLAY_FLAG "DISPLAY_ON_QT")
+option(WITH_QT_DISPLAY ${WITH_QT_DESCRIPTION} FALSE)
+if(WITH_QT_DISPLAY)
+    add_subdirectory("qt")
+endif()
