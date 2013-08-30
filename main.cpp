@@ -299,7 +299,7 @@ class BO_algorithm_for_spheres
           it != circles.end(); it++)
       {
         const Circle_3 & c = **it;
-        CGAL::Circle_type circle_type = CGAL::classify(c, s); // FIXME this has already been computed
+        CGAL::Circle_type circle_type = CGAL::classify(c, s); // this has already been computed...
         Intersection_list ini_intersected_arcs;
         Intersect_3()(meridian_arc, c, std::back_inserter(ini_intersected_arcs));
         if (ini_intersected_arcs.empty())
@@ -328,17 +328,30 @@ class BO_algorithm_for_spheres
           CAP cap;
           Assign_3()(cap, ini_intersected_arcs[0]);
 
-          if (circle_type == CGAL::NORMAL && CGAL::theta_extremal_point(c, s, true) == cap.first)
+          if (circle_type == CGAL::NORMAL && CGAL::theta_extremal_point(c, s, true) == cap.first) // normal circle tangeant to meridian
           {
-            // TODO insert start/end arcs
+            Circular_arc_point_3 extremes[2];
+            CGAL::theta_extremal_points(c, s, extremes);
+            CGAL_assertion(cap.first == extremes[1]);
+            ini_V.insert(Intersected_arc(s, cap.first, Circular_arc_3(c, extremes[0], extremes[1])));
+            ini_V.insert(Intersected_arc(s, cap.first, Circular_arc_3(c, extremes[1], extremes[0])));
           }
-          else if (circle_type == CGAL::POLAR)
+          else if (circle_type == CGAL::POLAR) // polar circle tangeant to meridian
           {
             // TODO check if end point is on tangeant meridian/circle
             // and if so, insert arc from full circle + corresponding pole
           }
+          else // threaded circle crossed by meridian
+          {
+            CGAL_assertion(circle_type == CGAL::THREADED);
+            // TODO
+          }
         }
       }
+
+      // Finished initializing, copy to V-ordering
+      for (typename std::set<Intersected_arc>::const_iterator it = ini_V.begin(); it != ini_V.end(); it++)
+      { _V.push_back(it->arc); }
     }
 
   private:
