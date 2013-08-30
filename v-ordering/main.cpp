@@ -1,41 +1,226 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
+
+#include <boost/thread.hpp>
+
 #include <CGAL/Exact_spherical_kernel_3.h>
+
 #include <Sphere_intersecter.h>
 #include <Event_queue.h>
 #include <Event_queue_builder.h>
 
+template <typename SK>
+class BO_algorithm_for_spheres
+{
+  typedef BO_algorithm_for_spheres Self;
+
+  typedef typename SK::Point_3 Point_3;
+  typedef typename SK::Plane_3 Plane_3;
+  typedef typename SK::Circle_3 Circle_3;
+  typedef typename SK::Sphere_3 Sphere_3;
+  typedef typename SK::Direction_3 Direction_3;
+  typedef typename SK::Vector_3 Vector_3;
+  typedef typename SK::Line_3 Line_3;
+  typedef typename SK::Assign_3 Assign_3;
+  typedef typename SK::Object_3 Object_3;
+  typedef typename SK::Intersect_3 Intersect_3;
+  typedef typename SK::Circular_arc_3 Circular_arc_3;
+  typedef typename SK::Circular_arc_point_3 Circular_arc_point_3;
+
+  typedef Sphere_intersecter<SK> SI;
+  typedef typename SI::Circle_handle Circle_handle;
+  typedef typename SI::Sphere_handle Sphere_handle;
+
+  typedef Event_queue<SK> EQ;
+  typedef typename EQ::Normal_event_site Normal_event_site;
+  typedef typename EQ::Polar_event_site Polar_event_site;
+  typedef typename EQ::Bipolar_event_site Bipolar_event_site;
+  typedef typename EQ::Event_site_type Event_site_type;
+
+  typedef std::list<Circular_arc_3> Vorder;
+
+  public:
+    BO_algorithm_for_spheres():
+      _si() {}
+    template <typename InputIterator>
+    BO_algorithm_for_spheres(InputIterator begin, InputIterator end):
+      _si(begin, end) {}
+
+    // Add a single sphere
+    Sphere_handle add_sphere(const Sphere_3 & sphere)
+    { return _si.add_sphere(sphere); }
+    // ...or a range of sphere
+    template <typename InputIterator>
+    void add_sphere(InputIterator begin, InputIterator end)
+    { std::copy(begin, end, _si.insert_iterator()); }
+
+    void run_for(const Sphere_3 & sphere)
+    {
+      // Sphere to work with
+      Sphere_handle sh = _si.add_sphere(sphere);
+      if (sh.is_null())
+      {
+        sh = _si.find_sphere(sphere);
+        if (sh.is_null())
+        { sh = _si.add_sphere(sphere); }
+      }
+
+      // Event queue
+      std::cout << "Starting event queue initialization" << std::endl;
+      boost::thread ini_E(boost::bind(&Self::initialize_E, this, sh));
+
+      // V-ordering
+      std::cout << "Starting v-ordering initialization" << std::endl;
+      boost::thread ini_V(boost::bind(&Self::initialize_V, this, sh));
+
+      // Finish initializing
+      ini_E.join();
+      ini_V.join();
+
+      // Initialize arrangement
+      // TODO
+
+      // Iterate over the event queue and get corresponding arcs
+      std::cout << "Handling events" << std::endl;
+      for (Event_site_type ev_type = _E.next_event();
+          ev_type != EQ::None; ev_type = _E.next_event())
+      {
+        if (ev_type == EQ::Polar)
+        {
+          Polar_event_site pes = _E.pop_polar();
+          //break_adjacencies(pes);
+          //handle_polar_event_site(_E, V, pes);
+        }
+        else if (ev_type == EQ::Bipolar)
+        {
+          Bipolar_event_site bpes = _E.pop_bipolar();
+          //break_adjacencies(bpes);
+          //handle_bipolar_event_site(_E, V, bpes);
+        }
+        else
+        {
+          CGAL_assertion(ev_type == EQ::Normal);
+          Normal_event_site nes = _E.pop_normal();
+          //break_adjacencies(nes);
+          //handle_event_site(_E, V, nes);
+        }
+      }
+
+      // Merge virtual faces
+      // TODO
+    }
+
+    // Initialize event queue
+    void initialize_E(const Sphere_handle & sh)
+    { _E = Event_queue_builder<SK>()(_si, sh); }
+
+    // Initialize V-ordering
+    void initialize_V(const Sphere_handle & sh)
+    {
+      const Sphere_3 & s = *sh;
+      std::set<Intersected_arc> ini_V;
+      Vector_3 meridian(0, 1, 0);
+      Line_3 pole_axis(s.center(), Direction_3(0, 0, 1));
+      Circular_arc_3 meridian_arc;
+      typedef std::vector<Object_3> Intersection_list;
+      typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
+      Intersection_list poles;
+      Intersect_3()(pole_axis, s, std::back_inserter(poles));
+      CGAL_assertion(poles.size() == 2);
+      CAP north_cap, south_cap;
+      Assign_3()(north_cap, poles[0]);
+      Assign_3()(south_cap, poles[1]);
+      meridian_arc = Circular_arc_3(Circle_3(s, Plane_3(s.center(), meridian)), north_cap.first, south_cap.first);
+      std::vector<Circle_handle> circles;
+      _si.circles_on_sphere(sh, std::back_inserter(circles));
+      for (typename std::vector<Circle_handle>::const_iterator it = circles.begin();
+          it != circles.end(); it++)
+      {
+        const Circle_3 & c = **it;
+        CGAL::Circle_type circle_type = CGAL::classify(c, s); // FIXME this has already been computed
+        Intersection_list ini_intersected_arcs;
+        Intersect_3()(meridian_arc, c, std::back_inserter(ini_intersected_arcs));
+        if (ini_intersected_arcs.empty())
+        { continue; }
+        else if (ini_intersected_arcs.size() == 2) // two intersections
+        {
+          CAP cap[2];
+          Assign_3()(cap[0], ini_intersected_arcs[0]);
+          Assign_3()(cap[1], ini_intersected_arcs[1]);
+          CGAL_assertion(std::adjacent_find(cap, cap + 2, std::greater<CAP>()) == cap + 2); // points must already be sorted (add a sort otherwise)
+          if (circle_type == CGAL::NORMAL)
+          {
+            Circular_arc_point_3 extremes[2];
+            CGAL::theta_extremal_points(c, s, extremes);
+            ini_V.insert(Intersected_arc(s, cap[0].first, Circular_arc_3(c, extremes[0], extremes[1])));
+            ini_V.insert(Intersected_arc(s, cap[1].first, Circular_arc_3(c, extremes[1], extremes[0])));
+          }
+          else // necessarily a polar circle, intersected traversely by the meridian
+          {
+            // FIXME two arcs need to be inserted in ini_V, both will the full circle,
+            // but one with theta min and one with theta max
+          }
+        }
+        else // only one intersection (maybe tangeancy)
+        {
+          CAP cap;
+          Assign_3()(cap, ini_intersected_arcs[0]);
+
+          if (circle_type == CGAL::NORMAL && CGAL::theta_extremal_point(c, s, true) == cap.first)
+          {
+            // TODO insert start/end arcs
+          }
+          else if (circle_type == CGAL::POLAR)
+          {
+            // TODO check if end point is on tangeant meridian/circle
+            // and if so, insert arc from full circle + corresponding pole
+          }
+        }
+      }
+    }
+
+  private:
+    // Structure used for ordering intersected arcs by a certain point
+    // in the initalization of the V structure
+    struct Intersected_arc
+    {
+      typedef typename SK::Compare_theta_z_3 Compare_theta_z_3;
+
+      Intersected_arc(const Sphere_3 & s,
+          const Circular_arc_point_3 & p,
+          const Circular_arc_3 & arc):
+        sphere(s), point(p), arc(arc) {}
+
+      bool operator<(const Intersected_arc & c) const
+      {
+        CGAL_assertion(&sphere == &c.sphere && sphere == c.sphere);
+        return Compare_theta_z_3(sphere)(point, c.point) == CGAL::SMALLER;
+      }
+
+      const Sphere_3 & sphere;
+      Circular_arc_point_3 point;
+      Circular_arc_3 arc;
+    };
+
+    // Sphere intersecter
+    SI _si;
+    Vorder _V;
+    EQ _E;
+};
+
+// Main program
+
 typedef CGAL::Exact_spherical_kernel_3 SK;
 
-typedef SK::Point_3 Point_3;
-typedef SK::Plane_3 Plane_3;
-typedef SK::Circle_3 Circle_3;
-typedef SK::Sphere_3 Sphere_3;
-typedef SK::Direction_3 Direction_3;
-typedef SK::Vector_3 Vector_3;
-typedef SK::Line_3 Line_3;
-typedef SK::Assign_3 Assign_3;
-typedef SK::Object_3 Object_3;
-typedef SK::Intersect_3 Intersect_3;
-typedef SK::Circular_arc_3 Circular_arc_3;
-typedef SK::Circular_arc_point_3 Circular_arc_point_3;
-
-typedef Sphere_intersecter<SK>::Circle_handle Circle_handle;
-typedef Sphere_intersecter<SK>::Sphere_handle Sphere_handle;
-
-typedef Event_queue<SK>::Normal_event_site Normal_event_site;
-typedef Event_queue<SK>::Polar_event_site Polar_event_site;
-typedef Event_queue<SK>::Bipolar_event_site Bipolar_event_site;
-
 // Main sphere to work with
-static const Sphere_3 test_sphere = Sphere_3(Point_3( 0, 0, 0), 3);
+static const SK::Sphere_3 test_sphere = SK::Sphere_3(SK::Point_3( 0, 0, 0), 3);
 
 // Macro for squaring a number
-#define SPHERE(x, y, z, r) Sphere_3(Point_3(x, y, z), r*r)
+#define SPHERE(x, y, z, r) SK::Sphere_3(SK::Point_3(x, y, z), r*r)
 
 // Test circles
-static const Sphere_3 test_spheres[] = {
+static const SK::Sphere_3 test_spheres[] = {
   // polar circles
   SPHERE(3,                0,                 3,                3),
   // bipolar circles
@@ -145,134 +330,11 @@ static const Sphere_3 test_spheres[] = {
 // and the size of this array
 static const std::size_t test_spheres_size = sizeof(test_spheres) / sizeof(double[4]);
 
-struct Intersected_arc
-{
-  Intersected_arc(const Sphere_3 & s,
-      const Circular_arc_point_3 & p,
-      const Circular_arc_3 & arc):
-    sphere(s), point(p), arc(arc) {}
-
-  bool operator<(const Intersected_arc & c) const
-  {
-    CGAL_assertion(&sphere == &c.sphere && sphere == c.sphere);
-    return SK::Compare_theta_z_3(*sphere)(point, c.point) == CGAL::SMALLER;
-  }
-
-  Sphere_3 & sphere;
-  Circular_arc_point_3 point;
-  Circular_arc_3 arc;
-};
-
-static void break_adjacencies(Normal_event_site & nes) {}
-static void break_adjacencies(Polar_event_site & pes) {}
-static void break_adjacencies(Bipolar_event_site & bpes) {}
-
 int main(int argc, const char * argv[])
 {
-  // 1) Setup initial spheres
-  //std::cout << "Setting up sphere intersecter" << std::endl;
-  Sphere_intersecter<SK> si;
-
-  // Add spheres to SI
-  std::cout << "Adding spheres" << std::endl;
-  std::copy(test_spheres, test_spheres + test_spheres_size,
-      si.insert_iterator());
-  // add the sphere to work with
-  Sphere_handle sh = si.add_sphere(test_sphere);
-  Sphere_3 s = *sh;
-
-  // Event queue
-  std::cout << "Building event queue" << std::endl;
-  Event_queue<SK> E = Event_queue_builder<SK>()(si, sh);
-
-  if (E.empty())
-  {
-    std::cerr << "Empty event queue" << std::endl;
-    return 1;
-  }
-
-  // V-ordering
-  std::list<Circular_arc_3> V;
-  std::set<Intersected_arc> ini_V;
-
-  // Initialize V-ordering
-  Vector_3 meridian(0, 1, 0);
-  Line_3 pole_axis(s.center(), Direction_3(0, 0, 1));
-  Circular_arc_3 meridian_arc;
-  typedef std::vector<Object_3> Intersection_list;
-  typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
-  Intersection_list poles;
-  Intersect_3()(pole_axis, s, std::back_inserter(poles));
-  CGAL_assertion(poles.size() == 2);
-  CAP north_cap, south_cap;
-  Assign_3()(north_cap, poles[0]);
-  Assign_3()(south_cap, poles[1]);
-  meridian_arc = Circular_arc_3(Circle_3(s, Plane_3(s.center(), meridian)), north_cap.first, south_cap.first);
-  std::vector<Circle_handle> circles;
-  si.circles_on_sphere(sh, std::back_inserter(circles));
-  for (std::vector<Circle_handle>::const_iterator it = circles.begin();
-      it != circles.end(); it++)
-  {
-    const Circle_3 & c = **it;
-    Intersection_list ini_intersected_arcs;
-    Intersect_3()(meridian_arc, c, std::back_inserter(ini_intersected_arcs));
-    if (ini_intersected_arcs.empty())
-    { continue; }
-    else if (ini_intersected_arcs.size() == 2)
-    {
-      CAP cap[2];
-      Assign_3()(cap[0], ini_intersected_arcs[0]);
-      Assign_3()(cap[1], ini_intersected_arcs[1]);
-      Circular_arc_3 arcs[2];
-      // TODO find corresponding arcs
-      ini_V.push_back(s, cap[0].first, arcs[0]);
-      ini_V.push_back(s, cap[1].first, arcs[1]);
-    }
-    else
-    {
-      CAP cap;
-      Assign_3()(cap, ini_intersected_arcs[0]);
-
-      // true/false flag meaning if end point is at smallest/largest
-      // theta value on sphere
-      if (CGAL::theta_extremal_point(c, s, true) == cap.first)
-      {
-        // TODO insert start/end arcs
-      }
-    }
-  }
-
-  // Initialize arrangement
-  // TODO
-
-  // Iterate over the event queue and get corresponding arcs
-  std::cout << "Handling events" << std::endl;
-  for (Event_queue<SK>::Event_site_type ev_type = E.next_event();
-      ev_type != Event_queue<SK>::None; ev_type = E.next_event())
-  {
-    if (ev_type == Event_queue<SK>::Polar)
-    {
-      Event_queue<SK>::Polar_event_site pes = E.pop_polar();
-      //break_adjacencies(pes);
-      //handle_polar_event_site(E, V, pes);
-    }
-    else if (ev_type == Event_queue<SK>::Bipolar)
-    {
-      Event_queue<SK>::Bipolar_event_site bpes = E.pop_bipolar();
-      //break_adjacencies(bpes);
-      //handle_bipolar_event_site(E, V, bpes);
-    }
-    else
-    {
-      CGAL_assertion(ev_type == Event_queue<SK>::Normal);
-      //break_adjacencies(nes);
-      //handle_event_site(E, V, E.pop_normal());
-    }
-  }
-
-  // Merge virtual faces
-  // TODO
-
+  BO_algorithm_for_spheres<SK> bo;
+  bo.add_sphere(test_spheres, test_spheres + test_spheres_size);
+  bo.run_for(test_sphere);
   return 0;
 }
 
