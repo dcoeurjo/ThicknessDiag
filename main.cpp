@@ -110,24 +110,30 @@ class BO_algorithm_for_spheres
         {
           Polar_event_site pes = _E.pop_polar();
           //break_adjacencies(pes);
-          //handle_polar_event_site(_E, V, pes);
+          //handle_polar_event_site(pes);
         }
         else if (ev_type == EQ::Bipolar)
         {
           Bipolar_event_site bpes = _E.pop_bipolar();
           //break_adjacencies(bpes);
-          //handle_bipolar_event_site(_E, V, bpes);
+          //handle_bipolar_event_site(bpes);
         }
         else
         {
           CGAL_assertion(ev_type == EQ::Normal);
           Normal_event_site nes = _E.pop_normal();
           //break_adjacencies(nes);
-          //handle_event_site(_E, V, nes);
+          //handle_event_site(nes);
         }
       }
 
       // Merge virtual faces
+      // TODO
+    }
+
+    // Handle a normal event site
+    void handle_event_site(const Normal_event_site & nes)
+    {
       // TODO
     }
 
@@ -238,7 +244,7 @@ class BO_algorithm_for_spheres
             // Intersection is necessarily a circle
             Circle_3 c;
             Assign_3()(c, circle_intersections[0]);
-            // FIXME
+            // TODO decide if anything should be done
           }
           else // Crossing
           {
@@ -338,13 +344,13 @@ class BO_algorithm_for_spheres
           }
           else if (circle_type == CGAL::POLAR) // polar circle tangeant to meridian
           {
-            // TODO check if end point is on tangeant meridian/circle
+            // FIXME check if end point is on tangeant meridian/circle
             // and if so, insert arc from full circle + corresponding pole
           }
           else // threaded circle crossed by meridian
           {
             CGAL_assertion(circle_type == CGAL::THREADED);
-            // TODO
+            // FIXME insert "corresponding" arcs
           }
         }
       }
@@ -386,17 +392,20 @@ class BO_algorithm_for_spheres
 // Main program
 
 typedef CGAL::Exact_spherical_kernel_3 SK;
+typedef SK::Sphere_3 Sphere_3;
+typedef SK::Point_3 Point_3;
+
+// Macro for creating a sphere
+#define SPHERE(x, y, z, r) Sphere_3(Point_3(x, y, z), r*r)
 
 // Main sphere to work with
-static const SK::Sphere_3 test_sphere = SK::Sphere_3(SK::Point_3( 0, 0, 0), 3);
-
-// Macro for squaring a number
-#define SPHERE(x, y, z, r) SK::Sphere_3(SK::Point_3(x, y, z), r*r)
+static const Sphere_3 test_sphere = SPHERE(0, 0, 0, 3);
 
 // Test circles
 static const SK::Sphere_3 test_spheres[] = {
   // polar circles
   SPHERE(3,                0,                 3,                3),
+  SPHERE(3,                0,                 -3,               3),
   // bipolar circles
   // TODO
   // normal circles
