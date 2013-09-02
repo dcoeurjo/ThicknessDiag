@@ -36,14 +36,21 @@ add_executable(${ThicknessDiag_EXE} main.cpp)
 target_link_libraries(${ThicknessDiag_EXE} ${ThicknessDiag_LIBRARIES})
 
 # C++0x/11 mode
-set(WITH_CPP0X_MODE_DESCRIPTION "Set this option to compile in C++0x mode")
+set(WITH_CPP0X_MODE_DESCRIPTION "Compile in C++0x mode")
 option(WITH_CPP0X_MODE ${WITH_CPP0X_MODE_DESCRIPTION} FALSE)
 if(WITH_CPP0X_MODE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+# Optional threading for BO algorithm
+set(WITH_BO_THREADING_DESCRIPTION "Use threads for the Bentley-Ottman algorithm")
+option(WITH_BO_THREADING ${WITH_CPP0X_MODE_DESCRIPTION} TRUE)
+if(WITH_BO_THREADING)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBO_USE_THREADING")
+endif()
+
 # Qt interface extension
-set(WITH_QT_DESCRIPTION "Set this option to display output of insertion on Geomview and prompt before passing")
+set(WITH_QT_DESCRIPTION "Compile the sphere addition and event queue interface")
 set(QT_DISPLAY_FLAG "DISPLAY_ON_QT")
 option(WITH_QT_DISPLAY ${WITH_QT_DESCRIPTION} FALSE)
 if(WITH_QT_DISPLAY)
