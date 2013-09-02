@@ -12,7 +12,6 @@
 #  define INFER_AUTO BOOST_AUTO
 #endif // __GXX_EXPERIMENTAL_CXX0X__ //
 
-#include <CGAL/assertions.h>
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
 
