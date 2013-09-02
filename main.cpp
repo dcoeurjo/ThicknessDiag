@@ -395,12 +395,14 @@ class BO_algorithm_for_spheres
       {
         if (ev_type == EQ::Polar)
         {
+          std::cout << "Handling polar event" << std::endl;
           Polar_event_site pes = _E.pop_polar();
           break_adjacencies(pes);
           //handle_polar_event_site(pes);
         }
         else if (ev_type == EQ::Bipolar)
         {
+          std::cout << "Handling bipolar event" << std::endl;
           Bipolar_event_site bpes = _E.pop_bipolar();
           break_adjacencies(bpes);
           //handle_bipolar_event_site(bpes);
@@ -408,6 +410,7 @@ class BO_algorithm_for_spheres
         else
         {
           CGAL_assertion(ev_type == EQ::Normal);
+          std::cout << "Handling normal event" << std::endl;
           Normal_event_site nes = _E.pop_normal();
           break_adjacencies(nes);
           //handle_event_site(nes);
