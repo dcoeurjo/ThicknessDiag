@@ -266,8 +266,7 @@ class BO_algorithm_for_spheres
         }
         else // necessarily a polar circle, intersected traversely by the meridian
         {
-          // FIXME two arcs need to be inserted in ini_V, both will the full circle,
-          // but one with theta min and one with theta max
+          ini_V.insert(Intersected_arc(s, cap[1].first, Circular_arc_3(c, cap[0].first)));
         }
       }
       else // only one intersection (maybe tangeancy)
@@ -291,7 +290,7 @@ class BO_algorithm_for_spheres
         else // threaded circle crossed by meridian
         {
           CGAL_assertion(circle_type == CGAL::THREADED);
-          // FIXME insert "corresponding" arcs
+          ini_V.insert(Intersected_arc(s, cap.first, Circular_arc_3(c, cap.first)));
         }
       }
     }
