@@ -2,9 +2,7 @@
 #include <iterator>
 #include <algorithm>
 
-#ifdef BO_USE_THREADING
-#  include <boost/thread.hpp>
-#endif // USE_THREADING //
+#include <boost/thread.hpp>
 
 #include <CGAL/Exact_spherical_kernel_3.h>
 
@@ -359,7 +357,6 @@ class BO_algorithm_for_spheres
       Circle_handle_list circles;
       _si.circles_on_sphere(sh, std::back_inserter(circles));
 
-#ifdef BO_USE_THREADING
       // Event queue
       std::cout << "Starting event queue initialization" << std::endl;
       boost::thread ini_E(boost::bind(&Self::initialize_E, this, sh, circles));
@@ -373,17 +370,6 @@ class BO_algorithm_for_spheres
       std::cout << "V-ordering initialization finished" << std::endl;
       ini_E.join();
       std::cout << "Event queue initialization finished" << std::endl;
-#else
-      // V-ordering
-      std::cout << "Starting v-ordering initialization" << std::endl;
-      initialize_V(sh, circles);
-      std::cout << "V-ordering initialization finished" << std::endl;
-
-      // Event queue
-      std::cout << "Starting event queue initialization" << std::endl;
-      initialize_E(sh, circles);
-      std::cout << "Event queue initialization finished" << std::endl;
-#endif // USE_THREADING //
 
       // Initialize arrangement
       // TODO
