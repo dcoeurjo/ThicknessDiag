@@ -330,10 +330,10 @@ class BO_algorithm_for_spheres
 
   public:
     BO_algorithm_for_spheres():
-      _si() {}
+      _si(), _V(), _E() {}
     template <typename InputIterator>
     BO_algorithm_for_spheres(InputIterator begin, InputIterator end):
-      _si(begin, end) {}
+      _si(begin, end), _V(), _E() {}
 
     // Add a single sphere
     Sphere_handle add_sphere(const Sphere_3 & sphere)
@@ -545,10 +545,9 @@ static const std::size_t test_spheres_size = sizeof(test_spheres) / sizeof(doubl
 
 int main(int argc, const char * argv[])
 {
-  BO_algorithm_for_spheres<SK> bo;
-  bo.add_sphere(test_spheres, test_spheres + test_spheres_size);
+  BO_algorithm_for_spheres<SK> bo(test_spheres, test_spheres + test_spheres_size);
   bo.run_for(test_sphere);
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 // vim: sw=2 et ts=2 sts=2

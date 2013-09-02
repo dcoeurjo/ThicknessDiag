@@ -47,6 +47,16 @@ class Sphere_intersecter
       _sphere_tree(), _sphere_storage(),
       _circle_storage(), _stcl(), _ctsl() {}
 
+    // Range constructor
+    template <typename InputIterator>
+    Sphere_intersecter(InputIterator begin, InputIterator end):
+      _sphere_tree(), _sphere_storage(),
+      _circle_storage(), _stcl(), _ctsl()
+      {
+        for (; begin != end; begin++)
+        { add_sphere(*begin); }
+      }
+
     // Make non copyable/assignable
     Sphere_intersecter(const Sphere_intersecter<SK> &);
     Sphere_intersecter & operator=(const Sphere_intersecter<SK> &);
