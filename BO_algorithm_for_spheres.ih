@@ -298,21 +298,28 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   typename Normal_event_site::Start_events const & S = nes.start_events();
   typename Normal_event_site::End_events const & F = nes.end_events();
   typename Normal_event_site::Intersection_events const & CT = nes.intersection_events();
+  // ...initialize subsets of CT (C and T)
+  typename Normal_event_site::Intersection_events C, T;
+  for (typename Normal_event_site::Intersection_events::const_iterator it = CT.begin();
+      it != CT.end(); it++)
+  {
+    if (it->type == Intersection_event::Tangency)
+    { T.push_back(*it); }
+    else
+    { C.push_back(*it); }
+  }
 
   // STEP 1
   //
-  // Case (a): F not empty
-  if (F.empty() == false)
+  if (F.empty() == false)         // (A)
   {
     handle_event_site(nes); // FIXME
   }
-  // Case (b): CT not empty
-  else if (CT.empty() == false)
+  else if (CT.empty() == false)   // (B)
   {
     // TODO
   }
-  // Case (c): S not empty
-  else if (S.empty() == false)
+  else if (S.empty() == false)    // (C)
   {
     // 1) If there exists an arc passing through the start point of Cs,
     //    we remove from E, if exists, any intersection event between
@@ -323,6 +330,11 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   }
 
   // STEP 2
+  //
+  if (C.empty() == false && T.empty() == false)
+  {
+    // TODO
+  }
 }
 
 template <typename SK>
