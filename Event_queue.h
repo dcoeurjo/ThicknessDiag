@@ -250,14 +250,14 @@ class Event_bundle
       // Iterator ranges should have access to hidden members
       friend class Intersection_events_range;
 
-      // Start/End events
-      typedef std::multiset<Critical_event, Comp_event_circle_radii> Start_events;
-      typedef std::multiset<Critical_event, Comp_event_inv_circle_radii> End_events;
-
-      // Crossing/Tangency events
-      typedef std::vector<Intersection_event> Intersection_events;
-
       public:
+        // Start/End events
+        typedef std::multiset<Critical_event, Comp_event_circle_radii> Start_events;
+        typedef std::multiset<Critical_event, Comp_event_inv_circle_radii> End_events;
+
+        // Crossing/Tangency events
+        typedef std::vector<Intersection_event> Intersection_events;
+
         Normal_event_site(const Sphere_handle & s,
             const Circular_arc_point_3 & p):
           _point(p), _sphere(s),
@@ -340,11 +340,21 @@ class Event_bundle
             const Normal_event_site & _nes;
         };
 
-        // Accessors
+        // Access point
         const Circular_arc_point_3 & point() const
         { return _point; }
+        // ...sphere
         const Sphere_handle & sphere() const
         { return _sphere; }
+        // ...start events
+        const Start_events & start_events() const
+        { return _start_events; }
+        // ...end events
+        const End_events & end_events() const
+        { return _end_events; }
+        // ...intersection events
+        const Intersection_events & intersection_events() const
+        { return _intersection_events; }
 
       private:
         // Location of event site

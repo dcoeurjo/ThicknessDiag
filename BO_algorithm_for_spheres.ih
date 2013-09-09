@@ -294,16 +294,44 @@ void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
 template <typename SK>
 void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_spheres<SK>::Normal_event_site const & nes)
 {
+  // Lists to work with at this normal event site
+  const EQ::Start_events & S = nes.start_events();
+  const EQ::End_events & F = nes.end_events();
+  const EQ::Intersection_events & CT = nes.intersection_events();
+
+  // STEP 1
+  //
+  // Case (a): F not empty
+  if (F.empty() == false)
+  {
+    handle_event_site(nes); // FIXME
+  }
+  // Case (b): CT not empty
+  else if (CT.empty() == false)
+  {
+    // TODO
+  }
+  // Case (c): S not empty
+  else if (S.empty() == false)
+  {
+    // TODO
+  }
+
+  // STEP 2
 }
 
 template <typename SK>
 void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_spheres<SK>::Polar_event_site const & pes)
 {
+  // TODO if polar-end intersected by M(0), remove from E (if any)
+  // the intersection event between the polar circle's arc and its
+  // neighbor in V which is not a pole
 }
 
 template <typename SK>
 void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_spheres<SK>::Bipolar_event_site const & bpes)
 {
+  // nothing to do ?
 }
 
 template <typename SK>
