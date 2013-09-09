@@ -295,9 +295,9 @@ template <typename SK>
 void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_spheres<SK>::Normal_event_site const & nes)
 {
   // Lists to work with at this normal event site
-  const EQ::Start_events & S = nes.start_events();
-  const EQ::End_events & F = nes.end_events();
-  const EQ::Intersection_events & CT = nes.intersection_events();
+  typename Normal_event_site::Start_events const & S = nes.start_events();
+  typename Normal_event_site::End_events const & F = nes.end_events();
+  typename Normal_event_site::Intersection_events const & CT = nes.intersection_events();
 
   // STEP 1
   //
