@@ -283,7 +283,7 @@ void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
       std::cout << "Handling normal event" << std::endl;
       Normal_event_site nes = _E.pop_normal();
       break_adjacencies(nes);
-      handle_event_site(nes);
+      //handle_event_site(nes); FIXME
     }
   }
 
