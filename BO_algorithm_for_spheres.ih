@@ -333,7 +333,7 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   //
   if (C.empty() == false && T.empty() == false)
   {
-    // TODO
+    // TODO take care of adjacency loss between arcs reversed in the CT block
   }
 }
 
