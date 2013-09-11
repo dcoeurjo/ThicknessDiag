@@ -325,7 +325,7 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
     typedef typename Normal_event_site::End_events::const_iterator F_const_iterator;
     F_const_iterator F_begin = F.begin();
 
-    // C+/C-, top A+/top A-, bottom A+/bottom A-
+    // C+/C-, circles of biggest/smallest radius in F
     Circle_handle max_c = *F_begin->circle, min_c = max_c;
 
     // Handle F list
@@ -345,7 +345,13 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
       if (ce.circle->squared_radius() < min_c->squared_radius()) { min_c = ce.circle; }
       else if (ce.circle->squared_radius() > min_c->squared_radius()) { max_c = ce.circle; }
     }
-    // FIXME not finished
+
+    // Intersect C+/C- with M0, remove all intersection events
+    // occurring in these circles (from E)
+    Intersection_list min_intersected_arcs, max_intersected_arcs;
+    Intersect_3()(_M0, *min_c, std::back_inserter(min_intersected_arcs));
+    Intersect_3()(_M0, *max_c, std::back_inserter(max_intersected_arcs));
+    // FIXME remove intersection events from E
   }
   else if (CT.empty() == false)   // (B)
   {
