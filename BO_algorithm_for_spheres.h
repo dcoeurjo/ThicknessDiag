@@ -97,13 +97,14 @@ class BO_algorithm_for_spheres
   SI _SI;
   Vorder _V;
   EQ _E;
+  Circular_arc_3 _M0;
 
   public:
     BO_algorithm_for_spheres():
-      _SI(), _V(), _E() {}
+      _SI(), _V(), _E(), _M0() {}
     template <typename InputIterator>
     BO_algorithm_for_spheres(InputIterator begin, InputIterator end):
-      _SI(begin, end), _V(), _E() {}
+      _SI(begin, end), _V(), _E(), _M0() {}
 
     // Add a single sphere
     Sphere_handle add_sphere(const Sphere_3 & sphere)

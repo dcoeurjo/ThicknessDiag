@@ -154,25 +154,28 @@ void BO_algorithm_for_spheres<SK>::initialize_V(typename BO_algorithm_for_sphere
     typename BO_algorithm_for_spheres<SK>::Circle_handle_list const & circles)
 {
   const Sphere_3 & s = *sh;
-  std::set<Intersected_arc> ini_V;
-  Vector_3 meridian(0, 1, 0);
-  Line_3 pole_axis(s.center(), Direction_3(0, 0, 1));
-  Circular_arc_3 meridian_arc;
   typedef std::pair<Circular_arc_point_3, unsigned int> CAP;
+
+  // Initialize M0 (meridian at theta == 0)
   Intersection_list poles;
+  Line_3 pole_axis(s.center(), Direction_3(0, 0, 1));
   Intersect_3()(pole_axis, s, std::back_inserter(poles));
   CGAL_assertion(poles.size() == 2);
   CAP north_cap, south_cap;
   Assign_3()(north_cap, poles[0]);
   Assign_3()(south_cap, poles[1]);
-  meridian_arc = Circular_arc_3(Circle_3(s, Plane_3(s.center(), meridian)), north_cap.first, south_cap.first);
+  Vector_3 meridian(0, 1, 0);
+  _M0 = Circular_arc_3(Circle_3(s, Plane_3(s.center(), meridian)), north_cap.first, south_cap.first);
+
+  // Sorted data-structure keeping arcs sorted at theta == 0
+  std::set<Intersected_arc> ini_V;
   for (typename std::vector<Circle_handle>::const_iterator it = circles.begin();
       it != circles.end(); it++)
   {
     const Circle_3 & c = **it;
     CGAL::Circle_type circle_type = CGAL::classify(c, s); // this has already been computed...
     Intersection_list ini_intersected_arcs;
-    Intersect_3()(meridian_arc, c, std::back_inserter(ini_intersected_arcs));
+    Intersect_3()(_M0, c, std::back_inserter(ini_intersected_arcs));
     if (ini_intersected_arcs.empty())
     { continue; }
     else if (ini_intersected_arcs.size() == 2) // two intersections
@@ -323,24 +326,24 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
     F_const_iterator F_begin = F.begin();
 
     // C+/C-, top A+/top A-, bottom A+/bottom A-
-    const Circle_3 & max_c = *F_begin->circle;
-    const Circle_3 & min_c = *F_begin->circle;
+    Circle_handle max_c = *F_begin->circle, min_c = max_c;
 
     // Handle F list
     for (F_const_iterator it = F_begin; it != F.end(); it++)
     {
-      CGAL_assertion(it->tag == Critical_event::End);
+      const Critical_event & ce = *it;
+      CGAL_assertion(ce.tag == Critical_event::End);
       // Remove associated arcs from V
       // TODO optimize this next part
       Circular_arc_point_3 extremes[2];
-      CGAL::theta_extremal_points(*it->circle, *nes.sphere(), extremes);
-      _V.remove(Circular_arc_3(*it->circle, extremes[0], extremes[1]));
-      _V.remove(Circular_arc_3(*it->circle, extremes[1], extremes[0]));
+      CGAL::theta_extremal_points(*ce.circle, *nes.sphere(), extremes);
+      _V.remove(Circular_arc_3(*ce.circle, extremes[0], extremes[1]));
+      _V.remove(Circular_arc_3(*ce.circle, extremes[1], extremes[0]));
 
       // Update min/max
-      if (it != F_begin)
-      {
-      }
+      if (it == F_begin) { continue; } // don't do update for the first loop (useless)
+      if (ce.circle->squared_radius() < min_c->squared_radius()) { min_c = ce.circle; }
+      else if (ce.circle->squared_radius() > min_c->squared_radius()) { max_c = ce.circle; }
     }
     // FIXME not finished
   }
