@@ -1,7 +1,6 @@
 #include <BO_algorithm_for_spheres.h>
-#include <CGAL/Exact_spherical_kernel_3.h>
+#include "lib/kernel.h"
 
-typedef CGAL::Exact_spherical_kernel_3 SK;
 typedef SK::Sphere_3 Sphere_3;
 typedef SK::Point_3 Point_3;
 
@@ -9,15 +8,11 @@ typedef SK::Point_3 Point_3;
 #define SPHERE(x, y, z, r) Sphere_3(Point_3(x, y, z), r*r)
 
 // Main sphere to work with
-static const Sphere_3 test_sphere = SPHERE(0, 0, 0, 3);
+static const Sphere_3 test_sphere =
+  SPHERE(0,                0,                 0,                3);
 
 // Test circles
 static const SK::Sphere_3 test_spheres[] = {
-  // polar circles
-  SPHERE(3,                0,                 3,                3),
-  SPHERE(3,                0,                 -3,               3),
-  // bipolar circles
-  // TODO
   // normal circles
   SPHERE(2.70740620397,    0.0776660083161,   2.07546263732,    2.11372481705),
   SPHERE(3.70429426026,    0.869174586472,    1.26770523628,    1.81458985627),
@@ -119,13 +114,17 @@ static const SK::Sphere_3 test_spheres[] = {
   SPHERE(1.68047168841,    2.37883317863,     0.832193181343,   1.29005911739),
   SPHERE(4.24813460012,    4.31396752148,     1.57568689939,    0.491121364259),
   SPHERE(4.37983082218,    2.68357003199,     2.2709203493,     1.743232948),
+  // polar circles
+  SPHERE(3,                0,                 3,                3),
+  SPHERE(3,                0,                 -3,               3),
+  // bipolar circles
+  // TODO
 };
-// and the size of this array
-static const std::size_t test_spheres_size = sizeof(test_spheres) / sizeof(double[4]);
 
 int main(int argc, const char * argv[])
 {
-  BO_algorithm_for_spheres<SK> bo(test_spheres, test_spheres + test_spheres_size);
+  BO_algorithm_for_spheres<SK> bo(test_spheres,
+      test_spheres + sizeof(test_spheres) / sizeof(double[4]));
   bo.run_for(test_sphere);
   return EXIT_SUCCESS;
 }
