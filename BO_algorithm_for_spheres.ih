@@ -319,8 +319,30 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   //
   if (F.empty() == false)         // (A)
   {
-    // FIXME
-    //handle_event_site(nes);
+    typedef typename Normal_event_site::End_events::const_iterator F_const_iterator;
+    F_const_iterator F_begin = F.begin();
+
+    // C+/C-, top A+/top A-, bottom A+/bottom A-
+    const Circle_3 & max_c = *F_begin->circle;
+    const Circle_3 & min_c = *F_begin->circle;
+
+    // Handle F list
+    for (F_const_iterator it = F_begin; it != F.end(); it++)
+    {
+      CGAL_assertion(it->tag == Critical_event::End);
+      // Remove associated arcs from V
+      // TODO optimize this next part
+      Circular_arc_point_3 extremes[2];
+      CGAL::theta_extremal_points(*it->circle, *nes.sphere(), extremes);
+      _V.remove(Circular_arc_3(*it->circle, extremes[0], extremes[1]));
+      _V.remove(Circular_arc_3(*it->circle, extremes[1], extremes[0]));
+
+      // Update min/max
+      if (it != F_begin)
+      {
+      }
+    }
+    // FIXME not finished
   }
   else if (CT.empty() == false)   // (B)
   {
