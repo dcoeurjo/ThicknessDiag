@@ -64,7 +64,6 @@ class BO_algorithm_for_spheres
   // Break adjacencies for an event site
   void break_adjacencies(const Normal_event_site &);
   void break_adjacencies(const Polar_event_site &);
-  void break_adjacencies(const Bipolar_event_site &);
 
   // Initialize event queue
   void initialize_E(const Sphere_handle &, const Circle_handle_list &);
@@ -95,26 +94,27 @@ class BO_algorithm_for_spheres
   };
 
   // Sphere intersecter
-  SI _si;
+  SI _SI;
   Vorder _V;
   EQ _E;
 
   public:
     BO_algorithm_for_spheres():
-      _si(), _V(), _E() {}
+      _SI(), _V(), _E() {}
     template <typename InputIterator>
     BO_algorithm_for_spheres(InputIterator begin, InputIterator end):
-      _si(begin, end), _V(), _E() {}
+      _SI(begin, end), _V(), _E() {}
 
     // Add a single sphere
     Sphere_handle add_sphere(const Sphere_3 & sphere)
-    { return _si.add_sphere(sphere); }
+    { return _SI.add_sphere(sphere); }
     // ...or a range of sphere
     template <typename InputIterator>
     void add_sphere(InputIterator begin, InputIterator end)
-    { std::copy(begin, end, _si.insert_iterator()); }
+    { std::copy(begin, end, _SI.insert_iterator()); }
 
     void run_for(const Sphere_3 &);
+    void run_for(const Sphere_handle &);
 };
 
 #endif // BO_ALGORITHM_FOR_SPHERES_H // vim: sw=2 et ts=2 sts=2

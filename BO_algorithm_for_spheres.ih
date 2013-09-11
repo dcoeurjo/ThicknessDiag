@@ -108,7 +108,7 @@ void BO_algorithm_for_spheres<SK>::initialize_E(typename BO_algorithm_for_sphere
         // Intersection is necessarily a circle
         Circle_3 c;
         Assign_3()(c, circle_intersections[0]);
-        // TODO decide if anything should be done
+        // TODO decide what to do when two circles intersect
       }
       else // Crossing
       {
@@ -228,18 +228,18 @@ template <typename SK>
 void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
 {
   // Sphere to work with
-  Sphere_handle sh = _si.add_sphere(sphere);
+  Sphere_handle sh = _SI.add_sphere(sphere);
   if (sh.is_null())
   {
-    sh = _si.find_sphere(sphere);
+    sh = _SI.find_sphere(sphere);
     if (sh.is_null())
-    { sh = _si.add_sphere(sphere); }
+    { sh = _SI.add_sphere(sphere); }
   }
   CGAL_assertion(sh.is_null() == false);
 
   // Get circles on sphere
   Circle_handle_list circles;
-  _si.circles_on_sphere(sh, std::back_inserter(circles));
+  _SI.circles_on_sphere(sh, std::back_inserter(circles));
 
   // Event queue
   std::cout << "Starting event queue initialization" << std::endl;
@@ -274,7 +274,6 @@ void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
     {
       std::cout << "Handling bipolar event" << std::endl;
       Bipolar_event_site bpes = _E.pop_bipolar();
-      break_adjacencies(bpes);
       handle_bipolar_event_site(bpes);
     }
     else
@@ -289,6 +288,13 @@ void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
 
   // Merge virtual faces
   // TODO
+}
+
+template <typename SK>
+void BO_algorithm_for_spheres<SK>::run_for(typename BO_algorithm_for_spheres<SK>::Sphere_handle const & sh)
+{
+  CGAL_assertion(sh.is_null() == false);
+  run_for(*sh);
 }
 
 template <typename SK>
@@ -343,12 +349,6 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   // TODO if polar-end intersected by M(0), remove from E (if any)
   // the intersection event between the polar circle's arc and its
   // neighbor in V which is not a pole
-}
-
-template <typename SK>
-void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_spheres<SK>::Bipolar_event_site const & bpes)
-{
-  // nothing to do ?
 }
 
 template <typename SK>
