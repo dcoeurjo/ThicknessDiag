@@ -123,8 +123,10 @@ static const SK::Sphere_3 test_spheres[] = {
 
 int main(int argc, const char * argv[])
 {
+  std::cout << "Initializing BO test case" << std::endl;
   BO_algorithm_for_spheres<SK> bo(test_spheres,
       test_spheres + sizeof(test_spheres) / sizeof(double[4]));
+  std::cout << "Running BO algorithm" << std::endl;
   bo.run_for(test_sphere);
   return EXIT_SUCCESS;
 }

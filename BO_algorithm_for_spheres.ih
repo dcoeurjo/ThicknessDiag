@@ -289,7 +289,7 @@ void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
       std::cout << "Handling normal event" << std::endl;
       Normal_event_site nes = _E.pop_normal();
       break_adjacencies(nes);
-      //handle_event_site(nes); FIXME
+      handle_event_site(nes);
     }
   }
 
@@ -319,7 +319,8 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   //
   if (F.empty() == false)         // (A)
   {
-    handle_event_site(nes); // FIXME
+    // FIXME
+    //handle_event_site(nes);
   }
   else if (CT.empty() == false)   // (B)
   {
