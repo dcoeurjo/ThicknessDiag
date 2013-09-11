@@ -527,4 +527,4 @@ class Event_queue
     Event_site_queue _queue;
 };
 
-#endif // EVENT_QUEUE_H // vim: sw=2 et ts=2 sts=2
+#endif // EVENT_QUEUE_H // vim: ft=cpp et sw=2 sts=2

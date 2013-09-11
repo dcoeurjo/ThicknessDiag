@@ -237,4 +237,4 @@ class Sphere_intersecter_insert_iterator:
     SI & _si;
 };
 
-#endif // SPHERE_INTERSECTER_H // vim: sw=2 et ts=2 sts=2
+#endif // SPHERE_INTERSECTER_H // vim: ft=cpp et sw=2 sts=2

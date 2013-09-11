@@ -13,4 +13,4 @@ struct Event_queue_builder
       typename Sphere_intersecter<SK>::Sphere_handle const &);
 };
 
-#endif // EVENT_QUEUE_BUILDER_H // vim: sw=2 et ts=2 sts=2
+#endif // EVENT_QUEUE_BUILDER_H // vim: ft=cpp et sw=2 sts=2

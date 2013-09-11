@@ -195,4 +195,4 @@ Event_queue<SK> Event_queue_builder<SK>::operator()(const Sphere_intersecter<SK>
   return ev_queue;
 }
 
-// vim: sw=2 et ts=2 sts=2
+// vim: ft=cpp et sw=2 sts=2

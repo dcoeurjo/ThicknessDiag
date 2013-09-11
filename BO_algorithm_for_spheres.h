@@ -117,4 +117,4 @@ class BO_algorithm_for_spheres
     void run_for(const Sphere_handle &);
 };
 
-#endif // BO_ALGORITHM_FOR_SPHERES_H // vim: sw=2 et ts=2 sts=2
+#endif // BO_ALGORITHM_FOR_SPHERES_H // vim: ft=cpp et sw=2 sts=2

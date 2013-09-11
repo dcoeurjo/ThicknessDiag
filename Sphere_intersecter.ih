@@ -180,4 +180,4 @@ void Sphere_intersecter<SK>::remove_sphere_links(typename Sphere_intersecter<SK>
   }
 }
 
-// vim: sw=2 et ts=2 sts=2
+// vim: ft=cpp et sw=2 sts=2

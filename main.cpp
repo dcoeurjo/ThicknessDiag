@@ -130,4 +130,4 @@ int main(int argc, const char * argv[])
   return EXIT_SUCCESS;
 }
 
-// vim: sw=2 et ts=2 sts=2
+// vim: ft=cpp et sw=2 sts=2

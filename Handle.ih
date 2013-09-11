@@ -51,4 +51,4 @@ template <typename T>
 bool Handle<T>::operator!=(const Handle<T> & handle) const
 { return _t != handle._t; }
 
-// vim: sw=2 et ts=2 sts=2
+// vim: ft=cpp et sw=2 sts=2

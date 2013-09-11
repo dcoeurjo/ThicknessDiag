@@ -14,4 +14,4 @@ struct Comp_by_squared_radii:
   }
 };
 
-#endif // SPHERICAL_UTILS_H // vim: sw=2 et ts=2 sts=2
+#endif // SPHERICAL_UTILS_H // vim: ft=cpp et sw=2 sts=2

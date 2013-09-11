@@ -226,4 +226,4 @@ typename Event_queue<SK>::Bipolar_event_site Event_queue<SK>::pop_bipolar()
   return bpes;
 }
 
-// vim: sw=2 et ts=2 sts=2
+// vim: ft=cpp et sw=2 sts=2
