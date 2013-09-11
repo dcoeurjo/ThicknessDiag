@@ -225,6 +225,13 @@ void BO_algorithm_for_spheres<SK>::initialize_V(typename BO_algorithm_for_sphere
 }
 
 template <typename SK>
+void BO_algorithm_for_spheres<SK>::run_for(typename BO_algorithm_for_spheres<SK>::Sphere_handle const & sh)
+{
+  CGAL_assertion(sh.is_null() == false);
+  run_for(*sh);
+}
+
+template <typename SK>
 void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
 {
   // Sphere to work with
@@ -288,13 +295,6 @@ void BO_algorithm_for_spheres<SK>::run_for(typename SK::Sphere_3 const & sphere)
 
   // Merge virtual faces
   // TODO
-}
-
-template <typename SK>
-void BO_algorithm_for_spheres<SK>::run_for(typename BO_algorithm_for_spheres<SK>::Sphere_handle const & sh)
-{
-  CGAL_assertion(sh.is_null() == false);
-  run_for(*sh);
 }
 
 template <typename SK>
