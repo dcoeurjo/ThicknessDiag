@@ -361,7 +361,7 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
   {
     // 1) If there exists an arc passing through the start point of Cs,
     //    we remove from E, if exists, any intersection event between
-    //    this arc and the upper (lower) neighbor in V of Âs (_As_).
+    //    this arc and the upper (lower) neighbor in V of top As (bottom As).
     //
     // 2) If arcs of Cs are inserted between two arcs, we remove from E, if
     //    exists, any intersection event between these two arcs.
