@@ -348,10 +348,19 @@ void BO_algorithm_for_spheres<SK>::break_adjacencies(typename BO_algorithm_for_s
 
     // Intersect C+/C- with M0, remove all intersection events
     // occurring in these circles (from E)
-    Intersection_list min_intersected_arcs, max_intersected_arcs;
+    Intersection_list min_intersected_arcs;
     Intersect_3()(_M0, *min_c, std::back_inserter(min_intersected_arcs));
+    if (min_intersected_arcs.empty() == false)
+    {
+      // FIXME remove intersection events from E which are located inside C-
+    }
+
+    Intersection_list max_intersected_arcs;
     Intersect_3()(_M0, *max_c, std::back_inserter(max_intersected_arcs));
-    // FIXME remove intersection events from E
+    if (max_intersected_arcs.empty() == false)
+    {
+      // FIXME remove intersection events from E which are located inside C+
+    }
   }
   else if (CT.empty() == false)   // (B)
   {
